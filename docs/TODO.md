@@ -1,8 +1,6 @@
 # TODO
 
-## Component migration
-
-### Repository foundation
+## Repository foundation
 
 - [x] Decide and document the package topology: one package with secondary entry points or separate UI, Markdown-rendering, and Markdown-editor packages.
 - [x] Select the package names, registry visibility, ownership, local-development workflow, and initial versioning scheme.
@@ -18,7 +16,7 @@
 - [ ] Configure strict push-to-main npm publication for unique versions, bootstrap 0.1.0 through CI, migrate the package to trusted publishing, and revoke the bootstrap token.
 - [ ] Document the local packed-archive, stable-release, semantic-versioning, and changelog workflows.
 
-### Design tokens and shared styles
+## Design tokens and shared styles
 
 - [ ] Move the byte-identical light and dark theme tokens from both applications into the design system.
 - [ ] Create separate SCSS entry points for theme tokens, Bootstrap overrides, Angular CDK overlay styles, common UI styles, and Markdown-rendering styles.
@@ -28,7 +26,7 @@
 - [ ] Add consumer integration coverage for theme preload and initial-document rendering in both applications.
 - [ ] Run SSR, strict-CSP, Bootstrap-mapping, light-theme, dark-theme, and initial-theme-flash checks after the style migration.
 
-### Independent UI components
+## Independent UI components
 
 - [ ] Move `EmptyStateComponent` and add a focused test for its public rendering contract.
 - [ ] Move `LoadingSpinnerComponent` and add a focused test for its accessible-label contract.
@@ -39,7 +37,7 @@
 - [ ] Add design-system regression tests for typed inputs and outputs, Angular Forms integration, keyboard behavior, accessibility semantics, `OnPush` rendering, SSR, and strict CSP where the migrated components exercise those behaviors.
 - [ ] Replace the duplicated consumer components with imports from the UI package entry point.
 
-### Notifications
+## Notifications
 
 - [ ] Move the byte-identical `NotificationService`, notification model, auto-dismiss behavior, browser-timer cleanup, and existing tests.
 - [ ] Move `NotificationAreaComponent`, its responsive placement and transition styles, and existing tests.
@@ -47,7 +45,7 @@
 - [ ] Add regression tests for polite live-region behavior, alert semantics, manual dismissal, automatic dismissal, animation state, and server execution.
 - [ ] Replace the duplicated notification implementations in both consumers with package imports.
 
-### Shared UI infrastructure
+## Shared UI infrastructure
 
 - [ ] Move the byte-identical `ThemeService`, `ThemeName` contract, and existing tests.
 - [ ] Move the byte-identical `ModalPageScrollLockService` and its existing tests.
@@ -55,13 +53,13 @@
 - [ ] Add regression coverage for reference-counted page locking, nested modals, SSR execution, wheel scrolling, touch scrolling, and Angular CDK integration.
 - [ ] Replace the duplicated theme and modal infrastructure in both consumers with package imports.
 
-### Form validation behavior
+## Form validation behavior
 
 - [ ] Extract the shared behavior of `AdminControlValidationStateDirective` and `ControlValidationStateDirective` into a neutral package directive.
 - [ ] Add directive tests for invalid and touched controls, `is-invalid`, `aria-invalid`, native control targeting, and Angular Forms integration.
 - [ ] Replace the two feature-owned validation-state directives with the package directive.
 
-### Shared presentation utilities and test helpers
+## Shared presentation utilities and test helpers
 
 - [ ] Move `formatLocalizedDate` and its byte-identical existing tests.
 - [ ] Remove the unused `slugify` copy and its isolated tests from `personal-workspace` after confirming it has no production consumers.
@@ -69,7 +67,7 @@
 - [ ] Replace duplicated consumer test-helper imports with the package testing entry point.
 - [ ] Verify that production bundles do not contain the package testing entry point.
 
-### Markdown rendering
+## Markdown rendering
 
 - [ ] Create a Markdown-rendering entry point that can be consumed independently of the interactive editor.
 - [ ] Move the byte-identical Prism-based Markdown syntax highlighter and its supported-language configuration.
@@ -80,7 +78,7 @@
 - [ ] Remove the empty wiki-link target stubs from `personal-workspace` after switching it to the package renderer.
 - [ ] Replace the duplicated read-view renderers in both consumers with the Markdown-rendering entry point.
 
-### Markdown editor
+## Markdown editor
 
 - [ ] Create the package editor from the `personal-workspace` implementation, including image capabilities, protected preview loading, pending-upload state, disabled upload interactions, MIME validation, object-URL cleanup, and syntax-tree-safe table selection.
 - [ ] Move the CodeMirror editor component, template, component styles, and editor theme styles.
