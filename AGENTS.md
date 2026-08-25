@@ -4,6 +4,8 @@
 
 - Read [Package topology](docs/package-topology.md) before changing package boundaries, public entry
   points, or dependencies between UI, Markdown rendering, and the Markdown editor.
+- Read [Package distribution](docs/package-distribution.md) before changing the package identity,
+  registry, public subpaths, publishing authority, local package workflow, or versioning baseline.
 
 ## Package boundaries
 

@@ -11,8 +11,9 @@ test utilities.
 The package is one installation, versioning, and release unit. Secondary entry points define
 public API and bundle boundaries; they do not create separately installable dependency sets.
 
-The package name and the final entry-point paths are intentionally not selected by this decision.
-The notation below describes roles rather than final import specifiers.
+The package name and final public subpaths are selected by the subsequent
+[Package distribution](package-distribution.md) decision. The notation below describes the roles
+whose concrete import specifiers that decision names.
 
 ## Context and decision drivers
 
@@ -80,8 +81,10 @@ Styles remain grouped by their logical owner:
 - Markdown presentation styles belong to Markdown rendering;
 - editor-specific styles belong to the Markdown editor and remain scoped or packaged with it.
 
-The exact style subpaths are deferred to the entry-point configuration work. Importing a UI style
-must not implicitly import Markdown-editor styles.
+The subsequent [Package distribution](package-distribution.md) decision names the public style
+subpaths as `styles/theme-tokens`, `styles/bootstrap-overrides`, `styles/cdk-overlay`, `styles/ui`,
+and `styles/markdown`. Their packaging configuration remains deferred. Importing a UI style must
+not implicitly import Markdown-editor styles.
 
 ### Testing secondary entry point
 
@@ -173,14 +176,15 @@ This option isolates CodeMirror while combining UI and rendering. It was rejecte
 partially isolates dependencies and weakens the UI-versus-rendering boundary without removing the
 need to coordinate releases.
 
-## Decisions deliberately deferred
+## Decisions delegated to subsequent work
 
-This document does not select:
+The subsequent [Package distribution](package-distribution.md) decision selects the package name,
+registry visibility, ownership, public subpaths, local-development workflow, and initial versioning
+scheme.
 
-- the package name, registry visibility, or ownership;
-- the local-development workflow;
-- the initial version number or detailed semantic-versioning and changelog workflow;
-- the concrete import suffixes for secondary entry points;
+This document still does not select:
+
+- the detailed semantic-versioning and changelog workflow beyond that initial scheme;
 - the Angular workspace and packaging configuration;
 - which dependencies are runtime dependencies, peer dependencies, or development dependencies;
 - the implementation details of API-surface, bundle, and package-content checks.

@@ -5,8 +5,9 @@
 ### Repository foundation
 
 - [x] Decide and document the package topology: one package with secondary entry points or separate UI, Markdown-rendering, and Markdown-editor packages.
-- [ ] Select the package names, registry visibility, ownership, local-development workflow, and initial versioning scheme.
+- [x] Select the package names, registry visibility, ownership, local-development workflow, and initial versioning scheme.
 - [ ] Scaffold an Angular 22 library workspace with strict TypeScript, standalone Angular artifacts, SCSS support, and partial-Ivy production builds.
+- [ ] Add a repository-owned Angular demo application that installs packed archives through public entry points and exercises UI, Markdown rendering, the editor, styles, SSR, and strict CSP without depending on either consumer repository.
 - [ ] Select an Angular version compatible with the current versions of `my-site` and `personal-workspace` and verify both consumers against it.
 - [ ] Configure public entry points for UI, styles, Markdown rendering, the Markdown editor, and test utilities.
 - [ ] Add an API-surface check that detects unintended public exports and imports through internal package paths.
@@ -14,7 +15,8 @@
 - [ ] Configure Jest, Angular testing support, ESLint, TypeScript checks, Prettier, production builds, and package-content verification.
 - [ ] Add repository scripts and thin Make targets for installation, tests, lint, type checks, format checks, builds, and package verification.
 - [ ] Configure CI to run the Make-based checks and build the distributable packages.
-- [ ] Document the development-package, stable-release, semantic-versioning, and changelog workflows.
+- [ ] Configure strict push-to-main npm publication for unique versions, bootstrap 0.1.0 through CI, migrate the package to trusted publishing, and revoke the bootstrap token.
+- [ ] Document the local packed-archive, stable-release, semantic-versioning, and changelog workflows.
 
 ### Design tokens and shared styles
 
@@ -98,7 +100,7 @@
 ### Consumer migration and release
 
 - [ ] Build and inspect the first distributable package archives.
-- [ ] Publish or otherwise provide an initial development version to both consumers.
+- [ ] Select and verify an existing published 0.x package version as the initial migration baseline for both consumers.
 - [ ] Migrate `personal-workspace` to the shared tokens, styles, UI components, notifications, UI infrastructure, validation behavior, utilities, test helpers, Markdown renderer, and Markdown editor.
 - [ ] Run the relevant `personal-workspace` Make targets for tests, lint, type checks, format checks, production build, and SSR or static-runtime verification.
 - [ ] Remove the migrated duplicate sources and tests from `personal-workspace` after its checks pass against the package.
@@ -108,5 +110,5 @@
 - [ ] Update both consumer manifests and lock files and verify peer-dependency installation without forced resolution flags.
 - [ ] Verify that both consumers import published package entry points rather than design-system sources or permanent sibling `file:` dependencies.
 - [ ] Update the README, package-consumption documentation, CI configuration, and dependency-update workflow in all three repositories.
-- [ ] Publish the first stable package version and consume that exact version in both applications.
+- [ ] Publish the stable 1.0.0 package and consume that exact version in both applications.
 - [ ] Evaluate the completed extraction for inclusion in the `my-site` public "How this site is built" case study and update the page if the design system becomes part of its public technical story.
