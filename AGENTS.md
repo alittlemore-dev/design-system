@@ -1,5 +1,10 @@
 # AGENTS.md
 
+## Architecture references
+
+- Read [Package topology](docs/package-topology.md) before changing package boundaries, public entry
+  points, or dependencies between UI, Markdown rendering, and the Markdown editor.
+
 ## Package boundaries
 
 - Design-system packages must expose only application-independent UI contracts. Consumer-specific APIs, authentication, i18n catalogs, wiki-link semantics, routes, and file transport stay in consumer applications and integrate through explicit adapters.

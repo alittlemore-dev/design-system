@@ -4,7 +4,7 @@
 
 ### Repository foundation
 
-- [ ] Decide and document the package topology: one package with secondary entry points or separate UI, Markdown-rendering, and Markdown-editor packages.
+- [x] Decide and document the package topology: one package with secondary entry points or separate UI, Markdown-rendering, and Markdown-editor packages.
 - [ ] Select the package names, registry visibility, ownership, local-development workflow, and initial versioning scheme.
 - [ ] Scaffold an Angular 22 library workspace with strict TypeScript, standalone Angular artifacts, SCSS support, and partial-Ivy production builds.
 - [ ] Select an Angular version compatible with the current versions of `my-site` and `personal-workspace` and verify both consumers against it.
