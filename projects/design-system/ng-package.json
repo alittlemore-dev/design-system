@@ -1,6 +1,21 @@
 {
   "$schema": "../../node_modules/ng-packagr/ng-package.schema.json",
   "dest": "../../dist/alittlemoron/design-system",
+  "allowedNonPeerDependencies": [
+    "^@codemirror/autocomplete$",
+    "^@codemirror/commands$",
+    "^@codemirror/lang-markdown$",
+    "^@codemirror/language$",
+    "^@codemirror/search$",
+    "^@codemirror/state$",
+    "^@codemirror/view$",
+    "^@lezer/common$",
+    "^@lezer/highlight$",
+    "^dompurify$",
+    "^marked$",
+    "^prismjs$",
+    "^tslib$"
+  ],
   "assets": ["README.md", "LICENSE", "styles"],
   "inlineStyleLanguage": "scss",
   "lib": {

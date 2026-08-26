@@ -1,14 +1,13 @@
 # @alittlemoron/design-system
 
-Application-independent Angular UI and Markdown building blocks shared by `my-site` and
-`personal-workspace`.
+Application-independent Angular UI and Markdown building blocks.
 
 The package currently exposes empty scaffolds for its future public APIs:
 
 - `@alittlemoron/design-system` for application-independent UI;
 - `@alittlemoron/design-system/markdown` for Markdown rendering;
 - `@alittlemoron/design-system/markdown-editor` for the interactive Markdown editor;
-- `@alittlemoron/design-system/testing` for supported consumer test utilities.
+- `@alittlemoron/design-system/testing` for public test utilities.
 
 Its public SCSS subpaths are:
 

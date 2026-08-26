@@ -2,6 +2,7 @@
 /dist
 /out-tsc
 /.angular/cache
+/coverage
 
 # Node.js dependencies and diagnostics
 /node_modules

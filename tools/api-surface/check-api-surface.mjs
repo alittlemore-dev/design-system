@@ -6,10 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import { Extractor, ExtractorConfig } from '@microsoft/api-extractor';
 
-import {
-  findImportViolations,
-  findPackageExportViolations,
-} from './api-surface.mjs';
+import { findImportViolations, findPackageExportViolations } from './api-surface.mjs';
 import {
   expectedPackageExports,
   packageName,
@@ -21,6 +18,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const packageFolder = join(repositoryRoot, 'dist/alittlemoron/design-system');
 const packageJsonPath = join(packageFolder, 'package.json');
 const reportFolder = join(repositoryRoot, 'etc/api');
+const reportTempFolder = join(repositoryRoot, 'dist/api-extractor-temp');
 
 async function main() {
   const update = parseArguments(process.argv.slice(2));
@@ -75,7 +73,7 @@ function runApiExtractor(entryPoint, update) {
         enabled: true,
         reportFileName: entryPoint.reportFileName,
         reportFolder,
-        reportTempFolder: join(packageFolder, '.api-extractor-temp'),
+        reportTempFolder,
       },
       compiler: {
         tsconfigFilePath: join(repositoryRoot, 'tsconfig.json'),

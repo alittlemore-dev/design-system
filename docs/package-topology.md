@@ -4,39 +4,32 @@ Status: accepted on 2026-08-25.
 
 ## Decision
 
-The design system will be published as one Angular package with a primary UI entry point and
-secondary entry points for Markdown rendering, the Markdown editor, styles, and consumer-facing
-test utilities.
+The design system is published as one Angular package with a primary UI entry point and secondary
+entry points for Markdown rendering, the Markdown editor, test utilities, and styles.
 
 The package is one installation, versioning, and release unit. Secondary entry points define
 public API and bundle boundaries; they do not create separately installable dependency sets.
 
-The package name and final public subpaths are selected by the subsequent
-[Package distribution](package-distribution.md) decision. The notation below describes the roles
-whose concrete import specifiers that decision names.
+The package name and public subpaths are defined by
+[Package distribution](package-distribution.md).
 
-## Context and decision drivers
+## Decision drivers
 
-The initial consumers are `my-site` and `personal-workspace`, with other internal applications
-possible later. The shared implementation has three distinct capability groups:
+The package contains three capability groups:
 
 - application-independent UI components and UI infrastructure;
-- safe Markdown rendering that read-only views can consume without the editor;
-- an interactive Markdown editor that uses both shared UI infrastructure and Markdown rendering.
+- safe Markdown rendering that remains independent of the editor;
+- an interactive Markdown editor that uses the UI and Markdown entry points.
 
-All current consumers use Angular, and the renderer is an Angular library rather than a
-framework-independent rendering core. The consumers can migrate to the design system in a
-coordinated change. The package must have one version and be released atomically.
-
-A single package means that installing any entry point installs the dependency set declared by the
-whole package, including Markdown and CodeMirror dependencies. This is an accepted trade-off. The
-entry-point boundaries must still prevent unused capabilities from entering application bundles.
+One package provides an atomic public contract and release. Installing any entry point installs the
+dependency set declared by the package manifest, including Markdown and CodeMirror dependencies.
+Entry-point boundaries must still prevent unused capabilities from entering application bundles.
 
 ## Public entry-point topology
 
 ### Primary UI entry point
 
-The package's primary entry point owns application-independent UI:
+The primary entry point owns:
 
 - standalone UI components and their public input, output, and forms contracts;
 - notifications and their neutral models;
@@ -44,8 +37,7 @@ The package's primary entry point owns application-independent UI:
 - form-validation presentation behavior;
 - shared presentation utilities.
 
-It must not re-export Markdown-rendering or Markdown-editor APIs. Consumers that need those
-capabilities import their secondary entry points explicitly.
+It must not re-export Markdown-rendering or Markdown-editor APIs.
 
 ### Markdown-rendering secondary entry point
 
@@ -57,8 +49,7 @@ The Markdown-rendering entry point owns:
 - application-independent rendering and extension contracts;
 - Markdown presentation styles.
 
-It is independently consumable by read-only views. It must not depend on the UI or Markdown-editor
-entry points.
+It must not depend on the UI or Markdown-editor entry points.
 
 ### Markdown-editor secondary entry point
 
@@ -67,30 +58,28 @@ The Markdown-editor entry point owns:
 - the Angular editor component and its public contracts;
 - CodeMirror configuration, extensions, commands, presentation, and table editing;
 - editor preview integration through the Markdown-rendering entry point;
-- application-independent translation, locale, wiki-link, navigation, and image-capability
-  contracts.
+- application-independent translation, locale, link, navigation, and image-capability contracts.
 
 It may depend on the public UI and Markdown-rendering entry points. It must not import their
 internal source paths.
 
 ### Styles secondary entry points
 
-Styles remain grouped by their logical owner:
+Styles are grouped by their logical owner:
 
 - theme tokens, Bootstrap overrides, Angular CDK overlay styles, and common UI styles belong to UI;
 - Markdown presentation styles belong to Markdown rendering;
-- editor-specific styles belong to the Markdown editor and remain scoped or packaged with it.
+- editor-specific styles remain scoped to or packaged with the Markdown editor.
 
-The subsequent [Package distribution](package-distribution.md) decision names the public style
-subpaths as `styles/theme-tokens`, `styles/bootstrap-overrides`, `styles/cdk-overlay`, `styles/ui`,
-and `styles/markdown`. Their packaging configuration remains deferred. Importing a UI style must
-not implicitly import Markdown-editor styles.
+The public style subpaths are `styles/theme-tokens`, `styles/bootstrap-overrides`,
+`styles/cdk-overlay`, `styles/ui`, and `styles/markdown`. Importing a UI style must not implicitly
+import Markdown-editor styles.
 
 ### Testing secondary entry point
 
-The testing entry point contains only utilities intentionally supported for consumer tests. It is
-not re-exported by any production entry point and must not be reachable from production bundles.
-Internal test fixtures and helpers remain private unless consumers have a concrete need for them.
+The testing entry point contains only intentionally public test utilities. It is not re-exported by
+any production entry point and must not be reachable from production bundles. Repository-only test
+fixtures and helpers remain private.
 
 ## Dependency rules
 
@@ -107,86 +96,67 @@ Markdown rendering    primary UI
 
 The rules are:
 
-- consumers import only documented package entry points;
-- neighboring entry points also communicate only through public entry points;
+- neighboring entry points communicate only through public entry points;
 - the primary UI entry point does not aggregate or re-export Markdown APIs;
 - UI and Markdown rendering do not import the Markdown editor;
 - Markdown rendering does not import UI;
 - the testing entry point depends only on public contracts owned by the capability it supports;
-- consumer-specific integrations never become package dependencies.
+- application-specific integrations do not become package dependencies.
 
 These rules keep the entry-point graph acyclic and allow build tools to exclude unused entry points
-from consumer bundles. Bundle isolation is a required property to verify during package scaffolding;
-secondary entry points alone do not prove it.
+from application bundles.
 
-## Consumer integration boundary
+## Package boundary
 
-Consumers use the entry points independently for UI and read-only Markdown views. The Markdown
-editor uses the package renderer for preview and shared UI infrastructure where required.
+Public APIs remain application-independent. Authentication, application routes, backend APIs, i18n
+catalogs, link semantics, navigation policy, and file transport are outside the package. Relevant
+capabilities cross the boundary through neutral public contracts; the package does not call
+application services or select application-specific behavior.
 
-Authentication, application routes, backend APIs, i18n catalogs, wiki-link semantics, navigation,
-and file transport remain in consumer applications. Consumers connect them through explicit,
-application-independent adapter contracts exposed by the relevant entry point. Application errors
-cross the boundary through neutral public contracts; the package does not call consumer services or
-select application-specific error presentation.
-
-The concrete adapter shapes and error contracts are defined by the later renderer and editor
-contract work, not by this topology decision.
+Concrete adapter implementations remain outside this repository. Their shared requirements may
+inform a neutral package contract during migration, but their application data models and workflows
+do not become package dependencies.
 
 ## Release and dependency consequences
 
-- There is one package manifest, package archive, installed version, and release operation.
+- There is one package manifest, archive, installed version, and release operation.
 - UI, Markdown rendering, and the editor cannot be installed or versioned independently.
 - A breaking change in any public entry point is a breaking change to the package.
-- Consumers cannot combine entry points from different package versions.
-- All package-level dependencies are installed even when a consumer imports only one entry point.
-- Explicit imports and an acyclic, side-effect-controlled entry-point graph preserve the ability to
-  omit unused capabilities from application bundles.
-- Splitting an entry point into a separate package later requires a new architecture decision and a
-  consumer migration; it is not an implementation detail.
+- Entry points from different package versions cannot be combined.
+- All package-level dependencies are installed even when only one entry point is imported.
+- Explicit imports and an acyclic, side-effect-controlled graph preserve bundle isolation.
+- Splitting an entry point into a separate package requires a new architecture decision.
 
 ## Enforcement and verification
 
-Later repository-foundation work must turn these documented boundaries into executable checks:
+Repository checks must enforce these boundaries:
 
-- public API-surface verification must detect unintended exports;
-- internal-path import checks must cover both consumers and imports between entry points;
-- package-content verification must confirm the intended entry points and exclude test-only code
-  from production surfaces;
-- production builds must confirm that UI-only and renderer-only consumers do not bundle the editor;
-- behavioral, SSR, strict-CSP, and security tests remain owned by the entry point whose contract they
-  exercise;
-- consumer integration checks must use packaged entry points rather than sibling source files.
-
-These checks are already represented by subsequent items in `docs/TODO.md`; this decision does not
-add or implement them.
+- API-surface verification detects unintended exports;
+- internal-path import checks cover imports between entry points;
+- package-content verification confirms the intended entry points and excludes test-only code;
+- production builds confirm partial-Ivy compilation;
+- repository-owned bundle fixtures confirm that UI-only and renderer-only imports do not include
+  the editor;
+- behavioral, SSR, strict-CSP, accessibility, and security tests remain owned by the relevant entry
+  point.
 
 ## Alternatives considered
 
 ### Separate UI, Markdown-rendering, and Markdown-editor packages
 
-This option provides physical dependency isolation: UI consumers do not install Markdown or
-CodeMirror dependencies, and renderer consumers do not install CodeMirror. It was rejected for the
-current topology in favor of one installation, versioning, and release unit for the coordinated
-migration.
+This option physically isolates dependency installation, but creates separate versioning and
+release units. It was rejected in favor of one atomic package contract.
 
 ### Two packages with the editor separated
 
 This option isolates CodeMirror while combining UI and rendering. It was rejected because it only
-partially isolates dependencies and weakens the UI-versus-rendering boundary without removing the
-need to coordinate releases.
+partially isolates dependencies and weakens the UI-versus-rendering boundary.
 
 ## Decisions delegated to subsequent work
 
-The subsequent [Package distribution](package-distribution.md) decision selects the package name,
-registry visibility, ownership, public subpaths, local-development workflow, and initial versioning
-scheme.
+The following remain separate implementation decisions:
 
-This document still does not select:
-
-- the detailed semantic-versioning and changelog workflow beyond that initial scheme;
-- the Angular workspace and packaging configuration;
-- which dependencies are runtime dependencies, peer dependencies, or development dependencies;
-- the implementation details of API-surface, bundle, and package-content checks.
-
-Those choices belong to the subsequent repository-foundation items in `docs/TODO.md`.
+- detailed semantic-versioning and changelog workflow;
+- Angular workspace and packaging configuration;
+- runtime, peer, and development dependency classification;
+- API-surface, bundle, and package-content implementation details.

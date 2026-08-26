@@ -7,13 +7,16 @@
 - Read [Package distribution](docs/package-distribution.md) before changing the package identity,
   registry, public subpaths, publishing authority, local package workflow, or versioning baseline.
 - Read [Angular compatibility](docs/angular-compatibility.md) before changing Angular framework,
-  compiler, TypeScript, RxJS, or Node baselines, peer ranges, or consumer compatibility
+  compiler, TypeScript, RxJS, or Node baselines, peer ranges, or package compatibility
   verification.
 
 ## Package boundaries
 
-- Design-system packages must expose only application-independent UI contracts. Consumer-specific APIs, authentication, i18n catalogs, wiki-link semantics, routes, and file transport stay in consumer applications and integrate through explicit adapters.
-- Consumers must use documented package entry points and must not import design-system internals or retain permanent sibling file dependencies.
+- Design-system packages must expose only application-independent contracts.
+- Compatibility, dependency, publication, and package-verification decisions must derive only from
+  package sources, public contracts, repository configuration, and generated package artifacts.
+- Migration tasks may name source repositories only to identify code and tests to extract; source
+  application versions, release workflows, and delivery checks are not package contracts.
 
 ## Component quality
 

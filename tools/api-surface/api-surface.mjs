@@ -1,18 +1,9 @@
 import { readFile, readdir } from 'node:fs/promises';
-import { dirname, relative, resolve, sep } from 'node:path';
+import { relative, resolve, sep } from 'node:path';
 
 import ts from 'typescript';
 
-const SOURCE_EXTENSIONS = new Set([
-  '.cjs',
-  '.cts',
-  '.js',
-  '.jsx',
-  '.mjs',
-  '.mts',
-  '.ts',
-  '.tsx',
-]);
+const SOURCE_EXTENSIONS = new Set(['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx']);
 
 const EXCLUDED_DIRECTORIES = new Set([
   '.angular',
@@ -89,10 +80,7 @@ export async function findImportViolations({
         continue;
       }
 
-      const importerEntryPoint = findOwningEntryPoint(
-        sourceFilePath,
-        absoluteEntryPoints,
-      );
+      const importerEntryPoint = findOwningEntryPoint(sourceFilePath, absoluteEntryPoints);
       const importedEntryPoint = findOwningEntryPoint(
         resolvedModule.resolvedFileName,
         absoluteEntryPoints,
@@ -103,9 +91,7 @@ export async function findImportViolations({
       }
 
       violations.push({
-        code: importerEntryPoint
-          ? 'cross-entry-point-relative-import'
-          : 'external-relative-import',
+        code: importerEntryPoint ? 'cross-entry-point-relative-import' : 'external-relative-import',
         ...commonFields,
       });
     }

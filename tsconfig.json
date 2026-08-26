@@ -18,7 +18,12 @@
     "target": "ES2022",
     "module": "ES2022",
     "paths": {
-      "@alittlemoron/design-system": ["./dist/alittlemoron/design-system"]
+      "@alittlemoron/design-system": ["./dist/alittlemoron/design-system"],
+      "@alittlemoron/design-system/markdown": ["./dist/alittlemoron/design-system/markdown"],
+      "@alittlemoron/design-system/markdown-editor": [
+        "./dist/alittlemoron/design-system/markdown-editor"
+      ],
+      "@alittlemoron/design-system/testing": ["./dist/alittlemoron/design-system/testing"]
     }
   },
   "angularCompilerOptions": {

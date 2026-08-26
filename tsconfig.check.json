@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "paths": {
+      "@alittlemoron/design-system": ["./projects/design-system/src/public-api.ts"],
+      "@alittlemoron/design-system/markdown": [
+        "./projects/design-system/markdown/src/public-api.ts"
+      ],
+      "@alittlemoron/design-system/markdown-editor": [
+        "./projects/design-system/markdown-editor/src/public-api.ts"
+      ],
+      "@alittlemoron/design-system/testing": ["./projects/design-system/testing/src/public-api.ts"]
+    },
+    "types": []
+  },
+  "include": ["projects/design-system/**/*.ts"],
+  "exclude": ["projects/design-system/**/*.spec.ts"]
+}
