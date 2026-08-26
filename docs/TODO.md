@@ -7,7 +7,7 @@
 - [x] Scaffold an Angular 22 library workspace with strict TypeScript, standalone Angular artifacts, SCSS support, and partial-Ivy production builds.
 - [x] Select an Angular version compatible with the current versions of `my-site` and `personal-workspace` and verify both consumers against it.
 - [x] Configure public entry points for UI, styles, Markdown rendering, the Markdown editor, and test utilities.
-- [ ] Add an API-surface check that detects unintended public exports and imports through internal package paths.
+- [x] Add an API-surface check that detects unintended public exports and imports through internal package paths.
 - [ ] Select and configure the Angular, Angular CDK, Bootstrap, RxJS, CodeMirror, Marked, Prism, and DOMPurify dependency contracts for each entry point.
 - [ ] Configure Jest, Angular testing support, ESLint, TypeScript checks, Prettier, production builds, and package-content verification.
 - [ ] Add repository scripts and thin Make targets for installation, tests, lint, type checks, format checks, builds, and package verification.

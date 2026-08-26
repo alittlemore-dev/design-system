@@ -5,6 +5,9 @@
   "scripts": {
     "ng": "ng",
     "build": "ng build @alittlemoron/design-system --configuration production",
+    "test:api-surface": "node --test tools/api-surface/api-surface.test.mjs",
+    "check:api-surface": "npm run test:api-surface && npm run build && node tools/api-surface/check-api-surface.mjs",
+    "update:api-surface": "npm run build && node tools/api-surface/check-api-surface.mjs --update",
     "watch": "ng build @alittlemoron/design-system --configuration development --watch"
   },
   "dependencies": {
@@ -18,6 +21,7 @@
     "@angular/build": "22.1.5",
     "@angular/cli": "22.1.5",
     "@angular/compiler-cli": "22.1.0",
+    "@microsoft/api-extractor": "7.59.0",
     "ng-packagr": "22.1.1",
     "typescript": "6.0.3"
   }
