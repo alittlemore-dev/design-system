@@ -6,6 +6,9 @@
   points, or dependencies between UI, Markdown rendering, and the Markdown editor.
 - Read [Package distribution](docs/package-distribution.md) before changing the package identity,
   registry, public subpaths, publishing authority, local package workflow, or versioning baseline.
+- Read [Angular compatibility](docs/angular-compatibility.md) before changing Angular framework,
+  compiler, TypeScript, RxJS, or Node baselines, peer ranges, or consumer compatibility
+  verification.
 
 ## Package boundaries
 

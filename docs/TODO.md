@@ -4,9 +4,8 @@
 
 - [x] Decide and document the package topology: one package with secondary entry points or separate UI, Markdown-rendering, and Markdown-editor packages.
 - [x] Select the package names, registry visibility, ownership, local-development workflow, and initial versioning scheme.
-- [ ] Scaffold an Angular 22 library workspace with strict TypeScript, standalone Angular artifacts, SCSS support, and partial-Ivy production builds.
-- [ ] Add a repository-owned Angular demo application that installs packed archives through public entry points and exercises UI, Markdown rendering, the editor, styles, SSR, and strict CSP without depending on either consumer repository.
-- [ ] Select an Angular version compatible with the current versions of `my-site` and `personal-workspace` and verify both consumers against it.
+- [x] Scaffold an Angular 22 library workspace with strict TypeScript, standalone Angular artifacts, SCSS support, and partial-Ivy production builds.
+- [x] Select an Angular version compatible with the current versions of `my-site` and `personal-workspace` and verify both consumers against it.
 - [ ] Configure public entry points for UI, styles, Markdown rendering, the Markdown editor, and test utilities.
 - [ ] Add an API-surface check that detects unintended public exports and imports through internal package paths.
 - [ ] Select and configure the Angular, Angular CDK, Bootstrap, RxJS, CodeMirror, Marked, Prism, and DOMPurify dependency contracts for each entry point.
@@ -15,6 +14,7 @@
 - [ ] Configure CI to run the Make-based checks and build the distributable packages.
 - [ ] Configure strict push-to-main npm publication for unique versions, bootstrap 0.1.0 through CI, migrate the package to trusted publishing, and revoke the bootstrap token.
 - [ ] Document the local packed-archive, stable-release, semantic-versioning, and changelog workflows.
+- [ ] Add a repository-owned Angular demo application that installs packed archives through public entry points and exercises UI, Markdown rendering, the editor, styles, SSR, and strict CSP without depending on either consumer repository.
 
 ## Design tokens and shared styles
 

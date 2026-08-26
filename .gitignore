@@ -1,0 +1,14 @@
+# Angular and TypeScript build output
+/dist
+/out-tsc
+/.angular/cache
+
+# Node.js dependencies and diagnostics
+/node_modules
+npm-debug.log
+
+# Generated package archives
+/*.tgz
+
+# System files
+.DS_Store

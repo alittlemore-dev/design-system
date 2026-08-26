@@ -1,0 +1,19 @@
+{
+  "name": "@alittlemoron/design-system",
+  "version": "0.1.0",
+  "description": "Application-independent Angular UI and Markdown building blocks.",
+  "author": "Dmitriy Lunev",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "peerDependencies": {
+    "@angular/common": ">=22.1.0 <23.0.0",
+    "@angular/core": ">=22.1.0 <23.0.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false
+}
