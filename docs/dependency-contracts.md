@@ -55,7 +55,12 @@ manifest permits compatible updates within the ranges above.
 
 `@angular/platform-browser` and `zone.js` support repository tests only. Jest, jsdom, ESLint,
 TypeScript, Prettier, and their adapters are workspace development dependencies and never appear in
-the published manifest.
+the published manifest. Dart Sass `1.101.0` is also a direct workspace test dependency: source and
+built-package checks compile every public SCSS entry point and their documented composition. Sass is
+not a published runtime dependency.
+
+The Bootstrap style entry point compiles Bootstrap's base before the package mappings and overrides.
+Consumers must not add a second Bootstrap stylesheet import.
 
 ## Enforcement
 

@@ -18,12 +18,13 @@
 
 ## Design tokens and shared styles
 
-- [ ] Migrate the byte-identical light and dark theme tokens from `my-site` and `personal-workspace`.
-- [ ] Implement separate SCSS entry points for theme tokens, Bootstrap overrides, Angular CDK overlay styles, common UI styles, and Markdown-rendering styles.
-- [ ] Classify the duplicated global component styles in `my-site` and `personal-workspace` as reusable UI, Markdown presentation, or application-specific styles.
-- [ ] Migrate the reusable selectors into their owning SCSS entry points.
-- [ ] Migrate the common color-contrast and shared-style regression tests from `my-site` and `personal-workspace`.
-- [ ] Add package-level checks for Bootstrap mappings, light and dark themes, SSR, strict CSP, and initial theme rendering.
+- [ ] Fully retire Bootstrap from the shared frontend of `my-site` and `personal-workspace`: replace all Bootstrap components, utility classes, variables, styles, and animations with repository-owned components, styles, and animations, then remove the Bootstrap dependencies, overrides, entry points, and Bootstrap-specific checks.
+- [x] Migrate the byte-identical light and dark theme tokens from `my-site` and `personal-workspace`.
+- [x] Implement separate SCSS entry points for theme tokens, Bootstrap overrides, Angular CDK overlay styles, common UI styles, and Markdown-rendering styles.
+- [x] Classify the duplicated global component styles in `my-site` and `personal-workspace` as reusable UI, Markdown presentation, or application-specific styles.
+- [x] Migrate the reusable selectors into their owning SCSS entry points.
+- [x] Migrate the common color-contrast and shared-style regression tests from `my-site` and `personal-workspace`.
+- [x] Add package-level checks for Bootstrap mappings, light and dark themes, SSR, strict CSP, and initial theme rendering.
 
 ## Independent UI components
 
@@ -72,7 +73,7 @@
 
 ## Markdown editor
 
-- [ ] Create the package editor from the `personal-workspace` implementation, including image capabilities, protected preview loading, pending-upload state, disabled interactions, MIME validation, object-URL cleanup, and syntax-tree-safe table selection.
+- [ ] Create the package editor from the `personal-workspace` and `my-site` implementation, including image capabilities, protected preview loading, pending-upload state, disabled interactions, MIME validation, object-URL cleanup, and syntax-tree-safe table selection.
 - [ ] Migrate the CodeMirror editor component, template, component styles, and editor theme styles from `personal-workspace`.
 - [ ] Migrate Markdown commands, editor extensions, presentation decorations, table parsing and editing, link completion infrastructure, sticky-bottom-inset behavior, and Markdown-table utilities from `personal-workspace`.
 - [ ] Migrate and consolidate editor regression tests from `my-site` and `personal-workspace` for commands, presentation, tables, selections, interactions, links, fullscreen behavior, uploads, accessibility, CSP, browser lifecycle, and malformed input.

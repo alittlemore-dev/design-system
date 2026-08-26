@@ -1,6 +1,6 @@
 NPM ?= npm
 
-.PHONY: install test test-watch test-coverage lint typecheck format format-check build watch verify-package check test-api-surface check-api-surface update-api-surface
+.PHONY: install test test-watch test-coverage lint typecheck format format-check build watch verify-package check test-api-surface check-api-surface update-api-surface test-styles check-styles
 
 install:
 	$(NPM) ci
@@ -46,3 +46,9 @@ check-api-surface:
 
 update-api-surface:
 	$(NPM) run update:api-surface
+
+test-styles:
+	$(NPM) run test:styles
+
+check-styles:
+	$(NPM) run check:styles

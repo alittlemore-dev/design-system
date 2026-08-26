@@ -6,7 +6,7 @@ const PUBLICATION_METADATA = {
     access: 'public',
     registry: 'https://registry.npmjs.org',
   },
-  sideEffects: false,
+  sideEffects: ['./theme-preload.js'],
 };
 
 export function aggregateDependencyContracts(contracts) {

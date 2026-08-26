@@ -65,13 +65,25 @@ export const styleEntryPoints = [
   },
 }));
 
+export const webAssetEntryPoints = [
+  {
+    exportKey: './theme-preload',
+    specifier: `${packageName}/theme-preload`,
+    targets: {
+      default: './theme-preload.js',
+    },
+  },
+];
+
 export const expectedPackageExports = Object.fromEntries([
   ...typeScriptEntryPoints.map(({ exportKey, targets }) => [exportKey, targets]),
   ...styleEntryPoints.map(({ exportKey, targets }) => [exportKey, targets]),
+  ...webAssetEntryPoints.map(({ exportKey, targets }) => [exportKey, targets]),
   ['./package.json', { default: './package.json' }],
 ]);
 
 export const publicSpecifiers = new Set([
   ...typeScriptEntryPoints.map(({ specifier }) => specifier),
   ...styleEntryPoints.map(({ specifier }) => specifier),
+  ...webAssetEntryPoints.map(({ specifier }) => specifier),
 ]);

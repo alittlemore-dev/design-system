@@ -9,6 +9,9 @@
     "registry": "https://registry.npmjs.org"
   },
   "exports": {
+    "./theme-preload": {
+      "default": "./theme-preload.js"
+    },
     "./styles/theme-tokens": {
       "sass": "./styles/theme-tokens.scss"
     },
@@ -48,5 +51,7 @@
     "prismjs": "^1.30.0",
     "tslib": "^2.3.0"
   },
-  "sideEffects": false
+  "sideEffects": [
+    "./theme-preload.js"
+  ]
 }

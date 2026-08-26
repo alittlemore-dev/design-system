@@ -1,0 +1,70 @@
+body {
+  min-height: 100vh;
+}
+
+.gradient-body {
+  background: var(--background-body);
+  background: var(--background-body-gradient);
+}
+
+.nav-blur {
+  background-color: var(--main-bg-color-opacity) !important;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+.text-main {
+  color: var(--hovered-main-component-color) !important;
+}
+
+.link-active {
+  color: var(--main-component-color) !important;
+}
+
+.link-active:hover {
+  color: var(--hovered-main-component-color) !important;
+}
+
+.link-colored:hover {
+  color: var(--main-component-color) !important;
+}
+
+::selection {
+  color: var(--main-bg-color);
+  background-color: var(--main-component-color);
+}
+
+.button-active {
+  color: var(--button-primary-color) !important;
+  background-color: var(--button-primary-bg) !important;
+  border-color: var(--button-primary-bg) !important;
+  z-index: 1;
+}
+
+.button-active:hover {
+  color: var(--button-primary-color) !important;
+  background-color: var(--button-primary-hover-bg) !important;
+  border-color: var(--button-primary-hover-bg) !important;
+  z-index: 1;
+}
+
+.button-inactive {
+  color: var(--main-text-color) !important;
+  background-color: var(--secondary-bg-color) !important;
+  border-color: var(--main-bg-color) !important;
+  z-index: 1;
+}
+
+.button-inactive:hover {
+  color: var(--button-primary-color) !important;
+  background-color: var(--button-primary-bg) !important;
+  border-color: var(--button-primary-bg) !important;
+  z-index: 1;
+}
+
+.alerts-section {
+  margin-top: 5rem;
+  margin-right: 1rem;
+  min-width: 20rem;
+  z-index: 1100;
+}

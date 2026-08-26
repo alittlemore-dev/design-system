@@ -24,6 +24,9 @@ const expectedExports = {
   './styles/ui': {
     sass: './styles/ui.scss',
   },
+  './theme-preload': {
+    default: './theme-preload.js',
+  },
   './package.json': {
     default: './package.json',
   },
@@ -52,7 +55,7 @@ function createValidFixture() {
       exports: structuredClone(expectedExports),
       peerDependencies: structuredClone(expectedPeerDependencies),
       dependencies: structuredClone(expectedDependencies),
-      sideEffects: false,
+      sideEffects: ['./theme-preload.js'],
     },
     sourcePackageJson: {
       name: '@scope/package',
@@ -73,6 +76,7 @@ function createValidFixture() {
         { path: 'types/package.d.ts' },
         { path: 'types/package-markdown.d.ts' },
         { path: 'styles/ui.scss' },
+        { path: 'theme-preload.js' },
       ],
     },
   };

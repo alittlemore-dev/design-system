@@ -16,7 +16,7 @@
     "^prismjs$",
     "^tslib$"
   ],
-  "assets": ["README.md", "LICENSE", "styles"],
+  "assets": ["README.md", "LICENSE", "styles", "theme-preload.js"],
   "inlineStyleLanguage": "scss",
   "lib": {
     "entryFile": "src/public-api.ts"

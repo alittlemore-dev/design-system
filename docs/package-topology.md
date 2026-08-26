@@ -75,6 +75,16 @@ The public style subpaths are `styles/theme-tokens`, `styles/bootstrap-overrides
 `styles/cdk-overlay`, `styles/ui`, and `styles/markdown`. Importing a UI style must not implicitly
 import Markdown-editor styles.
 
+### Theme-preload web asset
+
+The package also owns one public, classic JavaScript web asset at `theme-preload`. Applications copy
+the asset into their web output and execute it synchronously in the document head before application
+code. It establishes the initial `data-bs-theme` without adding a runtime import to any TypeScript
+entry point.
+
+The asset is the package's only declared JavaScript side effect. TypeScript modules remain
+tree-shakeable, and SCSS entry points remain independently selectable.
+
 ### Testing secondary entry point
 
 The testing entry point contains only intentionally public test utilities. It is not re-exported by
@@ -134,11 +144,18 @@ Repository checks must enforce these boundaries:
 - API-surface verification detects unintended exports;
 - internal-path import checks cover imports between entry points;
 - package-content verification confirms the intended entry points and excludes test-only code;
+- style-contract verification compiles each SCSS entry point and their documented composition from
+  both package sources and the built npm package;
+- theme-preload verification covers initial rendering, browser-global failures, SSR execution, and
+  self-hosted external delivery under a strict-CSP-shaped fixture;
 - production builds confirm partial-Ivy compilation;
 - repository-owned bundle fixtures confirm that UI-only and renderer-only imports do not include
   the editor;
 - behavioral, SSR, strict-CSP, accessibility, and security tests remain owned by the relevant entry
   point.
+
+The package-level CSP fixture verifies the static external-delivery contract. The repository-owned
+demo remains responsible for full browser, SSR, and hydration integration once it is implemented.
 
 ## Alternatives considered
 

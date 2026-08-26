@@ -31,6 +31,11 @@ Its public SCSS subpaths are:
 - `@alittlemoron/design-system/styles/ui`;
 - `@alittlemoron/design-system/styles/markdown`.
 
+Its public web-asset subpath is `@alittlemoron/design-system/theme-preload`, which resolves to the
+published classic `theme-preload.js` file. Applications copy this file from the package to their web
+output and load the self-hosted copy synchronously in `<head>` without `async` or `defer`. It is not
+bundled into a TypeScript entry point.
+
 Editor-specific styles remain scoped to or packaged with the Markdown editor. They do not receive a
 global style subpath without a concrete package requirement.
 
@@ -92,6 +97,7 @@ The repository-owned Angular demo verifies the production archive and must:
 - exercise the primary UI, Markdown rendering, Markdown editor, and public styles with neutral data;
 - import the public testing entry point only from tests;
 - cover browser execution, SSR, and strict CSP;
+- copy and load the public theme-preload asset through the documented external delivery contract;
 - remain excluded from the published package archive.
 
 The demo is not an additional distributable package and is not part of the public API.
