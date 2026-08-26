@@ -8,6 +8,23 @@
     "access": "public",
     "registry": "https://registry.npmjs.org"
   },
+  "exports": {
+    "./styles/theme-tokens": {
+      "sass": "./styles/theme-tokens.scss"
+    },
+    "./styles/bootstrap-overrides": {
+      "sass": "./styles/bootstrap-overrides.scss"
+    },
+    "./styles/cdk-overlay": {
+      "sass": "./styles/cdk-overlay.scss"
+    },
+    "./styles/ui": {
+      "sass": "./styles/ui.scss"
+    },
+    "./styles/markdown": {
+      "sass": "./styles/markdown.scss"
+    }
+  },
   "peerDependencies": {
     "@angular/common": ">=22.1.0 <23.0.0",
     "@angular/core": ">=22.1.0 <23.0.0"
