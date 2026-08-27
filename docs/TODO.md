@@ -18,7 +18,7 @@
 
 ## Design tokens and shared styles
 
-- [ ] Fully retire Bootstrap from the shared frontend of `my-site` and `personal-workspace`: replace all Bootstrap components, utility classes, variables, styles, and animations with repository-owned components, styles, and animations, then remove the Bootstrap dependencies, overrides, entry points, and Bootstrap-specific checks.
+- [ ] Fully retire Bootstrap: replace all Bootstrap components, utility classes, variables, styles, and animations with repository-owned components, styles, and animations, then remove the Bootstrap dependencies, overrides, entry points, and Bootstrap-specific checks.
 - [x] Migrate the byte-identical light and dark theme tokens from `my-site` and `personal-workspace`.
 - [x] Implement separate SCSS entry points for theme tokens, Bootstrap overrides, Angular CDK overlay styles, common UI styles, and Markdown-rendering styles.
 - [x] Classify the duplicated global component styles in `my-site` and `personal-workspace` as reusable UI, Markdown presentation, or application-specific styles.
