@@ -21,3 +21,9 @@
 ## Component quality
 
 - New and migrated components must be standalone, use `OnPush` change detection, be accessible, remain SSR-safe and strict-CSP-compatible, and have behavioral test coverage.
+
+## Working artifacts
+
+- Before handing off completed work, remove every Superpowers-generated artifact from the
+  repository, including `.superpowers/` workspaces and `docs/superpowers/` plans or specs, unless
+  the user explicitly asks to retain a specific artifact.

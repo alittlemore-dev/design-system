@@ -4,6 +4,264 @@
 
 ```ts
 
+import { AbstractControl } from '@angular/forms';
+import * as _angular_core from '@angular/core';
+import { ControlValueAccessor } from '@angular/forms';
+import { OnChanges } from '@angular/core';
+import { SimpleChanges } from '@angular/core';
+import { ValidationErrors } from '@angular/forms';
+import { Validator } from '@angular/forms';
+
+// @public (undocumented)
+export class EmptyStateComponent {
+    // (undocumented)
+    readonly message: _angular_core.InputSignal<string>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<EmptyStateComponent, "ds-empty-state", never, { "message": { "alias": "message"; "required": true; "isSignal": true; }; }, {}, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<EmptyStateComponent, never>;
+}
+
+// @public (undocumented)
+export interface ErrorDisplay {
+    // (undocumented)
+    readonly attr?: string | null;
+    // (undocumented)
+    readonly location?: string | null;
+    // (undocumented)
+    readonly message: string;
+    // (undocumented)
+    readonly nested_errors?: readonly ErrorDisplay[];
+}
+
+// @public (undocumented)
+export function errorDisplayMessages(error: ErrorDisplay): readonly string[];
+
+// @public (undocumented)
+export class ErrorMessageComponent {
+    // (undocumented)
+    readonly error: _angular_core.InputSignal<ErrorDisplay>;
+    // (undocumented)
+    readonly retry: _angular_core.OutputEmitterRef<void>;
+    // (undocumented)
+    readonly retryLabel: _angular_core.InputSignal<string>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<ErrorMessageComponent, "ds-error-message", never, { "error": { "alias": "error"; "required": true; "isSignal": true; }; "retryLabel": { "alias": "retryLabel"; "required": true; "isSignal": true; }; }, { "retry": "retry"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<ErrorMessageComponent, never>;
+}
+
+// @public (undocumented)
+export function flattenNestedErrorMessages(error: ErrorDisplay): readonly string[];
+
+// @public (undocumented)
+export class FoldableTreeComponent {
+    // (undocumented)
+    readonly defaultExpandedSectionKeys: _angular_core.InputSignal<readonly string[]>;
+    // (undocumented)
+    readonly emptyMessage: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly itemSelected: _angular_core.OutputEmitterRef<string>;
+    // (undocumented)
+    readonly itemTestId: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly rootItems: _angular_core.InputSignal<readonly FoldableTreeItem[]>;
+    // (undocumented)
+    readonly sections: _angular_core.InputSignal<readonly FoldableTreeSection[]>;
+    // (undocumented)
+    readonly sectionTestId: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly selectedItemKey: _angular_core.InputSignal<string | null>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<FoldableTreeComponent, "ds-foldable-tree", never, { "rootItems": { "alias": "rootItems"; "required": true; "isSignal": true; }; "sections": { "alias": "sections"; "required": true; "isSignal": true; }; "emptyMessage": { "alias": "emptyMessage"; "required": true; "isSignal": true; }; "selectedItemKey": { "alias": "selectedItemKey"; "required": true; "isSignal": true; }; "defaultExpandedSectionKeys": { "alias": "defaultExpandedSectionKeys"; "required": true; "isSignal": true; }; "sectionTestId": { "alias": "sectionTestId"; "required": true; "isSignal": true; }; "itemTestId": { "alias": "itemTestId"; "required": true; "isSignal": true; }; }, { "itemSelected": "itemSelected"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<FoldableTreeComponent, never>;
+}
+
+// @public (undocumented)
+export interface FoldableTreeItem {
+    // (undocumented)
+    readonly badgeText: string | null;
+    // (undocumented)
+    readonly key: string;
+    // (undocumented)
+    readonly label: string;
+}
+
+// @public (undocumented)
+export interface FoldableTreeSection {
+    // (undocumented)
+    readonly items: readonly FoldableTreeItem[];
+    // (undocumented)
+    readonly key: string;
+    // (undocumented)
+    readonly label: string;
+    // (undocumented)
+    readonly trailingText: string | null;
+}
+
+// @public (undocumented)
+export function formatErrorMessage(error: ErrorDisplay): string;
+
+// @public (undocumented)
+export class LoadingSpinnerComponent {
+    // (undocumented)
+    readonly ariaLabel: _angular_core.InputSignal<string>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<LoadingSpinnerComponent, "ds-loading-spinner", never, { "ariaLabel": { "alias": "ariaLabel"; "required": true; "isSignal": true; }; }, {}, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<LoadingSpinnerComponent, never>;
+}
+
+// @public (undocumented)
+export class LocalizedDatePickerComponent implements ControlValueAccessor, OnChanges, Validator {
+    // (undocumented)
+    readonly controlDisabled: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly controlSize: _angular_core.InputSignal<LocalizedDatePickerControlSize>;
+    // (undocumented)
+    readonly dateLocale: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly disabledDates: _angular_core.InputSignal<readonly string[] | undefined>;
+    // (undocumented)
+    readonly inputId: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly invalid: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly labels: _angular_core.InputSignal<LocalizedDatePickerLabels>;
+    // (undocumented)
+    readonly max: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    readonly min: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    ngOnChanges(): void;
+    // (undocumented)
+    readonly readonly: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    registerOnChange(fn: (value: string) => void): void;
+    // (undocumented)
+    registerOnTouched(fn: () => void): void;
+    // (undocumented)
+    registerOnValidatorChange(fn: () => void): void;
+    // (undocumented)
+    readonly required: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    setDisabledState(disabled: boolean): void;
+    // (undocumented)
+    validate(control: AbstractControl<unknown>): ValidationErrors | null;
+    // (undocumented)
+    readonly validityChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    readonly value: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    readonly valueChange: _angular_core.OutputEmitterRef<string>;
+    // (undocumented)
+    writeValue(value: unknown): void;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<LocalizedDatePickerComponent, "ds-localized-date-picker", never, { "inputId": { "alias": "inputId"; "required": true; "isSignal": true; }; "value": { "alias": "value"; "required": false; "isSignal": true; }; "controlSize": { "alias": "controlSize"; "required": true; "isSignal": true; }; "dateLocale": { "alias": "dateLocale"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "required": { "alias": "required"; "required": true; "isSignal": true; }; "invalid": { "alias": "invalid"; "required": true; "isSignal": true; }; "controlDisabled": { "alias": "controlDisabled"; "required": true; "isSignal": true; }; "readonly": { "alias": "readonly"; "required": true; "isSignal": true; }; "min": { "alias": "min"; "required": false; "isSignal": true; }; "max": { "alias": "max"; "required": false; "isSignal": true; }; "disabledDates": { "alias": "disabledDates"; "required": false; "isSignal": true; }; }, { "valueChange": "valueChange"; "validityChange": "validityChange"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<LocalizedDatePickerComponent, never>;
+}
+
+// @public (undocumented)
+export type LocalizedDatePickerControlSize = 'default' | 'small';
+
+// @public (undocumented)
+export interface LocalizedDatePickerLabels {
+    // (undocumented)
+    readonly changeCalendar: string;
+    // (undocumented)
+    readonly clear: string;
+    // (undocumented)
+    readonly close: string;
+    // (undocumented)
+    readonly dialog: string;
+    // (undocumented)
+    readonly formatHint: string;
+    // (undocumented)
+    readonly invalidDate: string;
+    // (undocumented)
+    readonly keyboardHelp: string;
+    // (undocumented)
+    readonly nextMonth: string;
+    // (undocumented)
+    readonly nextYear: string;
+    // (undocumented)
+    readonly openCalendar: string;
+    // (undocumented)
+    readonly openMonthYearPicker: string;
+    // (undocumented)
+    readonly placeholder: string;
+    // (undocumented)
+    readonly previousMonth: string;
+    // (undocumented)
+    readonly previousYear: string;
+    // (undocumented)
+    readonly requiredDate: string;
+}
+
+// @public (undocumented)
+export type SiteSelectAppearance = 'default' | 'bordered';
+
+// @public (undocumented)
+export class SiteSelectComponent implements ControlValueAccessor, OnChanges, Validator {
+    // (undocumented)
+    readonly appearance: _angular_core.InputSignal<SiteSelectAppearance>;
+    // (undocumented)
+    readonly ariaDescribedBy: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    readonly controlDisabled: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly controlSize: _angular_core.InputSignal<SiteSelectControlSize>;
+    // (undocumented)
+    focus(options: FocusOptions): void;
+    // (undocumented)
+    readonly inputId: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly invalid: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    ngOnChanges(changes: SimpleChanges): void;
+    // (undocumented)
+    readonly options: _angular_core.InputSignal<readonly SiteSelectOption[]>;
+    // (undocumented)
+    registerOnChange(fn: (value: string) => void): void;
+    // (undocumented)
+    registerOnTouched(fn: () => void): void;
+    // (undocumented)
+    registerOnValidatorChange(fn: () => void): void;
+    // (undocumented)
+    readonly required: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    scrollIntoView(options: ScrollIntoViewOptions): void;
+    // (undocumented)
+    setDisabledState(disabled: boolean): void;
+    // (undocumented)
+    readonly testId: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    validate(control: AbstractControl<unknown>): ValidationErrors | null;
+    // (undocumented)
+    readonly value: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    readonly valueChange: _angular_core.OutputEmitterRef<string>;
+    // (undocumented)
+    writeValue(value: unknown): void;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<SiteSelectComponent, "ds-site-select", never, { "inputId": { "alias": "inputId"; "required": true; "isSignal": true; }; "options": { "alias": "options"; "required": true; "isSignal": true; }; "value": { "alias": "value"; "required": false; "isSignal": true; }; "controlSize": { "alias": "controlSize"; "required": true; "isSignal": true; }; "appearance": { "alias": "appearance"; "required": true; "isSignal": true; }; "required": { "alias": "required"; "required": true; "isSignal": true; }; "invalid": { "alias": "invalid"; "required": true; "isSignal": true; }; "controlDisabled": { "alias": "controlDisabled"; "required": true; "isSignal": true; }; "testId": { "alias": "testId"; "required": false; "isSignal": true; }; "ariaDescribedBy": { "alias": "ariaDescribedBy"; "required": false; "isSignal": true; }; }, { "valueChange": "valueChange"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<SiteSelectComponent, never>;
+}
+
+// @public (undocumented)
+export type SiteSelectControlSize = 'default' | 'small';
+
+// @public (undocumented)
+export interface SiteSelectOption {
+    // (undocumented)
+    readonly label: string;
+    // (undocumented)
+    readonly value: string;
+}
+
 // (No @packageDocumentation comment for this package)
 
 ```
