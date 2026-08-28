@@ -38,10 +38,10 @@
 
 ## Notifications
 
-- [ ] Migrate the byte-identical `NotificationService`, notification model, auto-dismiss behavior, browser-timer cleanup, and tests from `my-site` and `personal-workspace`.
-- [ ] Migrate the duplicated `NotificationAreaComponent`, responsive placement, transition styles, and tests from `my-site` and `personal-workspace`.
-- [ ] Replace the source implementations' direct `TranslatePipe` dependency with an application-independent close-label contract.
-- [ ] Add regression tests for polite live-region behavior, alert semantics, manual dismissal, automatic dismissal, animation state, and server execution.
+- [x] Migrate the byte-identical `NotificationService`, notification model, auto-dismiss behavior, browser-timer cleanup, and tests from `my-site` and `personal-workspace`.
+- [x] Migrate the duplicated `NotificationAreaComponent`, responsive placement, transition styles, and tests from `my-site` and `personal-workspace`.
+- [x] Replace the source implementations' direct `TranslatePipe` dependency with an application-independent close-label contract.
+- [x] Add regression tests for polite live-region behavior, alert semantics, manual dismissal, automatic dismissal, animation state, and server execution.
 
 ## Shared UI infrastructure
 

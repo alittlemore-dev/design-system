@@ -13,6 +13,18 @@ import { ValidationErrors } from '@angular/forms';
 import { Validator } from '@angular/forms';
 
 // @public (undocumented)
+export interface AppNotification {
+    // (undocumented)
+    dismissing?: boolean;
+    // (undocumented)
+    id: number;
+    // (undocumented)
+    message: string;
+    // (undocumented)
+    type: 'success' | 'danger';
+}
+
+// @public (undocumented)
 export class EmptyStateComponent {
     // (undocumented)
     readonly message: _angular_core.InputSignal<string>;
@@ -198,6 +210,34 @@ export interface LocalizedDatePickerLabels {
     readonly previousYear: string;
     // (undocumented)
     readonly requiredDate: string;
+}
+
+// @public (undocumented)
+export class NotificationAreaComponent {
+    // (undocumented)
+    readonly closeLabel: _angular_core.InputSignal<string>;
+    // (undocumented)
+    protected readonly notificationService: NotificationService;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<NotificationAreaComponent, "ds-notification-area", never, { "closeLabel": { "alias": "closeLabel"; "required": true; "isSignal": true; }; }, {}, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<NotificationAreaComponent, never>;
+}
+
+// @public (undocumented)
+export class NotificationService {
+    // (undocumented)
+    dismiss(id: number): void;
+    // (undocumented)
+    error(message: string): void;
+    // (undocumented)
+    readonly notifications: _angular_core.WritableSignal<AppNotification[]>;
+    // (undocumented)
+    success(message: string): void;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<NotificationService, never>;
+    // (undocumented)
+    static ɵprov: _angular_core.ɵɵInjectableDeclaration<NotificationService>;
 }
 
 // @public (undocumented)

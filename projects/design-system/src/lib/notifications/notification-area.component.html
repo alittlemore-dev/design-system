@@ -1,0 +1,22 @@
+@if (notificationService.notifications().length > 0) {
+  <section class="alerts-section position-fixed end-0" aria-live="polite">
+    @for (notification of notificationService.notifications(); track notification.id) {
+      <div
+        class="alert alert-dismissible shadow-sm notification-alert"
+        [class.alert-success]="notification.type === 'success'"
+        [class.alert-danger]="notification.type === 'danger'"
+        [class.notification-alert-dismissing]="notification.dismissing === true"
+        role="alert"
+        aria-live="polite"
+      >
+        {{ notification.message }}
+        <button
+          type="button"
+          class="btn-close"
+          [attr.aria-label]="closeLabel()"
+          (click)="notificationService.dismiss(notification.id)"
+        ></button>
+      </div>
+    }
+  </section>
+}

@@ -14,6 +14,8 @@ import {
   FoldableTreeComponent,
   LoadingSpinnerComponent,
   LocalizedDatePickerComponent,
+  NotificationAreaComponent,
+  NotificationService,
   SiteSelectComponent,
   type ErrorDisplay,
   type FoldableTreeItem,
@@ -33,6 +35,7 @@ type ThemeName = 'light' | 'dark';
     FoldableTreeComponent,
     LoadingSpinnerComponent,
     LocalizedDatePickerComponent,
+    NotificationAreaComponent,
     SiteSelectComponent,
   ],
   templateUrl: './app.component.html',
@@ -46,6 +49,7 @@ export class AppComponent {
   private readonly document = inject(DOCUMENT);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   protected readonly cspNonce = inject(CSP_NONCE);
+  protected readonly notificationService = inject(NotificationService);
 
   protected readonly activeTheme = signal<ThemeName>(this.initialTheme());
   protected readonly retryCount = signal(0);

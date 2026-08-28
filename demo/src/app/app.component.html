@@ -1,4 +1,6 @@
 <main class="showcase-page" data-demo-shell>
+  <ds-notification-area closeLabel="Close notification" />
+
   <header class="showcase-hero">
     <div>
       <p class="showcase-kicker">Packed archive consumer</p>
@@ -58,6 +60,29 @@
         (retry)="retryCount.update((count) => count + 1)"
       />
       <p class="showcase-output" data-demo-retry-count>Retries: {{ retryCount() }}</p>
+    </article>
+
+    <article class="showcase-card showcase-card-wide">
+      <h2>Notifications</h2>
+      <p class="showcase-description">
+        Polite live-region alerts with consumer-owned messages and close labels.
+      </p>
+      <div class="showcase-actions">
+        <button
+          type="button"
+          class="btn btn-success"
+          (click)="notificationService.success('Demo notification saved')"
+        >
+          Show success notification
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger"
+          (click)="notificationService.error('Demo notification failed')"
+        >
+          Show error notification
+        </button>
+      </div>
     </article>
 
     <article class="showcase-card">

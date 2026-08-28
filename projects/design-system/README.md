@@ -20,23 +20,47 @@ import {
   FoldableTreeComponent,
   LoadingSpinnerComponent,
   LocalizedDatePickerComponent,
+  NotificationAreaComponent,
+  NotificationService,
   SiteSelectComponent,
   type SiteSelectOption,
 } from '@alittlemoron/design-system';
 ```
 
-| Import                         | Selector                   | Purpose                                                        |
-| ------------------------------ | -------------------------- | -------------------------------------------------------------- |
-| `EmptyStateComponent`          | `ds-empty-state`           | Displays a consumer-supplied empty-state message.              |
-| `LoadingSpinnerComponent`      | `ds-loading-spinner`       | Displays a named loading status.                               |
-| `ErrorMessageComponent`        | `ds-error-message`         | Displays an `ErrorDisplay` and emits `retry`.                  |
-| `FoldableTreeComponent`        | `ds-foldable-tree`         | Renders consumer-owned tree data and emits selected item keys. |
-| `LocalizedDatePickerComponent` | `ds-localized-date-picker` | Provides a localized calendar-date form control.               |
-| `SiteSelectComponent`          | `ds-site-select`           | Provides a select-only combobox form control.                  |
+| Import                         | Selector                   | Purpose                                                         |
+| ------------------------------ | -------------------------- | --------------------------------------------------------------- |
+| `EmptyStateComponent`          | `ds-empty-state`           | Displays a consumer-supplied empty-state message.               |
+| `LoadingSpinnerComponent`      | `ds-loading-spinner`       | Displays a named loading status.                                |
+| `ErrorMessageComponent`        | `ds-error-message`         | Displays an `ErrorDisplay` and emits `retry`.                   |
+| `FoldableTreeComponent`        | `ds-foldable-tree`         | Renders consumer-owned tree data and emits selected item keys.  |
+| `LocalizedDatePickerComponent` | `ds-localized-date-picker` | Provides a localized calendar-date form control.                |
+| `NotificationAreaComponent`    | `ds-notification-area`     | Renders and dismisses notifications from `NotificationService`. |
+| `SiteSelectComponent`          | `ds-site-select`           | Provides a select-only combobox form control.                   |
 
 All labels, messages, option text, and localized date-picker strings are consumer-owned. Supply
 them through component inputs and application i18n; the package does not provide translations or
 depend on an i18n service.
+
+Place one notification area in the application shell and provide its translated close label from
+the consumer. Inject `NotificationService` wherever the application needs to publish a success or
+error message; both kinds auto-dismiss after five seconds.
+
+```ts
+import { Component, inject } from '@angular/core';
+import { NotificationAreaComponent, NotificationService } from '@alittlemoron/design-system';
+
+@Component({
+  standalone: true,
+  imports: [NotificationAreaComponent],
+  template: `
+    <ds-notification-area closeLabel="Close notification" />
+    <button type="button" (click)="notifications.success('Saved')">Save</button>
+  `,
+})
+export class ApplicationShellComponent {
+  readonly notifications = inject(NotificationService);
+}
+```
 
 `SiteSelectComponent` integrates with Angular Reactive Forms. It receives its value, touched and
 disabled state through the control, while the consumer continues to own validation presentation:

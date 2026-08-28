@@ -75,7 +75,7 @@ test('emits reusable UI, Markdown, Bootstrap, and CDK styles only from their own
   assert.match(cdkOverlay, /\.cdk-overlay-container/);
   assert.match(ui, /body\s*\{[^}]*min-height:\s*100vh/s);
   assert.match(ui, /\.gradient-body\s*\{/);
-  assert.match(ui, /\.alerts-section\s*\{/);
+  assert.doesNotMatch(ui, /\.alerts-section\s*\{/);
   assert.match(markdown, /\.markdown-code\s*\{/);
   assert.match(markdown, /\.markdown-code \.token\.comment/);
 
@@ -120,6 +120,24 @@ test('emits reusable UI, Markdown, Bootstrap, and CDK styles only from their own
   }
 });
 
+test('keeps the notification area responsive placement and enter and exit transitions', async () => {
+  const styles = await readNotificationAreaStyles();
+
+  assert.match(
+    styles,
+    /\.alerts-section\s*\{[^}]*z-index:\s*1080;[^}]*inline-size:\s*min\(24rem,\s*100vw\s*-\s*2rem\);[^}]*inset-block-start:\s*4rem;/s,
+  );
+  assert.match(
+    styles,
+    /\.notification-alert\s*\{[^}]*animation:\s*notification-alert-enter (?:160ms|\.16s) ease-out;[^}]*transition:\s*opacity (?:200ms|\.2s) ease,\s*transform (?:200ms|\.2s) ease;?/s,
+  );
+  assert.match(
+    styles,
+    /\.notification-alert-dismissing\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;[^}]*transform:\s*translateY\(-0?\.5rem\);?/s,
+  );
+  assert.match(styles, /@keyframes notification-alert-enter\s*\{/);
+});
+
 test('keeps shared interactive colors at WCAG AA contrast in both themes', async () => {
   const themeTokens = await compileStyle(sourcePackageRoot, 'theme-tokens');
 
@@ -153,6 +171,20 @@ async function compileStyle(packageRoot, entryPoint) {
     url: pathToFileURL(path),
     verbose: true,
   }).css;
+}
+
+async function readNotificationAreaStyles() {
+  if (process.env['STYLE_PACKAGE_ROOT'] !== undefined) {
+    return readFile(join(sourcePackageRoot, 'fesm2022/alittlemoron-design-system.mjs'), 'utf8');
+  }
+  return sass.compile(
+    join(sourcePackageRoot, 'src/lib/notifications/notification-area.component.scss'),
+    {
+      loadPaths: [join(repositoryRoot, 'node_modules')],
+      logger: createSassLogger(),
+      verbose: true,
+    },
+  ).css;
 }
 
 function createSassLogger() {

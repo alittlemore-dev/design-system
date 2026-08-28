@@ -37,6 +37,13 @@ test('hydrates the packed showcase and keeps its interactions CSP-clean', async 
   await page.getByRole('button', { name: 'Retry' }).click();
   await waitForText(page, '[data-demo-retry-count]', 'Retries: 1');
 
+  await page.getByRole('button', { name: 'Show success notification' }).click();
+  const notification = page.locator('ds-notification-area [role="alert"]');
+  await notification.waitFor();
+  assert.match((await notification.textContent()) ?? '', /Demo notification saved/);
+  await notification.getByRole('button', { name: 'Close notification' }).click();
+  await notification.waitFor({ state: 'detached' });
+
   await page.getByRole('button', { name: 'Guides', exact: true }).click();
   await waitForText(page, '[data-demo-tree-selection]', 'Selected: guides');
 
