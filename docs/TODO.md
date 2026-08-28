@@ -65,8 +65,8 @@
 
 ## Form validation behavior
 
-- [ ] Extract the shared behavior of `AdminControlValidationStateDirective` from `my-site` and `ControlValidationStateDirective` from `personal-workspace` into an application-independent package directive.
-- [ ] Migrate and consolidate directive tests for invalid and touched controls, `is-invalid`, `aria-invalid`, native control targeting, and Angular Forms integration.
+- [x] Extract the shared behavior of `AdminControlValidationStateDirective` from `my-site` and `ControlValidationStateDirective` from `personal-workspace` into an application-independent package directive.
+- [x] Migrate and consolidate directive tests for invalid and touched controls, `is-invalid`, `aria-invalid`, native control targeting, and Angular Forms integration.
 
 ## Presentation utilities and test helpers
 

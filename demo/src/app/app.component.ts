@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import {
+  ControlValidationStateDirective,
   EmptyStateComponent,
   ErrorMessageComponent,
   FoldableTreeComponent,
@@ -24,6 +25,7 @@ import {
   type LocalizedDatePickerLabels,
   type SiteSelectOption,
 } from '@alittlemoron/design-system';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 @Component({
   selector: 'demo-root',
@@ -31,12 +33,14 @@ import {
   imports: [
     EmptyStateComponent,
     CdkTrapFocus,
+    ControlValidationStateDirective,
     ErrorMessageComponent,
     FoldableTreeComponent,
     LoadingSpinnerComponent,
     LocalizedDatePickerComponent,
     ModalScrollDirective,
     NotificationAreaComponent,
+    ReactiveFormsModule,
     SiteSelectComponent,
   ],
   templateUrl: './app.component.html',
@@ -59,6 +63,12 @@ export class AppComponent {
   protected readonly selectedTreeKey = signal('overview');
   protected readonly selectedSite = signal('alpha');
   protected readonly selectedDate = signal('2026-08-28');
+  protected readonly validationForm = new FormGroup({
+    requiredField: new FormControl('', {
+      nonNullable: true,
+      validators: Validators.required,
+    }),
+  });
 
   protected readonly error: ErrorDisplay = {
     message: 'The example request could not be completed.',

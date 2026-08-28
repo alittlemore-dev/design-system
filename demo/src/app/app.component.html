@@ -86,6 +86,27 @@
     </article>
 
     <article class="showcase-card showcase-card-wide">
+      <h2>Form validation state</h2>
+      <p class="showcase-description">
+        Native text controls become visibly and semantically invalid only after Angular Forms marks
+        them touched.
+      </p>
+      <form [formGroup]="validationForm" novalidate>
+        <label class="form-label" for="demo-required-field">Required example</label>
+        <input
+          id="demo-required-field"
+          class="form-control"
+          data-demo-validation-input
+          formControlName="requiredField"
+          aria-describedby="demo-validation-hint"
+        />
+        <p id="demo-validation-hint" class="showcase-output">
+          Leave this blank and move focus away to see the shared validation state.
+        </p>
+      </form>
+    </article>
+
+    <article class="showcase-card showcase-card-wide">
       <h2>Modal scroll infrastructure</h2>
       <p class="showcase-description">
         Reference-counted CDK page locking with wheel and touch routing inside a modal.

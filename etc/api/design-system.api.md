@@ -25,6 +25,16 @@ export interface AppNotification {
 }
 
 // @public (undocumented)
+export class ControlValidationStateDirective {
+    // (undocumented)
+    protected get invalid(): boolean;
+    // (undocumented)
+    static ɵdir: _angular_core.ɵɵDirectiveDeclaration<ControlValidationStateDirective, "input[formControlName], textarea[formControlName]", never, {}, {}, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<ControlValidationStateDirective, never>;
+}
+
+// @public (undocumented)
 export class EmptyStateComponent {
     // (undocumented)
     readonly message: _angular_core.InputSignal<string>;

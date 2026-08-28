@@ -34,6 +34,27 @@ test('hydrates the packed showcase and keeps its interactions CSP-clean', async 
   await page.goto(server.url, { waitUntil: 'networkidle' });
   assert.equal(await page.locator('[data-demo-shell]').count(), 1);
 
+  const validationInput = page.locator('[data-demo-validation-input]');
+  assert.equal(await validationInput.count(), 1);
+  assert.equal(
+    await validationInput.evaluate((element) => element.classList.contains('is-invalid')),
+    false,
+  );
+  assert.equal(await validationInput.getAttribute('aria-invalid'), null);
+  await validationInput.focus();
+  await validationInput.blur();
+  assert.equal(
+    await validationInput.evaluate((element) => element.classList.contains('is-invalid')),
+    true,
+  );
+  assert.equal(await validationInput.getAttribute('aria-invalid'), 'true');
+  await validationInput.fill('Package consumer');
+  assert.equal(
+    await validationInput.evaluate((element) => element.classList.contains('is-invalid')),
+    false,
+  );
+  assert.equal(await validationInput.getAttribute('aria-invalid'), null);
+
   await page.getByRole('button', { name: 'Retry' }).click();
   await waitForText(page, '[data-demo-retry-count]', 'Retries: 1');
 
