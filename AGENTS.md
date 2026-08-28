@@ -22,6 +22,12 @@
 
 - New and migrated components must be standalone, use `OnPush` change detection, be accessible, remain SSR-safe and strict-CSP-compatible, and have behavioral test coverage.
 
+## Demo synchronization
+
+- Any change to the design system's public behavior, public APIs, styles, or web assets must include
+  the corresponding repository demo update and relevant demo checks, using only the packed
+  package's public entry points.
+
 ## Working artifacts
 
 - Before handing off completed work, remove every Superpowers-generated artifact from the

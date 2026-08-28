@@ -8,6 +8,12 @@
 /node_modules
 npm-debug.log
 
+# Independent packed-package demo
+/demo/.angular
+/demo/dist
+/demo/node_modules
+/demo/test-results
+
 # Generated package archives
 /*.tgz
 

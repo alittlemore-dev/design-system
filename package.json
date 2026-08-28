@@ -13,6 +13,7 @@
     "test:api-surface": "node --test tools/api-surface/api-surface.test.mjs",
     "test:package-content": "node --test tools/package-content/package-content.test.mjs",
     "test:styles": "node --test tools/styles/style-contract.test.mjs tools/styles/theme-preload.test.mjs",
+    "test:demo-tools": "node --test tools/demo/run-packed-demo.test.mjs",
     "lint": "eslint .",
     "typecheck": "npm run typecheck:production && npm run typecheck:spec",
     "typecheck:production": "tsc --noEmit -p tsconfig.check.json",
@@ -27,6 +28,10 @@
     "check:styles": "npm run test:styles && npm run build && npm run verify:styles:built",
     "verify:package": "npm run test:tools && npm run build && npm run verify:api-surface:built && npm run verify:package-content:built && npm run verify:styles:built",
     "check": "npm run test && npm run lint && npm run typecheck && npm run format:check && npm run build && npm run verify:api-surface:built && npm run verify:package-content:built && npm run verify:styles:built",
+    "demo": "node tools/demo/run-packed-demo.mjs start",
+    "check:demo": "npm run test:demo-tools && node tools/demo/run-packed-demo.mjs check",
+    "install:demo-browser": "node tools/demo/run-packed-demo.mjs install-browser",
+    "check:demo:browser": "npm run test:demo-tools && node tools/demo/run-packed-demo.mjs check-browser",
     "watch": "ng build @alittlemoron/design-system --configuration development --watch"
   },
   "dependencies": {

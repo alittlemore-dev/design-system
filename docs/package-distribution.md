@@ -94,8 +94,11 @@ The repository-owned Angular demo verifies the production archive and must:
 - have its own manifest, lock file, and installation directory;
 - import only documented package entry points and style subpaths;
 - never import library source files or internal package paths;
-- exercise the primary UI, Markdown rendering, Markdown editor, and public styles with neutral data;
-- import the public testing entry point only from tests;
+- exercise every implemented public capability with neutral data, including the primary UI,
+  Markdown rendering, the Markdown editor, and their owning styles as those APIs become available;
+- gain corresponding coverage in the same change that adds or changes public behavior, styles, or
+  web assets;
+- import the public testing entry point only from tests once it exposes test utilities;
 - cover browser execution, SSR, and strict CSP;
 - copy and load the public theme-preload asset through the documented external delivery contract;
 - remain excluded from the published package archive.
@@ -115,6 +118,11 @@ The supported local loop is:
 Generated archives are disposable build artifacts and must not be committed. The workflow does not
 use `npm link`, source-directory symlinks, a local registry, or continuous source-linked watch mode.
 Build, pack, install, and check proves the distributable archive directly.
+
+The repository exposes this workflow through `make demo` for an interactive run, `make check-demo`
+for the production SSR smoke, and `make check-demo-browser` for the separate Chromium smoke. Run
+`make install-demo-browser` once before the browser smoke. Demo checks remain separate from the
+ordinary `make check` quality gate.
 
 ## Initial versioning scheme
 

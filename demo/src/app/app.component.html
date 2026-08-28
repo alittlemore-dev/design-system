@@ -1,0 +1,120 @@
+<main class="showcase-page" data-demo-shell>
+  <header class="showcase-hero">
+    <div>
+      <p class="showcase-kicker">Packed archive consumer</p>
+      <h1>Design system demo</h1>
+      <p class="showcase-intro">
+        A repository-owned Angular application rendering the package through its public UI and style
+        entry points.
+      </p>
+    </div>
+    <div class="theme-switcher" aria-label="Theme">
+      <button
+        type="button"
+        class="btn btn-sm"
+        [class.btn-primary]="activeTheme() === 'light'"
+        [class.btn-outline-secondary]="activeTheme() !== 'light'"
+        data-demo-theme="light"
+        (click)="setTheme('light')"
+      >
+        Light
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm"
+        [class.btn-primary]="activeTheme() === 'dark'"
+        [class.btn-outline-secondary]="activeTheme() !== 'dark'"
+        data-demo-theme="dark"
+        (click)="setTheme('dark')"
+      >
+        Dark
+      </button>
+    </div>
+  </header>
+
+  <section class="showcase-grid" aria-label="Independent UI components">
+    <article class="showcase-card">
+      <h2>Empty state</h2>
+      <p class="showcase-description">Consumer-owned copy in a reusable empty presentation.</p>
+      <div class="component-frame">
+        <ds-empty-state message="Nothing has been added yet." />
+      </div>
+    </article>
+
+    <article class="showcase-card">
+      <h2>Loading spinner</h2>
+      <p class="showcase-description">An accessible named loading status.</p>
+      <div class="component-frame">
+        <ds-loading-spinner ariaLabel="Loading example content" />
+      </div>
+    </article>
+
+    <article class="showcase-card showcase-card-wide">
+      <h2>Error message</h2>
+      <p class="showcase-description">Retry remains consumer-controlled through an output.</p>
+      <ds-error-message
+        [error]="error"
+        retryLabel="Retry"
+        (retry)="retryCount.update((count) => count + 1)"
+      />
+      <p class="showcase-output" data-demo-retry-count>Retries: {{ retryCount() }}</p>
+    </article>
+
+    <article class="showcase-card">
+      <h2>Foldable tree</h2>
+      <p class="showcase-description">Sections and item selection use neutral package contracts.</p>
+      <ds-foldable-tree
+        [rootItems]="rootItems"
+        [sections]="treeSections"
+        emptyMessage="No navigation items"
+        [selectedItemKey]="selectedTreeKey()"
+        [defaultExpandedSectionKeys]="['documentation']"
+        sectionTestId="demo-tree-section"
+        itemTestId="demo-tree-item"
+        (itemSelected)="selectedTreeKey.set($event)"
+      />
+      <p class="showcase-output" data-demo-tree-selection>Selected: {{ selectedTreeKey() }}</p>
+    </article>
+
+    <article class="showcase-card">
+      <h2>Site select</h2>
+      <p class="showcase-description">A controlled select-only combobox.</p>
+      <label class="form-label" for="demo-site">Workspace</label>
+      <ds-site-select
+        inputId="demo-site"
+        [options]="siteOptions"
+        [value]="selectedSite()"
+        controlSize="default"
+        appearance="bordered"
+        [required]="true"
+        [invalid]="false"
+        [controlDisabled]="false"
+        testId="demo-site-select"
+        (valueChange)="selectedSite.set($event)"
+      />
+      <p class="showcase-output" data-demo-site-selection>Selected: {{ selectedSite() }}</p>
+    </article>
+
+    <article class="showcase-card showcase-card-wide">
+      <h2>Localized date picker</h2>
+      <p class="showcase-description">Canonical ISO state with locale-owned display labels.</p>
+      <label class="form-label" for="demo-date">Review date</label>
+      <ds-localized-date-picker
+        inputId="demo-date"
+        [value]="selectedDate()"
+        controlSize="default"
+        dateLocale="en-US"
+        [labels]="dateLabels"
+        [required]="false"
+        [invalid]="false"
+        [controlDisabled]="false"
+        [readonly]="false"
+        min="2026-08-01"
+        max="2026-09-30"
+        [disabledDates]="[]"
+        (valueChange)="selectedDate.set($event)"
+      />
+      <p class="showcase-output" data-demo-date-selection>Selected: {{ selectedDate() }}</p>
+    </article>
+  </section>
+</main>

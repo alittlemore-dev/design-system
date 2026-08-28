@@ -1,0 +1,19 @@
+@use '@alittlemoron/design-system/styles/theme-tokens';
+@use '@alittlemoron/design-system/styles/bootstrap-overrides';
+@use '@alittlemoron/design-system/styles/cdk-overlay';
+@use '@alittlemoron/design-system/styles/ui';
+
+html {
+  min-width: 20rem;
+  background: var(--background-body);
+}
+
+body {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+button,
+input {
+  font: inherit;
+}

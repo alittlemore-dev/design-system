@@ -14,7 +14,7 @@
 - [ ] Configure CI to run the Make-based checks and build the distributable package.
 - [ ] Configure strict push-to-main npm publication for unique versions, bootstrap 0.1.0 through CI, migrate the package to trusted publishing, and revoke the bootstrap token.
 - [ ] Document the local packed-archive, stable-release, semantic-versioning, and changelog workflows.
-- [ ] Add a repository-owned Angular demo that installs the packed archive through public entry points and exercises UI, Markdown rendering, the editor, styles, SSR, and strict CSP.
+- [x] Add a repository-owned Angular demo that installs the packed archive through public entry points and exercises the current UI, UI styles, theme preload, SSR, hydration, and strict CSP.
 
 ## Design tokens and shared styles
 
@@ -64,6 +64,7 @@
 
 ## Markdown rendering
 
+- [ ] Extend the repository demo to exercise the packed Markdown-rendering entry point and public Markdown styles.
 - [ ] Implement the Markdown-rendering entry point independently of the interactive editor.
 - [ ] Migrate the byte-identical Prism syntax highlighter and supported-language configuration from `my-site` and `personal-workspace`.
 - [ ] Consolidate the duplicated Marked rendering, code-block highlighting, sanitization, and `.markdown-code` styles from `my-site` and `personal-workspace`.
@@ -73,6 +74,7 @@
 
 ## Markdown editor
 
+- [ ] Extend the repository demo to exercise the packed Markdown-editor entry point and its browser interactions.
 - [ ] Create the package editor from the `personal-workspace` and `my-site` implementation, including image capabilities, protected preview loading, pending-upload state, disabled interactions, MIME validation, object-URL cleanup, and syntax-tree-safe table selection.
 - [ ] Migrate the CodeMirror editor component, template, component styles, and editor theme styles from `personal-workspace`.
 - [ ] Migrate Markdown commands, editor extensions, presentation decorations, table parsing and editing, link completion infrastructure, sticky-bottom-inset behavior, and Markdown-table utilities from `personal-workspace`.
