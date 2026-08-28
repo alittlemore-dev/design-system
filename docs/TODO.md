@@ -15,6 +15,7 @@
 - [ ] Configure strict push-to-main npm publication for unique versions, bootstrap 0.1.0 through CI, migrate the package to trusted publishing, and revoke the bootstrap token.
 - [ ] Document the local packed-archive, stable-release, semantic-versioning, and changelog workflows.
 - [x] Add a repository-owned Angular demo that installs the packed archive through public entry points and exercises the current UI, UI styles, theme preload, SSR, hydration, and strict CSP.
+- [ ] add dependabot
 
 ## Design tokens and shared styles
 
@@ -28,13 +29,25 @@
 
 ## Independent UI components
 
-- [x] Migrate the duplicated `EmptyStateComponent` from `my-site` and `personal-workspace` and test its public rendering contract.
-- [x] Migrate the duplicated `LoadingSpinnerComponent` from `my-site` and `personal-workspace` and test its accessible-label contract.
-- [x] Migrate the duplicated `ErrorMessageComponent` from `my-site` and `personal-workspace`, define an `ErrorDisplay` contract, and migrate its tests.
-- [x] Migrate the duplicated `FoldableTreeComponent` from `my-site` and `personal-workspace` with neutral item and section contracts, template, styles, and tests.
-- [x] Migrate the duplicated `LocalizedDatePickerComponent` from `my-site` and `personal-workspace` with labels and control contracts, template, styles, and tests.
-- [x] Migrate the duplicated `SiteSelectComponent` from `my-site` and `personal-workspace` with option, size, and appearance contracts, template, styles, and tests.
 - [x] Add regression tests for typed inputs and outputs, Angular Forms integration, keyboard behavior, accessibility semantics, `OnPush` rendering, SSR, and strict CSP.
+- [x] error message component
+  - [x] Migrate the duplicated `ErrorMessageComponent` from `my-site` and `personal-workspace`, define an `ErrorDisplay` contract, and migrate its tests.
+- [x] loading spinner component
+  - [x] Migrate the duplicated `LoadingSpinnerComponent` from `my-site` and `personal-workspace` and test its accessible-label contract.
+- [x] empty state component
+  - [x] Migrate the duplicated `EmptyStateComponent` from `my-site` and `personal-workspace` and test its public rendering contract.
+- [x] select component
+  - [x] Migrate the duplicated `SiteSelectComponent` from `my-site` and `personal-workspace` with option, size, and appearance contracts, template, styles, and tests.
+- [x] foldable tree component
+  - [x] Migrate the duplicated `FoldableTreeComponent` from `my-site` and `personal-workspace` with neutral item and section contracts, template, styles, and tests.
+- [x] date picker component
+  - [x] Migrate the duplicated `LocalizedDatePickerComponent` from `my-site` and `personal-workspace` with labels and control contracts, template, styles, and tests.
+- [ ] date range picker component
+  - [ ] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for range selection.
+- [ ] datetime picker component
+  - [ ] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for datetime selection.
+- [ ] datetime range picker component
+  - [ ] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for datetime range selection.
 
 ## Notifications
 
@@ -45,10 +58,10 @@
 
 ## Shared UI infrastructure
 
-- [ ] Migrate the byte-identical `ThemeService`, `ThemeName` contract, and tests from `my-site` and `personal-workspace`.
-- [ ] Migrate the byte-identical `ModalPageScrollLockService` and tests from `my-site` and `personal-workspace`.
-- [ ] Migrate the byte-identical `ModalScrollDirective` and tests from `my-site` and `personal-workspace`.
-- [ ] Add regression coverage for reference-counted page locking, nested modals, SSR execution, wheel scrolling, touch scrolling, and Angular CDK integration.
+- [x] Migrate the byte-identical `ThemeService`, `ThemeName` contract, and tests from `my-site` and `personal-workspace`.
+- [x] Migrate the byte-identical `ModalPageScrollLockService` and tests from `my-site` and `personal-workspace`.
+- [x] Migrate the byte-identical `ModalScrollDirective` and tests from `my-site` and `personal-workspace`.
+- [x] Add regression coverage for reference-counted page locking, nested modals, SSR execution, wheel scrolling, touch scrolling, and Angular CDK integration.
 
 ## Form validation behavior
 

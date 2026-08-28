@@ -1,10 +1,9 @@
-import { isPlatformBrowser } from '@angular/common';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 import {
   CSP_NONCE,
   ChangeDetectionStrategy,
   Component,
   DOCUMENT,
-  PLATFORM_ID,
   inject,
   signal,
 } from '@angular/core';
@@ -14,9 +13,11 @@ import {
   FoldableTreeComponent,
   LoadingSpinnerComponent,
   LocalizedDatePickerComponent,
+  ModalScrollDirective,
   NotificationAreaComponent,
   NotificationService,
   SiteSelectComponent,
+  ThemeService,
   type ErrorDisplay,
   type FoldableTreeItem,
   type FoldableTreeSection,
@@ -24,17 +25,17 @@ import {
   type SiteSelectOption,
 } from '@alittlemoron/design-system';
 
-type ThemeName = 'light' | 'dark';
-
 @Component({
   selector: 'demo-root',
   standalone: true,
   imports: [
     EmptyStateComponent,
+    CdkTrapFocus,
     ErrorMessageComponent,
     FoldableTreeComponent,
     LoadingSpinnerComponent,
     LocalizedDatePickerComponent,
+    ModalScrollDirective,
     NotificationAreaComponent,
     SiteSelectComponent,
   ],
@@ -47,11 +48,13 @@ type ThemeName = 'light' | 'dark';
 })
 export class AppComponent {
   private readonly document = inject(DOCUMENT);
-  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private modalTrigger: HTMLButtonElement | null = null;
+
   protected readonly cspNonce = inject(CSP_NONCE);
   protected readonly notificationService = inject(NotificationService);
+  protected readonly themeService = inject(ThemeService);
 
-  protected readonly activeTheme = signal<ThemeName>(this.initialTheme());
+  protected readonly modalOpen = signal(false);
   protected readonly retryCount = signal(0);
   protected readonly selectedTreeKey = signal('overview');
   protected readonly selectedSite = signal('alpha');
@@ -102,20 +105,15 @@ export class AppComponent {
     keyboardHelp: 'Use arrow keys to move through dates.',
   };
 
-  protected setTheme(theme: ThemeName): void {
-    this.document.documentElement.setAttribute('data-bs-theme', theme);
-    this.activeTheme.set(theme);
-    if (!this.isBrowser) return;
-    try {
-      this.document.defaultView?.localStorage.setItem('chosenTheme', theme);
-    } catch {
-      // Theme selection still applies when browser storage is unavailable.
-    }
+  protected openModal(trigger: HTMLButtonElement): void {
+    this.modalTrigger = trigger;
+    this.modalOpen.set(true);
   }
 
-  private initialTheme(): ThemeName {
-    return this.document.documentElement.getAttribute('data-bs-theme') === 'dark'
-      ? 'dark'
-      : 'light';
+  protected closeModal(): void {
+    const trigger = this.modalTrigger;
+    this.modalOpen.set(false);
+    this.modalTrigger = null;
+    this.document.defaultView?.setTimeout(() => trigger?.focus());
   }
 }

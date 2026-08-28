@@ -6,3 +6,6 @@ export * from './lib/localized-date-picker/localized-date-picker.component';
 export * from './lib/site-select/site-select.component';
 export * from './lib/notifications/notification.service';
 export * from './lib/notifications/notification-area.component';
+export * from './lib/theme/theme.service';
+export * from './lib/modal/modal-page-scroll-lock.service';
+export * from './lib/modal/modal-scroll.directive';

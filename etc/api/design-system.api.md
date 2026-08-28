@@ -213,6 +213,35 @@ export interface LocalizedDatePickerLabels {
 }
 
 // @public (undocumented)
+export class ModalPageScrollLockService {
+    // (undocumented)
+    acquire(): () => void;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<ModalPageScrollLockService, never>;
+    // (undocumented)
+    static ɵprov: _angular_core.ɵɵInjectableDeclaration<ModalPageScrollLockService>;
+}
+
+// @public (undocumented)
+export class ModalScrollDirective {
+    constructor();
+    // (undocumented)
+    protected clearTouchState(): void;
+    // (undocumented)
+    readonly dsModalScroll: _angular_core.InputSignal<HTMLElement>;
+    // (undocumented)
+    protected handleTouchMove(event: TouchEvent): void;
+    // (undocumented)
+    protected handleTouchStart(event: TouchEvent): void;
+    // (undocumented)
+    protected handleWheel(event: WheelEvent): void;
+    // (undocumented)
+    static ɵdir: _angular_core.ɵɵDirectiveDeclaration<ModalScrollDirective, "[dsModalScroll]", never, { "dsModalScroll": { "alias": "dsModalScroll"; "required": true; "isSignal": true; }; }, {}, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<ModalScrollDirective, never>;
+}
+
+// @public (undocumented)
 export class NotificationAreaComponent {
     // (undocumented)
     readonly closeLabel: _angular_core.InputSignal<string>;
@@ -300,6 +329,24 @@ export interface SiteSelectOption {
     readonly label: string;
     // (undocumented)
     readonly value: string;
+}
+
+// @public (undocumented)
+export type ThemeName = 'light' | 'dark';
+
+// @public (undocumented)
+export class ThemeService {
+    constructor();
+    // (undocumented)
+    setTheme(theme: ThemeName): void;
+    // (undocumented)
+    readonly theme: _angular_core.WritableSignal<ThemeName>;
+    // (undocumented)
+    toggleTheme(): void;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<ThemeService, never>;
+    // (undocumented)
+    static ɵprov: _angular_core.ɵɵInjectableDeclaration<ThemeService>;
 }
 
 // (No @packageDocumentation comment for this package)

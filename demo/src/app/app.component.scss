@@ -104,6 +104,49 @@ h2 {
   font-size: 0.875rem;
 }
 
+.demo-modal-backdrop {
+  position: fixed;
+  z-index: 1050;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.demo-modal {
+  width: min(32rem, 100%);
+  overflow: hidden;
+  background: var(--surface-1);
+  border: 1px solid var(--border-color-solid);
+  border-radius: 0.75rem;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.3);
+}
+
+.demo-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color-solid);
+}
+
+.demo-modal-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.demo-modal-body {
+  max-height: 12rem;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.demo-modal-body p:last-child {
+  margin-bottom: 0;
+}
+
 @media (max-width: 47.99rem) {
   .showcase-page {
     width: min(100% - 1rem, 36rem);

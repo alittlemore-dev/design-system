@@ -14,20 +14,20 @@
       <button
         type="button"
         class="btn btn-sm"
-        [class.btn-primary]="activeTheme() === 'light'"
-        [class.btn-outline-secondary]="activeTheme() !== 'light'"
+        [class.btn-primary]="themeService.theme() === 'light'"
+        [class.btn-outline-secondary]="themeService.theme() !== 'light'"
         data-demo-theme="light"
-        (click)="setTheme('light')"
+        (click)="themeService.setTheme('light')"
       >
         Light
       </button>
       <button
         type="button"
         class="btn btn-sm"
-        [class.btn-primary]="activeTheme() === 'dark'"
-        [class.btn-outline-secondary]="activeTheme() !== 'dark'"
+        [class.btn-primary]="themeService.theme() === 'dark'"
+        [class.btn-outline-secondary]="themeService.theme() !== 'dark'"
         data-demo-theme="dark"
-        (click)="setTheme('dark')"
+        (click)="themeService.setTheme('dark')"
       >
         Dark
       </button>
@@ -83,6 +83,53 @@
           Show error notification
         </button>
       </div>
+    </article>
+
+    <article class="showcase-card showcase-card-wide">
+      <h2>Modal scroll infrastructure</h2>
+      <p class="showcase-description">
+        Reference-counted CDK page locking with wheel and touch routing inside a modal.
+      </p>
+      <button #modalTrigger type="button" class="btn btn-primary" (click)="openModal(modalTrigger)">
+        Open modal scroll demo
+      </button>
+
+      @if (modalOpen()) {
+        <section
+          class="demo-modal-backdrop"
+          data-demo-modal
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="demo-modal-title"
+          [dsModalScroll]="modalBody"
+          [cdkTrapFocus]="true"
+          [cdkTrapFocusAutoCapture]="true"
+          (keydown.escape)="closeModal()"
+        >
+          <article class="demo-modal">
+            <header class="demo-modal-header" data-demo-modal-header>
+              <h3 id="demo-modal-title">Modal scroll demo</h3>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="Close modal scroll demo"
+                cdkFocusInitial
+                (click)="closeModal()"
+              ></button>
+            </header>
+            <div #modalBody class="demo-modal-body" data-demo-modal-body tabindex="0">
+              <p>Scroll input over this body keeps the browser's native scrolling behavior.</p>
+              <p>Scroll input over the header is redirected into this body by the directive.</p>
+              <p>The page remains locked through Angular CDK while the modal is present.</p>
+              <p>Nested consumers share the same reference-counted page lock.</p>
+              <p>Wheel deltas in pixels, lines, and pages are normalized before scrolling.</p>
+              <p>Single-touch gestures over modal chrome are routed to this body.</p>
+              <p>Touch state is cleared when a gesture ends or is cancelled.</p>
+              <p>Removing the final modal restores the previous page scroll position.</p>
+            </div>
+          </article>
+        </section>
+      }
     </article>
 
     <article class="showcase-card">

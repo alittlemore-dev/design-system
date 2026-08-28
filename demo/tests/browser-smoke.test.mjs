@@ -60,6 +60,38 @@ test('hydrates the packed showcase and keeps its interactions CSP-clean', async 
     () => document.documentElement.getAttribute('data-bs-theme') === 'dark',
   );
   assert.equal(await page.locator('html').getAttribute('data-bs-theme'), 'dark');
+
+  await page.getByRole('button', { name: 'Open modal scroll demo' }).click();
+  const modal = page.locator('[data-demo-modal]');
+  await modal.waitFor();
+  await page.waitForFunction(
+    () => document.activeElement?.getAttribute('aria-label') === 'Close modal scroll demo',
+  );
+  assert.equal(
+    await page
+      .locator('html')
+      .evaluate((element) => element.classList.contains('cdk-global-scrollblock')),
+    true,
+  );
+  await modal.locator('[data-demo-modal-header]').hover();
+  await page.mouse.wheel(0, 80);
+  assert.equal(
+    await modal.locator('[data-demo-modal-body]').evaluate((element) => element.scrollTop),
+    80,
+  );
+  await page.keyboard.press('Escape');
+  await modal.waitFor({ state: 'detached' });
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.textContent?.trim()),
+    'Open modal scroll demo',
+  );
+  assert.equal(
+    await page
+      .locator('html')
+      .evaluate((element) => element.classList.contains('cdk-global-scrollblock')),
+    false,
+  );
+
   assert.deepEqual(await page.evaluate(() => window.__demoCspViolations), []);
   assert.deepEqual(browserErrors, []);
 
