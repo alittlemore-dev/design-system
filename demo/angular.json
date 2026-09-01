@@ -34,6 +34,11 @@
                 "glob": "theme-preload.js",
                 "input": "node_modules/@alittlemoron/design-system",
                 "output": "/assets/design-system"
+              },
+              {
+                "glob": "**/*",
+                "input": "src/assets",
+                "output": "/assets"
               }
             ],
             "styles": ["src/styles.scss"],

@@ -77,24 +77,25 @@
 
 ## Markdown rendering
 
-- [ ] Extend the repository demo to exercise the packed Markdown-rendering entry point and public Markdown styles.
-- [ ] Implement the Markdown-rendering entry point independently of the interactive editor.
-- [ ] Migrate the byte-identical Prism syntax highlighter and supported-language configuration from `my-site` and `personal-workspace`.
-- [ ] Consolidate the duplicated Marked rendering, code-block highlighting, sanitization, and `.markdown-code` styles from `my-site` and `personal-workspace`.
-- [ ] Migrate and consolidate renderer regression tests from `my-site` and `personal-workspace` for scripts, event-handler attributes, unsafe URL schemes, escaped Markdown, unknown languages, and highlighted code output.
-- [ ] Define application-independent Markdown parsing, rendering, completion-metadata, and navigation extension contracts.
-- [ ] Extract only neutral extension contracts from the `my-site` wiki-link implementation and the empty `personal-workspace` wiki-link stubs; keep their application semantics out of the package.
+- [x] Extend the repository demo to exercise the packed Markdown-rendering entry point and public Markdown styles.
+- [x] Implement the Markdown-rendering entry point independently of the interactive editor.
+- [x] Migrate the byte-identical Prism syntax highlighter and supported-language configuration from `my-site` and `personal-workspace`.
+- [x] Consolidate the duplicated Marked rendering, code-block highlighting, sanitization, and `.markdown-code` styles from `my-site` and `personal-workspace`.
+- [x] Migrate and consolidate renderer regression tests from `my-site` and `personal-workspace` for scripts, event-handler attributes, unsafe URL schemes, escaped Markdown, unknown languages, and highlighted code output.
+- [x] Define application-independent Markdown parsing, rendering, completion-metadata, and navigation extension contracts.
+- [x] Extract only neutral extension contracts from the `my-site` wiki-link implementation and the empty `personal-workspace` wiki-link stubs; keep their application semantics out of the package.
 
 ## Markdown editor
 
-- [ ] Extend the repository demo to exercise the packed Markdown-editor entry point and its browser interactions.
-- [ ] Create the package editor from the `personal-workspace` and `my-site` implementation, including image capabilities, protected preview loading, pending-upload state, disabled interactions, MIME validation, object-URL cleanup, and syntax-tree-safe table selection.
-- [ ] Migrate the CodeMirror editor component, template, component styles, and editor theme styles from `personal-workspace`.
-- [ ] Migrate Markdown commands, editor extensions, presentation decorations, table parsing and editing, link completion infrastructure, sticky-bottom-inset behavior, and Markdown-table utilities from `personal-workspace`.
-- [ ] Migrate and consolidate editor regression tests from `my-site` and `personal-workspace` for commands, presentation, tables, selections, interactions, links, fullscreen behavior, uploads, accessibility, CSP, browser lifecycle, and malformed input.
-- [ ] Replace direct application translation, locale, and link dependencies in the source implementations with application-independent public contracts.
-- [ ] Derive neutral image and link capability requirements from `my-site` article-image upload and wiki-link behavior and from `personal-workspace` authenticated image-upload, attachment, and protected-preview behavior without adding application services to the package.
-- [ ] Promote `MarkdownEditorImageCapability` into the package API.
-- [ ] Connect editor preview to the package Markdown renderer and Prism highlighter.
-- [ ] Connect fullscreen behavior to the package modal page-scroll lock.
-- [ ] Add regression coverage for minimal CodeMirror transactions, undo and redo, selection direction, history, scroll intent, IME behavior, keyboard navigation, focus restoration, CSP nonce propagation, SSR guards, and object-URL revocation.
+- [x] Extend the repository demo to exercise the packed Markdown-editor entry point and its browser interactions.
+- [x] Create the package editor from the `personal-workspace` and `my-site` implementation, including image capabilities, protected preview loading, pending-upload state, disabled interactions, MIME validation, object-URL cleanup, and syntax-tree-safe table selection.
+- [x] Migrate the CodeMirror editor component, template, component styles, and editor theme styles from `personal-workspace`.
+- [x] Migrate Markdown commands, editor extensions, presentation decorations, table parsing and editing, link completion infrastructure, sticky-bottom-inset behavior, and Markdown-table utilities from `personal-workspace`.
+- [x] Migrate and consolidate editor regression tests from `my-site` and `personal-workspace` for commands, presentation, tables, selections, interactions, links, fullscreen behavior, uploads, accessibility, CSP, browser lifecycle, and malformed input.
+- [x] Replace direct application translation, locale, and link dependencies in the source implementations with application-independent public contracts.
+- [x] Derive neutral image and link capability requirements from `my-site` article-image upload and wiki-link behavior and from `personal-workspace` authenticated image-upload, attachment, and protected-preview behavior without adding application services to the package.
+- [x] Promote the split `MarkdownEditorImageConfig` upload and preview strategies into the package API.
+- [x] Connect editor preview to the package Markdown renderer and Prism highlighter.
+- [x] Connect fullscreen behavior to the package modal page-scroll lock.
+- [x] Add regression coverage for minimal CodeMirror transactions, undo and redo, selection direction, history, scroll intent, IME behavior, keyboard navigation, focus restoration, CSP nonce propagation, SSR guards, and object-URL revocation.
+- [ ] Add ordinary-file attachment support with a separate transport and insertion contract, configurable picker, paste, and drop sources, exact MIME and size validation, sequential retryable queues, and non-image preview semantics.

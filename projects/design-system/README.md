@@ -118,6 +118,130 @@ and `disabledDates` use canonical calendar-date ISO strings (`YYYY-MM-DD`); loca
 the user-facing parsing and display. Provide every `LocalizedDatePickerLabels` value and
 `dateLocale` from the consumer.
 
+## Markdown rendering
+
+Import the renderer independently from the editor:
+
+```ts
+import {
+  MarkdownRendererService,
+  type MarkdownWikiLinkRenderConfig,
+} from '@alittlemoron/design-system/markdown';
+
+const wikiLinks: MarkdownWikiLinkRenderConfig = {
+  namespaces: [{ key: 'docs', label: 'Documentation' }],
+  resolve: ({ namespace, key }) =>
+    namespace === 'docs' ? { href: `/docs/${encodeURIComponent(key)}`, openIn: 'same-tab' } : null,
+};
+
+const html = inject(MarkdownRendererService).render(markdown, { wikiLinks });
+```
+
+The renderer drops authored HTML, rejects unsafe link and image schemes, sanitizes the generated
+HTML, highlights supported fenced-code languages, and emits resolved wiki-links as native anchors.
+Unknown namespaces, unresolved targets, and wiki-like text inside inline or fenced code remain
+plain Markdown text. Import `styles/markdown` in the consuming application's global SCSS for the
+code and Prism presentation.
+
+Wiki syntax is application-independent and fixed as `[[namespace:key|label]]`; the label is
+optional. The package also exports `parseMarkdownWikiLinks`,
+`createMarkdownWikiLinkTargetLookup`, and `findMissingMarkdownWikiLinkTargets` for validation and
+content tooling.
+
+## Markdown editor
+
+Import the standalone editor from its secondary entry point:
+
+```ts
+import {
+  MarkdownEditorComponent,
+  type MarkdownEditorImageConfig,
+  type MarkdownEditorLabels,
+  type MarkdownEditorWikiLinkConfig,
+} from '@alittlemoron/design-system/markdown-editor';
+```
+
+```html
+<ds-markdown-editor
+  [value]="markdown()"
+  accessibleLabel="Article body"
+  [labels]="editorLabels"
+  [imageConfig]="imageConfig"
+  [imageInteractionsDisabled]="saving()"
+  [wikiLinks]="wikiLinks"
+  (valueChange)="markdown.set($event)"
+  (imageUploadPendingChange)="imageUploadPending.set($event)"
+/>
+```
+
+`MarkdownEditorLabels` is exhaustive by design: the consumer owns every visible editor, search,
+table, upload, preview, shortcut, and accessibility string. This keeps the package independent of
+an application i18n service. `value` is controlled state; external synchronization does not emit a
+second `valueChange`. `focus()` is the only imperative public editor action.
+
+Image transport and image preview are deliberately separate. Choose any combination of `picker`,
+`paste`, and `drop` for one editor instance:
+
+```ts
+const publicImages: MarkdownEditorImageConfig = {
+  upload: {
+    sources: ['picker', 'paste', 'drop'],
+    acceptedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    upload: (file) => articleImages.upload(file), // Observable<{ source: string }>
+  },
+  preview: { kind: 'direct' },
+};
+
+const protectedImages: MarkdownEditorImageConfig = {
+  upload: {
+    sources: ['paste', 'drop'],
+    acceptedMimeTypes: ['image/png'],
+    upload: (file) => attachments.upload(file),
+  },
+  preview: {
+    kind: 'blob',
+    revision: attachmentRevision(),
+    load: (source) => attachments.loadAuthorizedBlob(source),
+  },
+};
+```
+
+`direct` leaves safe rendered image URLs in the preview DOM. `blob` removes each protected source
+before binding the preview, loads it through the supplied observable, uses a temporary object URL,
+and revokes that URL on retry, revision or configuration changes, document changes, mode changes,
+and destruction. Set `upload: null` for a read-only editor that still needs either preview strategy,
+or set the whole `imageConfig` to `null` when no image integration is needed. MIME matching is
+exact. Uploads run sequentially in stable insertion order; a failure pauses the queue until the
+consumer-facing retry or dismiss action is used. `imageInteractionsDisabled` pauses new actions and
+queued retries without removing active previews or discarding queued work.
+
+Ordinary file attachments are intentionally not part of the current contract; only images are
+accepted in this version.
+
+Wiki completion and rendering share one neutral configuration:
+
+```ts
+const wikiLinks: MarkdownEditorWikiLinkConfig = {
+  namespaces: [
+    { key: 'articles', label: 'Articles' },
+    { key: 'people', label: 'People' },
+  ],
+  loadTargets: () => contentIndex.snapshot(), // Observable<MarkdownWikiLinkTargetGroup[]>
+  resolve: ({ namespace, key }) => ({
+    href: `/content/${namespace}/${encodeURIComponent(key)}`,
+    openIn: 'same-tab',
+  }),
+};
+```
+
+The target snapshot supplies completion labels, descriptions, and badges. A registry error is
+reported in the editor status area but never blocks manual editing or preview. Set `wikiLinks` to
+`null` to disable wiki completion and interpretation.
+
+`MarkdownEditorStickyBottomInsetDirective` is available as
+`[dsMarkdownEditorStickyBottomInset]` for forms with a sticky action footer. It maintains the
+editor's bottom inset with a narrowly scoped, nonce-bearing runtime style and remains SSR-safe.
+
 ## Styles
 
 The public SCSS entry points are:

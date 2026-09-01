@@ -210,5 +210,29 @@
       />
       <p class="showcase-output" data-demo-date-selection>Selected: {{ selectedDate() }}</p>
     </article>
+
+    <article id="markdown-demo" class="showcase-card showcase-card-wide">
+      <h2>Markdown renderer and editor</h2>
+      <p class="showcase-description">
+        Both secondary entry points come from the packed package. The editor enables picker, paste,
+        and drop uploads independently, uses direct image preview, and resolves a generic
+        <code>docs</code> wiki namespace.
+      </p>
+      <div
+        class="rendered-markdown showcase-markdown-renderer"
+        data-demo-rendered-markdown
+        [innerHTML]="renderedMarkdown()"
+      ></div>
+      <ds-markdown-editor
+        [value]="markdownValue()"
+        accessibleLabel="Demo Markdown body"
+        [labels]="markdownEditorLabels"
+        [imageConfig]="markdownImageConfig"
+        [imageInteractionsDisabled]="false"
+        [wikiLinks]="markdownWikiLinks"
+        (valueChange)="markdownValue.set($event)"
+      />
+      <pre class="showcase-markdown-value" data-demo-markdown-value>{{ markdownValue() }}</pre>
+    </article>
   </section>
 </main>

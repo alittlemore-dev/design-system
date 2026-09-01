@@ -48,6 +48,10 @@ test('accepts a production module graph without the testing entry point', async 
     JSON.stringify({
       inputs: {
         'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system.mjs': {},
+        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown.mjs':
+          {},
+        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown-editor.mjs':
+          {},
       },
     }),
   );
@@ -69,6 +73,32 @@ test('rejects a production module graph without the packed primary entry point',
   }
 });
 
+test('rejects a production module graph without either packed Markdown entry point', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'packed-demo-stats-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const statsPath = join(directory, 'stats.json');
+  const inputs = {
+    'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system.mjs': {},
+    'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown.mjs': {},
+    'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown-editor.mjs':
+      {},
+  };
+
+  for (const [missing, expected] of [
+    ['alittlemoron-design-system-markdown.mjs', /packed Markdown entry point/i],
+    ['alittlemoron-design-system-markdown-editor.mjs', /packed Markdown-editor entry point/i],
+  ]) {
+    const filteredInputs = Object.fromEntries(
+      Object.entries(inputs).filter(([path]) => !path.endsWith(missing)),
+    );
+    await writeFile(statsPath, JSON.stringify({ inputs: filteredInputs }));
+    await assert.rejects(
+      packedDemo.assertProductionBundlesExcludeTestingEntryPoint(statsPath),
+      expected,
+    );
+  }
+});
+
 test('rejects a production module graph containing the testing entry point', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'packed-demo-stats-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
@@ -78,6 +108,10 @@ test('rejects a production module graph containing the testing entry point', asy
     JSON.stringify({
       inputs: {
         'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system.mjs': {},
+        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown.mjs':
+          {},
+        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown-editor.mjs':
+          {},
         'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-testing.mjs':
           {},
       },

@@ -104,6 +104,26 @@ h2 {
   font-size: 0.875rem;
 }
 
+.showcase-markdown-renderer {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--surface-0);
+  border: 1px dashed var(--border-color-solid);
+  border-radius: 0.5rem;
+}
+
+.showcase-markdown-value {
+  max-height: 10rem;
+  margin: 1rem 0 0;
+  padding: 0.75rem;
+  overflow: auto;
+  color: var(--text-secondary);
+  background: var(--surface-0);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+}
+
 .demo-modal-backdrop {
   position: fixed;
   z-index: 1050;

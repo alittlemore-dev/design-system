@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 240" role="img" aria-labelledby="title description">
+  <title id="title">Design-system Markdown demo</title>
+  <desc id="description">A geometric illustration of Markdown text becoming a preview.</desc>
+  <rect width="640" height="240" rx="24" fill="#172033"/>
+  <rect x="32" y="32" width="256" height="176" rx="16" fill="#263650"/>
+  <path d="M72 78h176M72 116h128M72 154h152" stroke="#d9e2f2" stroke-width="14" stroke-linecap="round"/>
+  <path d="m330 120 52-52v36h80v32h-80v36z" fill="#7c9cff"/>
+  <rect x="496" y="58" width="112" height="124" rx="16" fill="#f4f7fb"/>
+  <circle cx="530" cy="94" r="14" fill="#7c9cff"/>
+  <path d="m512 154 28-32 20 20 16-18 16 30z" fill="#263650"/>
+</svg>

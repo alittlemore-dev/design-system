@@ -4,6 +4,294 @@
 
 ```ts
 
+import { AfterViewChecked } from '@angular/core';
+import { AfterViewInit } from '@angular/core';
+import * as _angular_core from '@angular/core';
+import { Observable } from 'rxjs';
+import { OnDestroy } from '@angular/core';
+import { OnInit } from '@angular/core';
+
+// @public (undocumented)
+export interface MarkdownEditorBlobImagePreviewConfig {
+    // (undocumented)
+    readonly kind: 'blob';
+    // (undocumented)
+    readonly load: (source: string) => Observable<Blob>;
+    // (undocumented)
+    readonly revision: string | number;
+}
+
+// @public (undocumented)
+export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked, OnDestroy {
+    constructor();
+    // (undocumented)
+    protected readonly acceptedImageMimeTypes: _angular_core.Signal<string>;
+    // (undocumented)
+    readonly accessibleLabel: _angular_core.InputSignal<string>;
+    // (undocumented)
+    protected dismissUnsupportedImage(id: number): void;
+    // (undocumented)
+    protected dismissUpload(id: number): void;
+    // (undocumented)
+    protected readonly editTabId: string;
+    // (undocumented)
+    protected executeToolbarCommand(command: MarkdownEditorCommandDefinition): void;
+    // (undocumented)
+    focus(): void;
+    // (undocumented)
+    protected readonly fullscreen: _angular_core.WritableSignal<boolean>;
+    // (undocumented)
+    protected readonly fullscreenIconPath: _angular_core.Signal<"M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" | "M4 9h5V4M20 9h-5V4M4 15h5v5M20 15h-5v5">;
+    // (undocumented)
+    protected readonly fullscreenLabel: _angular_core.Signal<string>;
+    // (undocumented)
+    readonly imageConfig: _angular_core.InputSignal<MarkdownEditorImageConfig | null>;
+    // (undocumented)
+    readonly imageInteractionsDisabled: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    protected readonly imagePickerEnabled: _angular_core.Signal<boolean>;
+    // (undocumented)
+    protected readonly imagePickerInteractionsEnabled: _angular_core.Signal<boolean>;
+    // (undocumented)
+    protected readonly imageUploadInteractionsEnabled: _angular_core.Signal<boolean>;
+    // (undocumented)
+    protected readonly imageUploadPending: _angular_core.Signal<boolean>;
+    // (undocumented)
+    readonly imageUploadPendingChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    protected readonly internalValue: _angular_core.WritableSignal<string>;
+    // (undocumented)
+    readonly labels: _angular_core.InputSignal<MarkdownEditorLabels>;
+    // (undocumented)
+    protected readonly mode: _angular_core.WritableSignal<EditorMode>;
+    // (undocumented)
+    ngAfterViewChecked(): void;
+    // (undocumented)
+    ngAfterViewInit(): void;
+    // (undocumented)
+    ngOnDestroy(): void;
+    // (undocumented)
+    protected onContainerKeydown(event: KeyboardEvent): void;
+    // (undocumented)
+    protected onImageInput(event: Event): void;
+    // (undocumented)
+    protected onModeTabKeydown(event: KeyboardEvent): void;
+    // (undocumented)
+    protected onShortcutsKeydown(event: KeyboardEvent): void;
+    // (undocumented)
+    protected onShortcutsKeyup(event: KeyboardEvent): void;
+    // (undocumented)
+    protected onToolbarKeydown(event: KeyboardEvent): void;
+    // (undocumented)
+    protected readonly previewEmpty: _angular_core.Signal<boolean>;
+    // (undocumented)
+    protected readonly previewHtml: _angular_core.Signal<string>;
+    // (undocumented)
+    protected readonly previewImageErrors: _angular_core.WritableSignal<readonly PreviewImageError[]>;
+    // (undocumented)
+    protected readonly previewPanelId: string;
+    // (undocumented)
+    protected readonly previewTabId: string;
+    // (undocumented)
+    protected retryPreviewImage(index: number): void;
+    // (undocumented)
+    protected retryUpload(id: number): void;
+    // (undocumented)
+    protected selectMode(mode: EditorMode): void;
+    // (undocumented)
+    protected shortcutGroupLabel(group: ResolvedShortcutGroup): string;
+    // (undocumented)
+    protected readonly shortcutGroups: _angular_core.Signal<readonly ResolvedShortcutGroup[]>;
+    // (undocumented)
+    protected shortcutLabel(command: MarkdownEditorCommandDefinition): string;
+    // (undocumented)
+    protected readonly shortcutModifierHint: _angular_core.Signal<string>;
+    // (undocumented)
+    protected shortcutParts(command: MarkdownEditorCommandDefinition): readonly string[];
+    // (undocumented)
+    protected readonly sourcePanelId: string;
+    // (undocumented)
+    protected readonly sourceTabId: string;
+    // (undocumented)
+    protected toggleFullscreen(): void;
+    // (undocumented)
+    protected toolbarCommandLabel(command: MarkdownEditorCommandDefinition): string;
+    // (undocumented)
+    protected readonly toolbarGroups: _angular_core.Signal<readonly ResolvedShortcutGroup[]>;
+    // (undocumented)
+    protected toolbarIconPath(commandId: MarkdownEditorCommandId): string;
+    // (undocumented)
+    protected readonly unsupportedImages: _angular_core.WritableSignal<readonly UnsupportedImage[]>;
+    // (undocumented)
+    protected readonly uploadErrors: _angular_core.Signal<ImageUpload[]>;
+    // (undocumented)
+    protected readonly uploading: _angular_core.Signal<boolean>;
+    // (undocumented)
+    protected readonly uploads: _angular_core.WritableSignal<readonly ImageUpload[]>;
+    // (undocumented)
+    readonly value: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly valueChange: _angular_core.OutputEmitterRef<string>;
+    // (undocumented)
+    protected readonly wikiLinkRegistryUnavailable: _angular_core.WritableSignal<boolean>;
+    // (undocumented)
+    readonly wikiLinks: _angular_core.InputSignal<MarkdownEditorWikiLinkConfig | null>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<MarkdownEditorComponent, "ds-markdown-editor", never, { "value": { "alias": "value"; "required": true; "isSignal": true; }; "accessibleLabel": { "alias": "accessibleLabel"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "imageConfig": { "alias": "imageConfig"; "required": true; "isSignal": true; }; "imageInteractionsDisabled": { "alias": "imageInteractionsDisabled"; "required": true; "isSignal": true; }; "wikiLinks": { "alias": "wikiLinks"; "required": true; "isSignal": true; }; }, { "valueChange": "valueChange"; "imageUploadPendingChange": "imageUploadPendingChange"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<MarkdownEditorComponent, never>;
+}
+
+// @public (undocumented)
+export interface MarkdownEditorDirectImagePreviewConfig {
+    // (undocumented)
+    readonly kind: 'direct';
+}
+
+// @public (undocumented)
+export interface MarkdownEditorImageConfig {
+    // (undocumented)
+    readonly preview: MarkdownEditorImagePreviewConfig;
+    // (undocumented)
+    readonly upload: MarkdownEditorImageUploadConfig | null;
+}
+
+// @public (undocumented)
+export type MarkdownEditorImageInputSource = 'picker' | 'paste' | 'drop';
+
+// @public (undocumented)
+export type MarkdownEditorImagePreviewConfig = MarkdownEditorDirectImagePreviewConfig | MarkdownEditorBlobImagePreviewConfig;
+
+// @public (undocumented)
+export interface MarkdownEditorImageUploadConfig {
+    // (undocumented)
+    readonly acceptedMimeTypes: readonly string[];
+    // (undocumented)
+    readonly sources: readonly MarkdownEditorImageInputSource[];
+    // (undocumented)
+    readonly upload: (file: File) => Observable<MarkdownEditorImageUploadResult>;
+}
+
+// @public (undocumented)
+export interface MarkdownEditorImageUploadResult {
+    // (undocumented)
+    readonly source: string;
+}
+
+// @public (undocumented)
+export interface MarkdownEditorLabels {
+    // (undocumented)
+    readonly commands: {
+        readonly togglePreview: string;
+        readonly toggleSource: string;
+        readonly heading1: string;
+        readonly heading2: string;
+        readonly heading3: string;
+        readonly heading4: string;
+        readonly heading5: string;
+        readonly heading6: string;
+        readonly bold: string;
+        readonly italic: string;
+        readonly strikethrough: string;
+        readonly quote: string;
+        readonly unorderedList: string;
+        readonly orderedList: string;
+        readonly taskList: string;
+        readonly horizontalRule: string;
+        readonly link: string;
+        readonly image: string;
+        readonly inlineCode: string;
+        readonly codeBlock: string;
+        readonly table: string;
+        readonly search: string;
+    };
+    // (undocumented)
+    readonly completions: string;
+    // (undocumented)
+    readonly fullscreen: {
+        readonly enter: string;
+        readonly exit: string;
+    };
+    // (undocumented)
+    readonly mode: {
+        readonly aria: string;
+        readonly edit: string;
+        readonly source: string;
+        readonly preview: string;
+    };
+    // (undocumented)
+    readonly preview: {
+        readonly empty: string;
+        readonly imageFailed: string;
+    };
+    // (undocumented)
+    readonly search: {
+        readonly find: string;
+        readonly replace: string;
+        readonly next: string;
+        readonly previous: string;
+        readonly all: string;
+        readonly matchCase: string;
+        readonly byWord: string;
+        readonly regexp: string;
+        readonly replaceAll: string;
+        readonly close: string;
+        readonly goToLine: string;
+        readonly go: string;
+        readonly currentMatch: string;
+        readonly onLine: string;
+        readonly replacedMatches: string;
+        readonly replacedMatchOnLine: string;
+    };
+    // (undocumented)
+    readonly shortcutGroups: Readonly<Record<'view' | 'headings' | 'inline' | 'blocks' | 'media', string>>;
+    // (undocumented)
+    readonly shortcuts: {
+        readonly summary: string;
+        readonly modifierHintMac: string;
+        readonly modifierHintOther: string;
+        readonly tabEscape: string;
+    };
+    // (undocumented)
+    readonly table: MarkdownTableEditorPhrases;
+    // (undocumented)
+    readonly toolbar: {
+        readonly aria: string;
+    };
+    // (undocumented)
+    readonly upload: {
+        readonly uploading: string;
+        readonly retry: string;
+        readonly dismiss: string;
+        readonly failed: (fileName: string) => string;
+        readonly unsupported: (fileName: string) => string;
+    };
+    // (undocumented)
+    readonly wikiLinks: {
+        readonly registryUnavailable: string;
+    };
+}
+
+// @public (undocumented)
+export class MarkdownEditorStickyBottomInsetDirective implements OnInit, OnDestroy {
+    // (undocumented)
+    readonly dsMarkdownEditorStickyBottomInset: _angular_core.InputSignal<HTMLElement>;
+    // (undocumented)
+    ngOnDestroy(): void;
+    // (undocumented)
+    ngOnInit(): void;
+    // (undocumented)
+    static ɵdir: _angular_core.ɵɵDirectiveDeclaration<MarkdownEditorStickyBottomInsetDirective, "[dsMarkdownEditorStickyBottomInset]", never, { "dsMarkdownEditorStickyBottomInset": { "alias": "dsMarkdownEditorStickyBottomInset"; "required": true; "isSignal": true; }; }, {}, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<MarkdownEditorStickyBottomInsetDirective, never>;
+}
+
+// @public (undocumented)
+export interface MarkdownEditorWikiLinkConfig extends MarkdownWikiLinkRenderConfig {
+    // (undocumented)
+    readonly loadTargets: () => Observable<readonly MarkdownWikiLinkTargetGroup[]>;
+}
+
 // (No @packageDocumentation comment for this package)
 
 ```

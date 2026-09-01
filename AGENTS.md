@@ -33,3 +33,9 @@
 - Before handing off completed work, remove every Superpowers-generated artifact from the
   repository, including `.superpowers/` workspaces and `docs/superpowers/` plans or specs, unless
   the user explicitly asks to retain a specific artifact.
+
+## Git workflow
+
+- Work directly on `main` by default and never create or use a Git worktree. Use a feature branch
+  only when the user explicitly requests one. Stop before making changes only when the working tree
+  is not clean.

@@ -13,6 +13,10 @@ const packedPackagePath = join(demoRoot, 'node_modules/@alittlemoron/design-syst
 const productionStatsPath = join(demoRoot, 'dist/design-system-demo/stats.json');
 const primaryEntryPointBundle =
   '/@alittlemoron/design-system/fesm2022/alittlemoron-design-system.mjs';
+const markdownEntryPointBundle =
+  '/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown.mjs';
+const markdownEditorEntryPointBundle =
+  '/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown-editor.mjs';
 const testingEntryPointBundle =
   '/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-testing.mjs';
 
@@ -105,6 +109,16 @@ export async function assertProductionBundlesExcludeTestingEntryPoint(statsPath)
       : [];
   if (!inputs.some((inputPath) => inputPath.endsWith(primaryEntryPointBundle))) {
     throw new Error('The production module graph does not contain the packed primary entry point.');
+  }
+  if (!inputs.some((inputPath) => inputPath.endsWith(markdownEntryPointBundle))) {
+    throw new Error(
+      'The production module graph does not contain the packed Markdown entry point.',
+    );
+  }
+  if (!inputs.some((inputPath) => inputPath.endsWith(markdownEditorEntryPointBundle))) {
+    throw new Error(
+      'The production module graph does not contain the packed Markdown-editor entry point.',
+    );
   }
   const testingInput = inputs.find((inputPath) => inputPath.endsWith(testingEntryPointBundle));
   if (testingInput !== undefined) {

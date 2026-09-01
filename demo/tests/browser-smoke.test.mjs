@@ -114,6 +114,109 @@ test('hydrates the packed showcase and keeps its interactions CSP-clean', async 
     false,
   );
 
+  const markdownDemo = page.locator('#markdown-demo');
+  const standaloneMarkdown = markdownDemo.locator('[data-demo-rendered-markdown]');
+  assert.equal(await standaloneMarkdown.locator('code.language-ts').count(), 1);
+  assert.equal(
+    await standaloneMarkdown
+      .getByRole('link', { name: 'the editor contract' })
+      .getAttribute('href'),
+    '#markdown-demo',
+  );
+
+  const editor = markdownDemo.locator('ds-markdown-editor');
+  const editorContent = editor.locator('.cm-content');
+  assert.equal(await editorContent.getAttribute('aria-label'), 'Demo Markdown body');
+  assert.match((await editorContent.textContent()) ?? '', /Shared Markdown editor/);
+  assert.equal(await editor.locator('[role="table"]').count(), 1);
+  await editor.getByRole('tab', { name: 'Preview' }).click();
+  const editorPreview = editor.locator('[data-testid="markdown-editor-preview-content"]');
+  await editorPreview.locator('code.language-ts').waitFor();
+  assert.equal(await editorPreview.locator('code.language-ts').count(), 1);
+  assert.equal(
+    await editorPreview.getByRole('link', { name: 'the editor contract' }).getAttribute('href'),
+    '#markdown-demo',
+  );
+  assert.match(
+    (await editorPreview.getByRole('img', { name: 'Design-system demo' }).getAttribute('src')) ??
+      '',
+    /\/assets\/demo-image\.svg$/,
+  );
+  await editor.getByRole('tab', { name: 'Edit' }).click();
+
+  const fullscreenToggle = editor.getByRole('button', { name: 'Enter fullscreen' });
+  await fullscreenToggle.click();
+  await editor
+    .locator('[data-testid="markdown-editor-shell"][role="dialog"]')
+    .waitFor({ state: 'attached' });
+  assert.equal(
+    await editor.locator('[data-testid="markdown-editor-shell"]').getAttribute('role'),
+    'dialog',
+  );
+  assert.equal(
+    await page
+      .locator('html')
+      .evaluate((element) => element.classList.contains('cdk-global-scrollblock')),
+    true,
+  );
+  await page.keyboard.press('Escape');
+  await editor.getByRole('button', { name: 'Enter fullscreen' }).waitFor();
+  assert.equal(
+    await page
+      .locator('html')
+      .evaluate((element) => element.classList.contains('cdk-global-scrollblock')),
+    false,
+  );
+
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await editor.locator('[data-markdown-command="image"]').click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles({
+    name: 'picked.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('demo image'),
+  });
+  await page.waitForFunction(() =>
+    document.querySelector('[data-demo-markdown-value]')?.textContent?.includes('![picked.png]'),
+  );
+  assert.match(
+    (await markdownDemo.locator('[data-demo-markdown-value]').textContent()) ?? '',
+    /!\[picked\.png\]\(\/assets\/demo-image\.svg\)/,
+  );
+
+  await editorContent.evaluate((element) => {
+    const file = new File(['pasted image'], 'pasted.png', { type: 'image/png' });
+    const event = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'clipboardData', {
+      value: {
+        items: [{ kind: 'file', type: file.type, getAsFile: () => file }],
+        getData: () => '',
+      },
+    });
+    element.dispatchEvent(event);
+  });
+  await page.waitForFunction(() =>
+    document.querySelector('[data-demo-markdown-value]')?.textContent?.includes('![pasted.png]'),
+  );
+
+  await editorContent.evaluate((element) => {
+    const file = new File(['dropped image'], 'dropped.png', { type: 'image/png' });
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    element.dispatchEvent(
+      new DragEvent('drop', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 0,
+        clientY: 0,
+        dataTransfer: transfer,
+      }),
+    );
+  });
+  await page.waitForFunction(() =>
+    document.querySelector('[data-demo-markdown-value]')?.textContent?.includes('![dropped.png]'),
+  );
+
   assert.deepEqual(await page.evaluate(() => window.__demoCspViolations), []);
   assert.deepEqual(browserErrors, []);
 

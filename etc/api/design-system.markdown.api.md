@@ -4,6 +4,127 @@
 
 ```ts
 
+import * as i0 from '@angular/core';
+
+// @public (undocumented)
+export function createMarkdownWikiLinkTargetLookup(groups: readonly MarkdownWikiLinkTargetGroup[]): MarkdownWikiLinkTargetLookup;
+
+// @public (undocumented)
+export function findMissingMarkdownWikiLinkTargets(params: {
+    readonly markdown: string;
+    readonly availableTargets: MarkdownWikiLinkTargetLookup;
+}): readonly string[];
+
+// @public (undocumented)
+export interface HighlightedMarkdownCode {
+    // (undocumented)
+    readonly html: string;
+    // (undocumented)
+    readonly language: string;
+}
+
+// @public (undocumented)
+export function highlightMarkdownCode(code: string, languageInfo: string | undefined): HighlightedMarkdownCode | null;
+
+// @public (undocumented)
+export interface MarkdownCodeToken {
+    // (undocumented)
+    readonly from: number;
+    // (undocumented)
+    readonly to: number;
+    // (undocumented)
+    readonly types: readonly string[];
+}
+
+// @public (undocumented)
+export interface MarkdownRenderConfig {
+    // (undocumented)
+    readonly wikiLinks: MarkdownWikiLinkRenderConfig | null;
+}
+
+// @public (undocumented)
+export class MarkdownRendererService {
+    // (undocumented)
+    render(markdown: string, config: MarkdownRenderConfig): string;
+    // (undocumented)
+    static ɵfac: i0.ɵɵFactoryDeclaration<MarkdownRendererService, never>;
+    // (undocumented)
+    static ɵprov: i0.ɵɵInjectableDeclaration<MarkdownRendererService>;
+}
+
+// @public (undocumented)
+export interface MarkdownResolvedWikiLink {
+    // (undocumented)
+    readonly href: string;
+    // (undocumented)
+    readonly openIn: 'same-tab' | 'new-tab';
+}
+
+// @public (undocumented)
+export interface MarkdownWikiLinkNamespace {
+    // (undocumented)
+    readonly key: string;
+    // (undocumented)
+    readonly label: string;
+}
+
+// @public (undocumented)
+export interface MarkdownWikiLinkReference {
+    // (undocumented)
+    readonly key: string;
+    // (undocumented)
+    readonly label: string;
+    // (undocumented)
+    readonly namespace: string;
+    // (undocumented)
+    readonly raw: string;
+}
+
+// @public (undocumented)
+export interface MarkdownWikiLinkRenderConfig {
+    // (undocumented)
+    readonly namespaces: readonly MarkdownWikiLinkNamespace[];
+    // (undocumented)
+    readonly resolve: (reference: MarkdownWikiLinkReference) => MarkdownResolvedWikiLink | null;
+}
+
+// @public (undocumented)
+export interface MarkdownWikiLinkTarget {
+    // (undocumented)
+    readonly badge: string | null;
+    // (undocumented)
+    readonly description: string | null;
+    // (undocumented)
+    readonly key: string;
+    // (undocumented)
+    readonly label: string;
+}
+
+// @public (undocumented)
+export interface MarkdownWikiLinkTargetGroup {
+    // (undocumented)
+    readonly namespace: string;
+    // (undocumented)
+    readonly targets: readonly MarkdownWikiLinkTarget[];
+}
+
+// @public (undocumented)
+export type MarkdownWikiLinkTargetLookup = ReadonlyMap<string, ReadonlySet<string>>;
+
+// @public (undocumented)
+export function parseMarkdownWikiLinks(markdown: string): readonly MarkdownWikiLinkReference[];
+
+// @public (undocumented)
+export interface TokenizedMarkdownCode {
+    // (undocumented)
+    readonly language: string;
+    // (undocumented)
+    readonly tokens: readonly MarkdownCodeToken[];
+}
+
+// @public (undocumented)
+export function tokenizeMarkdownCode(code: string, languageInfo: string | undefined): TokenizedMarkdownCode | null;
+
 // (No @packageDocumentation comment for this package)
 
 ```
