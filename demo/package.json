@@ -5,12 +5,13 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --host 127.0.0.1",
-    "build": "ng build --configuration production",
+    "build": "ng build --configuration production --stats-json",
     "serve:ssr": "node dist/design-system-demo/server/server.mjs",
+    "test:testing-entry-point": "node --test tests/testing-entry-point.test.mjs",
     "test:ssr": "node --test tests/ssr-smoke.test.mjs",
     "test:browser": "node --test tests/browser-smoke.test.mjs",
-    "check": "npm run build && npm run test:ssr",
-    "check:browser": "npm run build && npm run test:ssr && npm run test:browser"
+    "check": "npm run build && npm run test:testing-entry-point && npm run test:ssr",
+    "check:browser": "npm run build && npm run test:testing-entry-point && npm run test:ssr && npm run test:browser"
   },
   "dependencies": {
     "@angular/cdk": "22.1.0",

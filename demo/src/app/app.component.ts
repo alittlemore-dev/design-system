@@ -19,6 +19,7 @@ import {
   NotificationService,
   SiteSelectComponent,
   ThemeService,
+  formatLocalizedDate,
   type ErrorDisplay,
   type FoldableTreeItem,
   type FoldableTreeSection,
@@ -63,6 +64,11 @@ export class AppComponent {
   protected readonly selectedTreeKey = signal('overview');
   protected readonly selectedSite = signal('alpha');
   protected readonly selectedDate = signal('2026-08-28');
+  protected readonly formattedDate = formatLocalizedDate(
+    '2026-08-28T12:34:56+00:00',
+    'en-US',
+    'date',
+  );
   protected readonly validationForm = new FormGroup({
     requiredField: new FormControl('', {
       nonNullable: true,

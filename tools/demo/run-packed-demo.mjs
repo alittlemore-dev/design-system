@@ -10,6 +10,11 @@ const demoRoot = join(repositoryRoot, 'demo');
 const packageRoot = join(repositoryRoot, 'dist/alittlemoron/design-system');
 const manifestPaths = [join(demoRoot, 'package.json'), join(demoRoot, 'package-lock.json')];
 const packedPackagePath = join(demoRoot, 'node_modules/@alittlemoron/design-system');
+const productionStatsPath = join(demoRoot, 'dist/design-system-demo/stats.json');
+const primaryEntryPointBundle =
+  '/@alittlemoron/design-system/fesm2022/alittlemoron-design-system.mjs';
+const testingEntryPointBundle =
+  '/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-testing.mjs';
 
 const demoScripts = new Map([
   ['start', 'start'],
@@ -92,6 +97,23 @@ export async function assertFilesUnchanged(snapshot) {
   }
 }
 
+export async function assertProductionBundlesExcludeTestingEntryPoint(statsPath) {
+  const stats = JSON.parse(await readFile(statsPath, 'utf8'));
+  const inputs =
+    stats.inputs !== null && typeof stats.inputs === 'object' && !Array.isArray(stats.inputs)
+      ? Object.keys(stats.inputs).map((inputPath) => inputPath.replaceAll('\\', '/'))
+      : [];
+  if (!inputs.some((inputPath) => inputPath.endsWith(primaryEntryPointBundle))) {
+    throw new Error('The production module graph does not contain the packed primary entry point.');
+  }
+  const testingInput = inputs.find((inputPath) => inputPath.endsWith(testingEntryPointBundle));
+  if (testingInput !== undefined) {
+    throw new Error(
+      `The production bundle includes the public testing entry point: ${testingInput}`,
+    );
+  }
+}
+
 function formatCommand(command, args) {
   return [command, ...args].join(' ');
 }
@@ -158,6 +180,9 @@ async function runPackedDemo(scriptName) {
       cwd: demoRoot,
     });
     await runCommand('npm', ['run', scriptName], { cwd: demoRoot });
+    if (scriptName !== 'start') {
+      await assertProductionBundlesExcludeTestingEntryPoint(productionStatsPath);
+    }
   } catch (error) {
     workflowError = error;
   } finally {

@@ -126,6 +126,9 @@ export interface FoldableTreeSection {
 export function formatErrorMessage(error: ErrorDisplay): string;
 
 // @public (undocumented)
+export function formatLocalizedDate(value: string, locale: string, display: LocalizedDateDisplay): string;
+
+// @public (undocumented)
 export class LoadingSpinnerComponent {
     // (undocumented)
     readonly ariaLabel: _angular_core.InputSignal<string>;
@@ -134,6 +137,9 @@ export class LoadingSpinnerComponent {
     // (undocumented)
     static ɵfac: _angular_core.ɵɵFactoryDeclaration<LoadingSpinnerComponent, never>;
 }
+
+// @public (undocumented)
+export type LocalizedDateDisplay = 'date' | 'dateTime';
 
 // @public (undocumented)
 export class LocalizedDatePickerComponent implements ControlValueAccessor, OnChanges, Validator {

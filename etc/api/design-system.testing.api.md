@@ -4,6 +4,23 @@
 
 ```ts
 
+import { ComponentFixture } from '@angular/core/testing';
+
+// @public (undocumented)
+export function chooseSiteSelectOption<T>(fixture: ComponentFixture<T>, selector: string, value: string): void;
+
+// @public (undocumented)
+export function siteSelectOptionLabels<T>(fixture: ComponentFixture<T>, selector: string): string[];
+
+// @public (undocumented)
+export function siteSelectOptionValues<T>(fixture: ComponentFixture<T>, selector: string): string[];
+
+// @public (undocumented)
+export function siteSelectTrigger<T>(fixture: ComponentFixture<T>, selector: string): HTMLButtonElement;
+
+// @public (undocumented)
+export function siteSelectValue<T>(fixture: ComponentFixture<T>, selector: string): string;
+
 // (No @packageDocumentation comment for this package)
 
 ```

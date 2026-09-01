@@ -33,6 +33,7 @@ test('hydrates the packed showcase and keeps its interactions CSP-clean', async 
 
   await page.goto(server.url, { waitUntil: 'networkidle' });
   assert.equal(await page.locator('[data-demo-shell]').count(), 1);
+  await waitForText(page, '[data-demo-localized-date]', 'Formatted date: Aug 28, 2026');
 
   const validationInput = page.locator('[data-demo-validation-input]');
   assert.equal(await validationInput.count(), 1);

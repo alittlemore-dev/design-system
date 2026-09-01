@@ -39,6 +39,57 @@ test('detects a changed demo manifest after a packed run', async (t) => {
   assert.equal(await readFile(lockPath, 'utf8'), '{"lockfileVersion":3}\n');
 });
 
+test('accepts a production module graph without the testing entry point', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'packed-demo-stats-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const statsPath = join(directory, 'stats.json');
+  await writeFile(
+    statsPath,
+    JSON.stringify({
+      inputs: {
+        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system.mjs': {},
+      },
+    }),
+  );
+
+  await assert.doesNotReject(packedDemo.assertProductionBundlesExcludeTestingEntryPoint(statsPath));
+});
+
+test('rejects a production module graph without the packed primary entry point', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'packed-demo-stats-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const statsPath = join(directory, 'stats.json');
+
+  for (const stats of [{}, { inputs: {} }, { inputs: { 'src/main.ts': {} } }]) {
+    await writeFile(statsPath, JSON.stringify(stats));
+    await assert.rejects(
+      packedDemo.assertProductionBundlesExcludeTestingEntryPoint(statsPath),
+      /production module graph does not contain the packed primary entry point/i,
+    );
+  }
+});
+
+test('rejects a production module graph containing the testing entry point', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'packed-demo-stats-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const statsPath = join(directory, 'stats.json');
+  await writeFile(
+    statsPath,
+    JSON.stringify({
+      inputs: {
+        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system.mjs': {},
+        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-testing.mjs':
+          {},
+      },
+    }),
+  );
+
+  await assert.rejects(
+    packedDemo.assertProductionBundlesExcludeTestingEntryPoint(statsPath),
+    /production bundle includes the public testing entry point/i,
+  );
+});
+
 test('forwards an interruption to the active workflow child and stops later steps', () => {
   const controller = new packedDemo.InterruptionController();
   const killedBy = [];

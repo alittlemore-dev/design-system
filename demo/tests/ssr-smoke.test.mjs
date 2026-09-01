@@ -21,6 +21,7 @@ test('serves the packed UI showcase through SSR with a nonce-based style policy'
   assert.match(html, /Show success notification/);
   assert.match(html, /Open modal scroll demo/);
   assert.match(html, /data-demo-validation-input/);
+  assert.match(html, /data-demo-localized-date[^>]*>\s*Formatted date: Aug 28, 2026\s*<\/p>/);
   assert.match(html, /ngh="/);
   assert.match(html, /ngCspNonce=/i);
   assert.ok(html.includes(`nonce="${nonceMatch[1]}"`));

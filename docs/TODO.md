@@ -70,10 +70,10 @@
 
 ## Presentation utilities and test helpers
 
-- [ ] Migrate `formatLocalizedDate` and its byte-identical tests from `my-site` and `personal-workspace`.
-- [ ] Confirm that the unused `slugify` implementation in `personal-workspace` has no shared package contract and exclude it from migration.
-- [ ] Migrate the duplicated `site-select-testing.ts` helpers from `my-site` and `personal-workspace` into the public testing entry point.
-- [ ] Verify that production bundles do not contain the testing entry point.
+- [x] Migrate `formatLocalizedDate` and its byte-identical tests from `my-site` and `personal-workspace`.
+- [x] Confirm that the unused `slugify` implementation in `personal-workspace` has no shared package contract and exclude it from migration. `personal-workspace` has no production imports; only `my-site` applies the same code to application-owned slug fields.
+- [x] Migrate the duplicated `site-select-testing.ts` helpers from `my-site` and `personal-workspace` into the public testing entry point.
+- [x] Verify that production bundles do not contain the testing entry point.
 
 ## Markdown rendering
 
