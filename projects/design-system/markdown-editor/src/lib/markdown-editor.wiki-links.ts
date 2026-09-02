@@ -88,8 +88,8 @@ export const wikiLinkCompletionSource = (context: CompletionContext): Completion
     .sort((left, right) => left.key.localeCompare(right.key))
     .map((target) => targetCompletion(target));
   return {
-    from: activeContext.slug?.from ?? context.pos,
-    to: activeContext.slug?.to ?? context.pos,
+    from: activeContext.slug!.from,
+    to: activeContext.slug!.to,
     options,
     validFor: /^[^\]|\r\n]*$/,
   };
@@ -211,7 +211,12 @@ function targetCompletion(target: MarkdownWikiLinkTarget): WikiLinkCompletion {
   };
   completion.apply = (view, selected, from, to) => {
     const after = view.state.sliceDoc(to, Math.min(view.state.doc.length, to + 2));
-    const closings = after.startsWith(']]') ? '' : after.startsWith(']') ? ']' : ']]';
+    const closings =
+      after.startsWith('|') || after.startsWith('\\|') || after.startsWith(']]')
+        ? ''
+        : after.startsWith(']')
+          ? ']'
+          : ']]';
     view.dispatch({
       changes: { from, to, insert: `${target.key}${closings}` },
       selection: EditorSelection.cursor(from + target.key.length),

@@ -13,7 +13,19 @@ async function waitForText(page, selector, expected) {
   assert.equal((await page.locator(selector).textContent())?.trim(), expected);
 }
 
-test('hydrates the packed showcase and keeps its interactions CSP-clean', async (t) => {
+async function assertAndResetInlineStyleViolations(page, browserErrors, expectedCount) {
+  const violations = await page.evaluate(() => window.__demoCspViolations);
+  assert.equal(violations.length, expectedCount);
+  assert.ok(violations.every((violation) => violation === 'style-src-attr: inline'));
+  assert.equal(browserErrors.length, expectedCount);
+  assert.ok(browserErrors.every((error) => error.includes('Applying inline style violates')));
+  await page.evaluate(() => {
+    window.__demoCspViolations = [];
+  });
+  browserErrors.splice(0);
+}
+
+test('hydrates the packed showcase, tracks the known Source-mode CSP gap, and keeps other interactions CSP-clean', async (t) => {
   const server = await startDemoServer(process.cwd());
   t.after(() => stopDemoServer(server.child));
   const browser = await chromium.launch({ headless: true });
@@ -215,6 +227,221 @@ test('hydrates the packed showcase and keeps its interactions CSP-clean', async 
   });
   await page.waitForFunction(() =>
     document.querySelector('[data-demo-markdown-value]')?.textContent?.includes('![dropped.png]'),
+  );
+
+  const primaryModifier = process.platform === 'darwin' ? 'Meta' : 'Control';
+  assert.deepEqual(await page.evaluate(() => window.__demoCspViolations), []);
+  assert.deepEqual(browserErrors, []);
+  await editor.getByRole('tab', { name: 'Source' }).click();
+  await editorContent.click();
+  await page.keyboard.press(`${primaryModifier}+A`);
+  await page.keyboard.insertText('[[docs:e|the editor contract]]');
+  await editor.getByRole('tab', { name: 'Edit' }).click();
+  await assertAndResetInlineStyleViolations(page, browserErrors, 1);
+  for (let index = 0; index < '|the editor contract]]'.length; index += 1) {
+    await editorContent.press('ArrowLeft');
+  }
+  await editorContent.press('Backspace');
+  await editorContent.press('e');
+  const completionTooltip = editor.locator('.cm-tooltip-autocomplete');
+  await completionTooltip.getByRole('listbox', { name: 'Completions' }).waitFor();
+  await page.keyboard.press('Enter');
+  const markdownValue = markdownDemo.locator('[data-demo-markdown-value]');
+  await page.waitForFunction(() =>
+    document
+      .querySelector('[data-demo-markdown-value]')
+      ?.textContent?.includes('[[docs:editor-contract|the editor contract]]'),
+  );
+  assert.doesNotMatch((await markdownValue.textContent()) ?? '', /\]\]\|the editor contract/);
+  await assertAndResetInlineStyleViolations(page, browserErrors, 0);
+
+  const shortTable = ['| Column A | Column B |', '| --- | --- |', '| Row 1 A | Row 1 B |'].join(
+    '\n',
+  );
+  await editor.getByRole('tab', { name: 'Source' }).click();
+  await editorContent.click();
+  await page.keyboard.press(`${primaryModifier}+A`);
+  await page.keyboard.insertText(shortTable);
+  await editor.getByRole('tab', { name: 'Edit' }).click();
+  await assertAndResetInlineStyleViolations(page, browserErrors, 0);
+  const addRow = editor.getByRole('button', { name: 'Add row', exact: true });
+  await addRow.scrollIntoViewIfNeeded();
+  const shellBeforeAddingRow = await editor
+    .locator('[data-testid="markdown-editor-shell"]')
+    .boundingBox();
+  assert.notEqual(shellBeforeAddingRow, null);
+  assert.ok(shellBeforeAddingRow.y > 0);
+  assert.ok(shellBeforeAddingRow.y + shellBeforeAddingRow.height <= page.viewportSize().height);
+  const previousLastRowCell = editor.locator(
+    '[data-table-cell="true"][data-row="1"][data-column="0"]',
+  );
+  const cellBeforeAddingRow = await previousLastRowCell.boundingBox();
+  await addRow.click();
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-table-cell="true"][data-row="2"]') !== null &&
+      document.querySelectorAll('[data-demo-rendered-markdown] tbody tr').length === 2,
+  );
+  const cellAfterAddingRow = await previousLastRowCell.boundingBox();
+  assert.notEqual(cellBeforeAddingRow, null);
+  assert.notEqual(cellAfterAddingRow, null);
+  assert.ok(
+    Math.abs(cellAfterAddingRow.y - cellBeforeAddingRow.y) <= 1,
+    `Adding a table row moved the previous row from ${cellBeforeAddingRow.y} to ${cellAfterAddingRow.y}.`,
+  );
+  assert.deepEqual(await page.evaluate(() => window.__demoCspViolations), []);
+  const newRowCell = editor.locator('[data-table-cell="true"][data-row="2"][data-column="1"]');
+  await newRowCell.click();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-table-cell="true"][data-row="2"][data-column="1"]')
+        ?.getAttribute('data-active-cell') === 'true',
+  );
+  assert.deepEqual(await page.evaluate(() => window.__demoCspViolations), []);
+  const cellBeforeTableInput = await newRowCell.boundingBox();
+  await page.keyboard.type('new row');
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-demo-rendered-markdown]')?.textContent?.includes('new row') &&
+      document.querySelector('[data-demo-markdown-value]')?.textContent?.includes('new row'),
+  );
+  const cellAfterTableInput = await newRowCell.boundingBox();
+  assert.notEqual(cellBeforeTableInput, null);
+  assert.notEqual(cellAfterTableInput, null);
+  assert.ok(
+    Math.abs(cellAfterTableInput.y - cellBeforeTableInput.y) <= 1,
+    `Table input moved the active cell from ${cellBeforeTableInput.y} to ${cellAfterTableInput.y}.`,
+  );
+  for (let index = 0; index < 'new row'.length; index += 1) {
+    await editorContent.press('Shift+ArrowLeft');
+  }
+  assert.equal(await editor.locator('.cm-markdown-table-cell-selected').count(), 0);
+  const cellBeforeShiftCrossing = await newRowCell.boundingBox();
+  await editorContent.press('Shift+ArrowLeft');
+  await editor.locator('.cm-markdown-table-cell-selected').nth(1).waitFor();
+  const cellAfterShiftCrossing = await newRowCell.boundingBox();
+  assert.equal(await editor.locator('.cm-markdown-table-cell-selected').count(), 2);
+  assert.notEqual(cellBeforeShiftCrossing, null);
+  assert.notEqual(cellAfterShiftCrossing, null);
+  assert.ok(
+    Math.abs(cellAfterShiftCrossing.y - cellBeforeShiftCrossing.y) <= 1,
+    `Shift selection crossing a cell moved it from ${cellBeforeShiftCrossing.y} to ${cellAfterShiftCrossing.y}.`,
+  );
+  await editorContent.press('ArrowRight');
+  await page.waitForFunction(
+    () =>
+      document.querySelectorAll('.cm-markdown-table-cell-selected').length === 0 &&
+      document
+        .querySelector('[data-table-cell="true"][data-row="2"][data-column="1"]')
+        ?.getAttribute('data-active-cell') === 'true',
+  );
+  assert.equal(await editor.locator('.cm-markdown-table-cell-active').count(), 1);
+
+  const otherNewRowCell = editor.locator('[data-table-cell="true"][data-row="2"][data-column="0"]');
+  await otherNewRowCell.click();
+  await page.keyboard.type('other row');
+  await page.waitForFunction(() =>
+    document.querySelector('[data-demo-markdown-value]')?.textContent?.includes('other row'),
+  );
+
+  const expectVerticalCellSelection = async ({ column, direction, startRow, targetRow, value }) => {
+    const startCell = editor.locator(
+      `[data-table-cell="true"][data-row="${startRow}"][data-column="${column}"]`,
+    );
+    const targetCell = editor.locator(
+      `[data-table-cell="true"][data-row="${targetRow}"][data-column="${column}"]`,
+    );
+    await startCell.selectText();
+    await editorContent.press(direction === 'ArrowDown' ? 'ArrowLeft' : 'ArrowRight');
+    for (let index = 0; index < value.length; index += 1) {
+      await editorContent.press(direction === 'ArrowDown' ? 'Shift+ArrowRight' : 'Shift+ArrowLeft');
+    }
+    assert.equal(await editor.locator('.cm-markdown-table-cell-selected').count(), 0);
+    await editorContent.press(`Shift+${direction}`);
+    await page.waitForFunction(
+      () => document.querySelectorAll('.cm-markdown-table-cell-selected').length === 2,
+    );
+    assert.equal(await startCell.getAttribute('aria-selected'), 'true');
+    assert.equal(await targetCell.getAttribute('aria-selected'), 'true');
+
+    const returnDirection = direction === 'ArrowDown' ? 'ArrowUp' : 'ArrowDown';
+    await editorContent.press(returnDirection);
+    await page.waitForFunction(
+      ({ expectedColumn, expectedRow }) =>
+        document.querySelectorAll('.cm-markdown-table-cell-selected').length === 0 &&
+        document
+          .querySelector(
+            `[data-table-cell="true"][data-row="${expectedRow}"][data-column="${expectedColumn}"]`,
+          )
+          ?.getAttribute('data-active-cell') === 'true',
+      { expectedColumn: column, expectedRow: startRow },
+    );
+    assert.equal(await editor.locator('.cm-markdown-table-cell-active').count(), 1);
+  };
+
+  for (const scenario of [
+    { column: 0, direction: 'ArrowDown', startRow: 1, targetRow: 2, value: 'Row 1 A' },
+    { column: 1, direction: 'ArrowDown', startRow: 1, targetRow: 2, value: 'Row 1 B' },
+    { column: 0, direction: 'ArrowUp', startRow: 2, targetRow: 1, value: 'other row' },
+    { column: 1, direction: 'ArrowUp', startRow: 2, targetRow: 1, value: 'new row' },
+  ]) {
+    await expectVerticalCellSelection(scenario);
+  }
+
+  const nativeSelectionState = () =>
+    editorContent.evaluate((element) => {
+      const selection = element.ownerDocument.getSelection();
+      return {
+        collapsed: selection?.isCollapsed ?? true,
+        text: selection?.toString() ?? '',
+      };
+    });
+
+  await previousLastRowCell.selectText();
+  await editorContent.press('ArrowRight');
+  await editorContent.press('Shift+ArrowLeft');
+  const partialSelectionBeforeDown = await nativeSelectionState();
+  await editorContent.press('Shift+ArrowDown');
+  assert.equal(await editor.locator('.cm-markdown-table-cell-selected').count(), 0);
+  const partialSelectionAfterDown = await nativeSelectionState();
+  assert.equal(partialSelectionAfterDown.collapsed, false);
+  assert.notEqual(partialSelectionAfterDown.text, partialSelectionBeforeDown.text);
+
+  await previousLastRowCell.selectText();
+  await editorContent.press('ArrowRight');
+  for (let index = 0; index < 'Row 1 A'.length; index += 1) {
+    await editorContent.press('Shift+ArrowLeft');
+  }
+  const reverseSelectionBeforeDown = await nativeSelectionState();
+  await editorContent.press('Shift+ArrowDown');
+  assert.equal(await editor.locator('.cm-markdown-table-cell-selected').count(), 0);
+  const reverseSelectionAfterDown = await nativeSelectionState();
+  assert.equal(reverseSelectionAfterDown.collapsed, false);
+  assert.notEqual(reverseSelectionAfterDown.text, reverseSelectionBeforeDown.text);
+
+  await newRowCell.selectText();
+  await editorContent.press('ArrowLeft');
+  for (let index = 0; index < 'new row'.length; index += 1) {
+    await editorContent.press('Shift+ArrowRight');
+  }
+  const forwardSelectionBeforeUp = await nativeSelectionState();
+  await editorContent.press('Shift+ArrowUp');
+  assert.equal(await editor.locator('.cm-markdown-table-cell-selected').count(), 0);
+  const forwardSelectionAfterUp = await nativeSelectionState();
+  assert.equal(forwardSelectionAfterUp.collapsed, false);
+  assert.notEqual(forwardSelectionAfterUp.text, forwardSelectionBeforeUp.text);
+
+  assert.match((await markdownValue.textContent()) ?? '', /Row 1 A/);
+  assert.match((await markdownValue.textContent()) ?? '', /new row/);
+  assert.match((await markdownValue.textContent()) ?? '', /other row/);
+  assert.match(
+    (await markdownDemo.locator('[data-demo-rendered-markdown]').textContent()) ?? '',
+    /Row 1 A/,
+  );
+  assert.match(
+    (await markdownDemo.locator('[data-demo-rendered-markdown]').textContent()) ?? '',
+    /new row/,
   );
 
   assert.deepEqual(await page.evaluate(() => window.__demoCspViolations), []);

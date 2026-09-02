@@ -84,11 +84,8 @@ export function parseMarkdownTable(source: string): MarkdownTable | null {
   }
 
   const rows = lines.map(parseRow);
-  const header = rows[0];
-  const delimiter = rows[1];
-  if (header === undefined || delimiter === undefined || header.cells.length === 0) {
-    return null;
-  }
+  const header = rows[0]!;
+  const delimiter = rows[1]!;
   if (
     delimiter.cells.length !== header.cells.length ||
     delimiter.cells.some((cell) => parseAlignment(cell.markdown) === null)
@@ -267,11 +264,7 @@ export function duplicateMarkdownTableColumns(
   }
   const insertionIndex = requiredLast(indices) + 1;
   const alignments = [...table.alignments];
-  alignments.splice(
-    insertionIndex,
-    0,
-    ...indices.map((index) => table.alignments[index] ?? 'none'),
-  );
+  alignments.splice(insertionIndex, 0, ...indices.map((index) => table.alignments[index]!));
   return rebuildColumns(
     table,
     (cells, kind) => {
@@ -381,7 +374,7 @@ export function setMarkdownTableAlignment(
 ): MarkdownTable {
   const selected = new Set(normalizedIndices(selectedColumnIndices, 0, table.columnCount - 1));
   const alignments = Array.from({ length: table.columnCount }, (_, index) =>
-    selected.has(index) ? alignment : (table.alignments[index] ?? 'none'),
+    selected.has(index) ? alignment : table.alignments[index]!,
   );
   const delimiterCells = padCells(table.delimiter.cells, table.columnCount, 'delimiter').map(
     (cell, index) =>
@@ -402,8 +395,8 @@ export function formatMarkdownTable(table: MarkdownTable): string {
     ...table.body.map((row) => padCells(row.cells, table.columnCount, 'data')),
   ];
   const widths = Array.from({ length: table.columnCount }, (_, index) => {
-    const contentWidth = Math.max(...dataRows.map((cells) => cells[index]?.markdown.length ?? 0));
-    return Math.max(contentWidth, minimumDelimiterWidth(table.alignments[index] ?? 'none'));
+    const contentWidth = Math.max(...dataRows.map((cells) => cells[index]!.markdown.length));
+    return Math.max(contentWidth, minimumDelimiterWidth(table.alignments[index]!));
   });
   const formatDataRow = (row: MarkdownTableRow): string =>
     canonicalFormattedRow(
@@ -414,7 +407,7 @@ export function formatMarkdownTable(table: MarkdownTable): string {
     );
   const delimiter = canonicalFormattedRow(
     table.delimiter.prefix,
-    widths.map((width, index) => delimiterMarker(table.alignments[index] ?? 'none', width)),
+    widths.map((width, index) => delimiterMarker(table.alignments[index]!, width)),
   );
   const lines = [formatDataRow(table.header), delimiter, ...table.body.map(formatDataRow)];
   return `${lines.join(table.lineEnding)}${table.trailingNewline ? table.lineEnding : ''}`;
@@ -519,7 +512,7 @@ export function parseMarkdownTableClipboard(text: string): MarkdownTableGrid {
   }
   if (containsUnquotedDelimiter(normalized, ',')) {
     const csv = parseDelimitedText(normalized, ',');
-    const width = csv.rows[0]?.length ?? 0;
+    const width = csv.rows[0]!.length;
     if (
       csv.valid &&
       width > 1 &&
@@ -647,18 +640,18 @@ function splitPrefix(line: string): { readonly prefix: string; readonly content:
   }
   const block = BLOCK_CONTAINER_PATTERN.exec(line);
   if (block !== null) {
-    return { prefix: block[1] ?? '', content: block[2] ?? '' };
+    return { prefix: block[1]!, content: block[2]! };
   }
   const list = LIST_CONTAINER_PATTERN.exec(line);
-  if (list !== null && (list[2] ?? '').includes('|')) {
-    return { prefix: list[1] ?? '', content: list[2] ?? '' };
+  if (list !== null && list[2]!.includes('|')) {
+    return { prefix: list[1]!, content: list[2]! };
   }
   return { prefix: '', content: line };
 }
 
 function parseCell(source: string): MarkdownTableCell {
-  const leading = /^\s*/.exec(source)?.[0] ?? '';
-  const trailing = /\s*$/.exec(source)?.[0] ?? '';
+  const leading = /^\s*/.exec(source)![0];
+  const trailing = /\s*$/.exec(source)![0];
   const contentEnd = Math.max(leading.length, source.length - trailing.length);
   return {
     markdown: source.slice(leading.length, contentEnd),
@@ -724,16 +717,11 @@ function minimumDelimiterWidth(alignment: MarkdownTableAlignment): number {
   return alignment === 'center' ? 5 : alignment === 'none' ? 3 : 4;
 }
 
-function blankBodyRow(
-  table: MarkdownTable,
-  template: MarkdownTableRow | undefined,
-): MarkdownTableRow {
-  const fallback = table.body[table.body.length - 1] ?? table.delimiter;
-  const style = template ?? fallback;
+function blankBodyRow(table: MarkdownTable, template: MarkdownTableRow): MarkdownTableRow {
   return {
-    prefix: continuationPrefix(style.prefix, table.header.prefix, table.delimiter.prefix),
-    leadingPipe: style.leadingPipe,
-    trailingPipe: style.trailingPipe,
+    prefix: continuationPrefix(template.prefix, table.header.prefix, table.delimiter.prefix),
+    leadingPipe: template.leadingPipe,
+    trailingPipe: template.trailingPipe,
     suffix: '',
     cells: Array.from({ length: table.columnCount }, () => canonicalCell('')),
   };
@@ -860,7 +848,7 @@ function parseDelimitedText(text: string, delimiter: string): ParsedDelimitedTex
   let valid = true;
 
   for (let index = 0; index < text.length; index += 1) {
-    const character = text[index] ?? '';
+    const character = text[index]!;
     if (quoted) {
       if (character === '"') {
         if (text[index + 1] === '"') {
@@ -964,7 +952,7 @@ function isEscaped(source: string, index: number): boolean {
 
 function findLastNonWhitespace(value: string): number {
   for (let index = value.length - 1; index >= 0; index -= 1) {
-    if (!/\s/u.test(value[index] ?? '')) {
+    if (!/\s/u.test(value[index]!)) {
       return index;
     }
   }

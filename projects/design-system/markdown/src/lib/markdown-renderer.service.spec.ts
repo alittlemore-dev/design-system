@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
@@ -147,6 +148,109 @@ describe('MarkdownRendererService', () => {
     expect(html).toContain('[[articles:unsafe]]');
     expect(html).not.toContain('<a');
   });
+
+  it('renders safe relative, mail, telephone, and titled links while exposing unsafe links as text', () => {
+    configureServerRenderer();
+
+    const html = renderer.render(
+      [
+        '[relative](/guide)',
+        '[mail](mailto:hello@example.com "Mail & title")',
+        '[phone](tel:+123)',
+        '[empty]()',
+        '[unsafe](file:///private/data)',
+      ].join(' '),
+      { wikiLinks: null },
+    );
+
+    expect(html).toContain('<a href="/guide">relative</a>');
+    expect(html).toContain('<a href="mailto:hello@example.com" title="Mail &amp; title">mail</a>');
+    expect(html).toContain('<a href="tel:+123">phone</a>');
+    expect(html).toContain('empty');
+    expect(html).toContain('unsafe');
+    expect(html).not.toContain('file:');
+  });
+
+  it('renders safe titled images and preserves escaped alt text when an image URI is rejected', () => {
+    configureServerRenderer();
+
+    const html = renderer.render(
+      '![safe & image](https://example.com/image.png "Image title") ![plain](./plain.png) ![unsafe <image>](mailto:image@example.com)',
+      { wikiLinks: null },
+    );
+
+    expect(html).toContain(
+      '<img src="https://example.com/image.png" alt="safe &amp; image" title="Image title">',
+    );
+    expect(html).toContain('<img src="./plain.png" alt="plain">');
+    expect(html).toContain('unsafe &lt;image&gt;');
+    expect(html).not.toContain('mailto:image@example.com');
+  });
+
+  it('fails closed to authored wiki text when resolution throws or returns an unsafe URI', () => {
+    configureServerRenderer();
+    const throwing = renderer.render('[[articles:throwing]]', {
+      wikiLinks: {
+        namespaces: [{ key: 'articles', label: 'Articles' }],
+        resolve: () => {
+          throw new Error('registry failed');
+        },
+      },
+    });
+    const unsafe = renderer.render('[[articles:unsafe]]', {
+      wikiLinks: {
+        namespaces: [{ key: 'articles', label: 'Articles' }],
+        resolve: () => ({ href: 'javascript:alert(1)', openIn: 'same-tab' }),
+      },
+    });
+
+    expect(throwing).toContain('[[articles:throwing]]');
+    expect(unsafe).toContain('[[articles:unsafe]]');
+    expect(`${throwing}${unsafe}`).not.toContain('<a');
+  });
+
+  it('renders safe content in a browser-like document without a default view', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        MarkdownRendererService,
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: DOCUMENT, useValue: { defaultView: null } },
+      ],
+    });
+    renderer = TestBed.inject(MarkdownRendererService);
+
+    expect(renderer.render('**visible**', { wikiLinks: null })).toContain(
+      '<strong>visible</strong>',
+    );
+  });
+
+  it('renders safe content when the host window cannot support DOM sanitization', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        MarkdownRendererService,
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        {
+          provide: DOCUMENT,
+          useValue: { defaultView: { document, Element: undefined } },
+        },
+      ],
+    });
+    renderer = TestBed.inject(MarkdownRendererService);
+
+    expect(renderer.render('**visible**', { wikiLinks: null })).toContain(
+      '<strong>visible</strong>',
+    );
+  });
+
+  function configureServerRenderer(): void {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [MarkdownRendererService, { provide: PLATFORM_ID, useValue: 'server' }],
+    });
+    renderer = TestBed.inject(MarkdownRendererService);
+  }
 });
 
 describe('Markdown wiki-link helpers', () => {
@@ -230,5 +334,63 @@ describe('Markdown wiki-link helpers', () => {
         availableTargets,
       }),
     ).toEqual(['articles:missing']);
+  });
+
+  it('ignores empty and malformed wiki targets while continuing to find later valid links', () => {
+    expect(
+      parseMarkdownWikiLinks(
+        '[[articles: ]] [[articles:|label]] [[1bad:key]] [[articles:valid| ]] [[articles:last]]',
+      ),
+    ).toEqual([
+      {
+        namespace: 'articles',
+        key: 'valid',
+        label: 'valid',
+        raw: '[[articles:valid| ]]',
+      },
+      {
+        namespace: 'articles',
+        key: 'last',
+        label: 'last',
+        raw: '[[articles:last]]',
+      },
+    ]);
+  });
+
+  it('treats an unmatched inline-code delimiter as protecting the rest of its line', () => {
+    expect(parseMarkdownWikiLinks('before `code [[articles:hidden]]')).toEqual([]);
+  });
+
+  it('requires the same fence marker and sufficient length before wiki parsing resumes', () => {
+    expect(
+      parseMarkdownWikiLinks(
+        [
+          '~~~~md',
+          '[[articles:first-hidden]]',
+          '```',
+          '[[articles:second-hidden]]',
+          '~~~',
+          '[[articles:third-hidden]]',
+          '~~~~',
+          '[[articles:visible]]',
+        ].join('\n'),
+      ),
+    ).toEqual([
+      {
+        namespace: 'articles',
+        key: 'visible',
+        label: 'visible',
+        raw: '[[articles:visible]]',
+      },
+    ]);
+  });
+
+  it('reports targets from namespaces absent from the available registry', () => {
+    expect(
+      findMissingMarkdownWikiLinkTargets({
+        markdown: '[[people:ada]]',
+        availableTargets: createMarkdownWikiLinkTargetLookup([]),
+      }),
+    ).toEqual(['people:ada']);
   });
 });

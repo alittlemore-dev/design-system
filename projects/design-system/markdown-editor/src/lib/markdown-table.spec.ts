@@ -14,6 +14,7 @@ import {
   insertMarkdownTableColumns,
   insertMarkdownTableRows,
   markdownTableSelectionToTsv,
+  markdownTableSelectionBounds,
   moveMarkdownTableColumns,
   moveMarkdownTableRows,
   parseMarkdownTable,
@@ -313,6 +314,154 @@ describe('Markdown table core', () => {
     const result = applyMarkdownTableGrid(table, 1, 0, grid);
 
     expect(serializeMarkdownTable(result)).toBe('| A |  |\n| --- | --- |\n| x | y |\n| z | w |');
+  });
+
+  it('treats non-positive insert counts and invalid duplicate or move indices as no-ops', () => {
+    const table = requiredTable('| A | B |\n| --- | --- |\n| 1 | 2 |');
+
+    expect(insertMarkdownTableRows(table, 1, 'after', 0)).toBe(table);
+    expect(insertMarkdownTableColumns(table, 1, 'after', -1)).toBe(table);
+    expect(duplicateMarkdownTableRows(table, [-1, 9, Number.NaN])).toBe(table);
+    expect(moveMarkdownTableRows(table, [-1, 9, 1.5], 0)).toBe(table);
+    expect(duplicateMarkdownTableColumns(table, [-1, 9, Number.NaN])).toBe(table);
+    expect(moveMarkdownTableColumns(table, [-1, 9, 1.5], 0)).toBe(table);
+  });
+
+  it('refuses to delete every semantic row because a table header is required', () => {
+    const table = requiredTable('| H |\n| --- |\n| value |');
+
+    expect(deleteMarkdownTableRows(table, [0, 1])).toEqual({
+      ok: false,
+      reason: 'table-required',
+    });
+  });
+
+  it('clears the header independently from unchanged body rows', () => {
+    const table = requiredTable('| H | V |\n| --- | --- |\n| one | two |');
+
+    expect(serializeMarkdownTable(clearMarkdownTableRows(table, [0]))).toBe(
+      '|  |  |\n| --- | --- |\n| one | two |',
+    );
+  });
+
+  it('clamps row insertion and movement gaps to the visible table boundaries', () => {
+    const table = requiredTable('| H |\n| --- |\n| one |\n| two |');
+
+    expect(serializeMarkdownTable(insertMarkdownTableRows(table, -10, 'before', 1))).toBe(
+      '|  |\n| --- |\n| H |\n| one |\n| two |',
+    );
+    expect(serializeMarkdownTable(moveMarkdownTableRows(table, [2], -10))).toBe(
+      '| two |\n| --- |\n| H |\n| one |',
+    );
+    expect(serializeMarkdownTable(moveMarkdownTableRows(table, [0], 99))).toBe(
+      '| one |\n| --- |\n| two |\n| H |',
+    );
+  });
+
+  it('clamps column insertion and movement gaps to the visible table boundaries', () => {
+    const table = requiredTable('| A | B | C |\n| --- | --- | --- |\n| 1 | 2 | 3 |');
+
+    expect(serializeMarkdownTable(insertMarkdownTableColumns(table, -10, 'before', 1))).toBe(
+      '|  | A | B | C |\n| --- | --- | --- | --- |\n|  | 1 | 2 | 3 |',
+    );
+    expect(serializeMarkdownTable(moveMarkdownTableColumns(table, [2], -10))).toBe(
+      '| C | A | B |\n| --- | --- | --- |\n| 3 | 1 | 2 |',
+    );
+    expect(serializeMarkdownTable(moveMarkdownTableColumns(table, [0], 99))).toBe(
+      '| B | C | A |\n| --- | --- | --- |\n| 2 | 3 | 1 |',
+    );
+  });
+
+  it('sorts rows with a missing selected column as stable empty values', () => {
+    const table = requiredTable('| H |\n| --- |\n| first |\n| second |');
+
+    expect(serializeMarkdownTable(sortMarkdownTableBody(table, 4, 'ascending', 'en'))).toBe(
+      '| H |\n| --- |\n| first |\n| second |',
+    );
+  });
+
+  it.each([
+    { alignment: 'left', marker: ':---' },
+    { alignment: 'center', marker: ':---:' },
+    { alignment: 'right', marker: '---:' },
+  ] as const)('aligns only the selected column to $alignment', ({ alignment, marker }) => {
+    const table = requiredTable('| A | B |\n| --- | --- |\n| 1 | 2 |');
+    const aligned = setMarkdownTableAlignment(table, [1], alignment);
+
+    expect(aligned.alignments).toEqual(['none', alignment]);
+    expect(serializeMarkdownTable(aligned)).toBe(`| A | B |\n| --- | ${marker} |\n| 1 | 2 |`);
+  });
+
+  it('clamps reverse out-of-range selections to the table rectangle', () => {
+    const table = requiredTable('| A | B |\n| --- | --- |\n| 1 | 2 |');
+
+    expect(
+      markdownTableSelectionBounds(table, range({ row: 99, column: 99 }, { row: -5, column: -5 })),
+    ).toEqual({ minRow: 0, maxRow: 1, minColumn: 0, maxColumn: 1 });
+  });
+
+  it('keeps an empty imported grid unchanged and applies negative origins to the header', () => {
+    const table = requiredTable('| A |\n| --- |\n| old |');
+
+    expect(applyMarkdownTableGrid(table, 0, 0, { rows: [] })).toBe(table);
+    expect(applyMarkdownTableGrid(table, 0, 0, { rows: [[]] })).toBe(table);
+    expect(serializeMarkdownTable(applyMarkdownTableGrid(table, -2, -3, { rows: [['new']] }))).toBe(
+      '| new |\n| --- |\n| old |',
+    );
+  });
+
+  it('normalizes clipboard line endings, drops one final blank row, and rejects malformed CSV shape', () => {
+    expect(parseMarkdownTableClipboard('a\tb\r\nc\td\r\n')).toEqual({
+      rows: [
+        ['a', 'b'],
+        ['c', 'd'],
+      ],
+    });
+    expect(parseMarkdownTableClipboard('"a"tail,b\nc,d')).toEqual({
+      rows: [['"a"tail,b'], ['c,d']],
+    });
+    expect(parseMarkdownTableClipboard('"unterminated,b\nc,d')).toEqual({
+      rows: [['"unterminated,b'], ['c,d']],
+    });
+  });
+
+  it('parses nested list containers and whitespace-only outer pipe suffixes losslessly', () => {
+    const source = '  1. A | B  \n     --- | ---  \n     one | two  ';
+
+    expect(serializeMarkdownTable(requiredTable(source))).toBe(source);
+  });
+
+  it('formats CRLF tables without dropping their trailing newline', () => {
+    const table = requiredTable('| A |\r\n| --- |\r\n| value |\r\n');
+
+    expect(formatMarkdownTable(table)).toBe('| A     |\r\n| ----- |\r\n| value |\r\n');
+  });
+
+  it('drops one final clipboard newline without dropping the preceding row', () => {
+    expect(parseMarkdownTableClipboard('first\nsecond\n')).toEqual({
+      rows: [['first'], ['second']],
+    });
+  });
+
+  it('uses the continuation prefix when a nested table header owns the list marker', () => {
+    const table = requiredTable('- | A |\n  | --- |');
+
+    expect(serializeMarkdownTable(insertMarkdownTableRows(table, 0, 'after', 1))).toBe(
+      '- | A |\n  | --- |\n  |  |',
+    );
+  });
+
+  it('pads a short delimiter when aligning a column introduced by an uneven body row', () => {
+    const table = requiredTable('| A |\n| --- |\n| one | two |');
+    const aligned = setMarkdownTableAlignment(table, [1], 'center');
+
+    expect(serializeMarkdownTable(aligned)).toBe('| A |\n| --- | :---: |\n| one | two |');
+  });
+
+  it('falls back to line-shaped paste when CSV starts valid but ends with an open quote', () => {
+    expect(parseMarkdownTableClipboard('a,b\n"unterminated')).toEqual({
+      rows: [['a,b'], ['"unterminated']],
+    });
   });
 });
 

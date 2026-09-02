@@ -22,11 +22,23 @@
 
 - New and migrated components must be standalone, use `OnPush` change detection, be accessible, remain SSR-safe and strict-CSP-compatible, and have behavioral test coverage.
 
+## Markdown behavior coverage
+
+- Before changing Markdown editor or preview behavior, inspect the task-relevant coverage. Fully
+  cover changed critical behavior across applicable modes, boundaries, input methods, selection
+  directions, undo and redo, malformed input, and real-browser-only interactions; test observable
+  behavior rather than private implementation details.
+
 ## Demo synchronization
 
 - Any change to the design system's public behavior, public APIs, styles, or web assets must include
   the corresponding repository demo update and relevant demo checks, using only the packed
   package's public entry points.
+
+## Bug tracking
+
+- Record every discovered repository bug as a finite, actionable checkbox in `docs/TODO.md`, and
+  mark it complete only after the fix and its regression coverage have been verified.
 
 ## Working artifacts
 

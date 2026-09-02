@@ -98,4 +98,13 @@
 - [x] Connect editor preview to the package Markdown renderer and Prism highlighter.
 - [x] Connect fullscreen behavior to the package modal page-scroll lock.
 - [x] Add regression coverage for minimal CodeMirror transactions, undo and redo, selection direction, history, scroll intent, IME behavior, keyboard navigation, focus restoration, CSP nonce propagation, SSR guards, and object-URL revocation.
+- [x] Prevent the owning page or scroll container from jumping while table rows are added and their cells are filled in the Markdown editor.
+- [x] Convert Shift+Arrow text selection crossing a Markdown-table boundary into whole-cell selection without moving the table in the viewport.
+- [x] Preserve an existing wiki-link alias after `|` when a target is selected from suggestions.
+- [x] Clear semantic Markdown-table cell selection when an unmodified arrow moves the caret to another cell.
+- [x] Make Shift+ArrowUp and Shift+ArrowDown whole-cell selection deterministic across every table column and direction.
+- [x] Preserve an existing escaped wiki-link alias separator (`\|`) when completing a target inside a Markdown table.
+- [x] Preserve external scroll while undoing or redoing Markdown-table content and structure changes.
+- [x] Ignore malformed table copy/cut events without clipboard data instead of reporting a browser error.
+- [ ] Eliminate the inline `style` attribute CSP violation from Markdown-editor Source mode without changing its placement or interactions.
 - [ ] Add ordinary-file attachment support with a separate transport and insertion contract, configurable picker, paste, and drop sources, exact MIME and size validation, sequential retryable queues, and non-image preview semantics.

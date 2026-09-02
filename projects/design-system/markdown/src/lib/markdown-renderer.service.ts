@@ -90,8 +90,9 @@ export function parseMarkdownWikiLinks(markdown: string): readonly MarkdownWikiL
   for (const line of lines) {
     const fence = /^ {0,3}(`{3,}|~{3,})/.exec(line);
     if (fence !== null) {
-      const marker = fence[1]?.[0];
-      const length = fence[1]?.length ?? 0;
+      const fenceText = fence[1]!;
+      const marker = fenceText[0];
+      const length = fenceText.length;
       if (fencedMarker === null && (marker === '`' || marker === '~')) {
         fencedMarker = marker;
         fencedLength = length;
@@ -217,10 +218,8 @@ function parseWikiLinksOutsideInlineCode(line: string): readonly MarkdownWikiLin
 function parseWikiLinkAtStart(source: string): MarkdownWikiLinkReference | null {
   const match = WIKI_LINK_AT_START_PATTERN.exec(source);
   if (match === null) return null;
-  const namespace = match[1] ?? '';
-  const rawKey = match[2] ?? '';
-  const separatorEscaped = rawKey.endsWith('\\');
-  const key = (separatorEscaped ? rawKey.slice(0, -1) : rawKey).trim();
+  const namespace = match[1]!;
+  const key = match[2]!.trim();
   if (key === '') return null;
   const raw = match[0];
   return {
@@ -253,7 +252,7 @@ function safeUri(value: string, allowedProtocols: ReadonlySet<string>): string |
 
 function containsUriControlCharacter(value: string): boolean {
   return [...value].some((character) => {
-    const codePoint = character.codePointAt(0) ?? 0;
+    const codePoint = character.codePointAt(0)!;
     return codePoint <= 0x1f || codePoint === 0x7f;
   });
 }

@@ -1,11 +1,13 @@
 import { history, redo, undo } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { EditorSelection, EditorState, StateEffect, Transaction } from '@codemirror/state';
-import { EditorView, lineNumbers } from '@codemirror/view';
+import { EditorView, lineNumbers, type ViewUpdate } from '@codemirror/view';
 import {
   markdownTableEditor,
+  markdownTableInputPreservesExternalScroll,
   markdownTableSelectionState,
   markdownTableSelectionTsv,
+  markdownTableUpdatePreservesExternalScroll,
   pasteMarkdownTableText,
   runMarkdownTableAction,
   type MarkdownTableEditorConfig,
@@ -310,6 +312,20 @@ describe('Markdown table editor extension', () => {
     expect(getComputedStyle(populatedCell).minWidth).toBe('0');
     expect(getComputedStyle(addRow).backgroundColor).toBe('rgba(0, 0, 0, 0)');
     expect(getComputedStyle(addRow).borderTopWidth).toBe('0px');
+  });
+
+  it('keeps the compact delimiter DOM mounted while a table cell is edited', () => {
+    const view = createView(VALID_TABLE, views);
+    const delimiter = view.dom.querySelector<HTMLElement>('.cm-markdown-table-delimiter-block');
+    const insertionPosition = Number(cell(view, 1, 0).dataset['cellFrom']);
+
+    view.dispatch({
+      changes: { from: insertionPosition, insert: 'X' },
+      annotations: Transaction.userEvent.of('input.type'),
+    });
+
+    expect(delimiter).not.toBeNull();
+    expect(view.dom.querySelector('.cm-markdown-table-delimiter-block')).toBe(delimiter);
   });
 
   it.each(DELIMITER_LAYOUT_CASES)(
@@ -2325,6 +2341,539 @@ describe('Markdown table editor extension', () => {
     expect(runMarkdownTableAction(view, 'format')).toBe(true);
     expect(view.state.doc.toString()).toMatch(/^\| .+ \|$/m);
   });
+
+  it.each(['insertBefore', 'insertAfter', 'duplicate', 'moveBefore', 'moveAfter'] as const)(
+    'applies the public %s action to a fully selected row',
+    (action) => {
+      const source = '| H | V |\n| --- | --- |\n| A | 2 |\n| B | 1 |';
+      const view = createView(source, views);
+      selectCells(view, [1, 0], [1, 1]);
+
+      expect(runMarkdownTableAction(view, action)).toBe(true);
+      expect(view.state.doc.toString()).not.toBe(source);
+      expect(undo(view)).toBe(true);
+      expect(view.state.doc.toString()).toBe(source);
+    },
+  );
+
+  it.each(['insertBefore', 'insertAfter', 'duplicate', 'moveBefore', 'moveAfter'] as const)(
+    'applies the public %s action to a fully selected column',
+    (action) => {
+      const source = '| A | B | C |\n| --- | --- | --- |\n| 1 | 2 | 3 |';
+      const view = createView(source, views);
+      selectCells(view, [0, 1], [1, 1]);
+
+      expect(runMarkdownTableAction(view, action)).toBe(true);
+      expect(view.state.doc.toString()).not.toBe(source);
+      expect(undo(view)).toBe(true);
+      expect(view.state.doc.toString()).toBe(source);
+    },
+  );
+
+  it('exposes public table actions only in contexts where their result is meaningful', () => {
+    const outside = createView('ordinary prose', views);
+    expect(markdownTableSelectionTsv(outside)).toBeNull();
+    expect(pasteMarkdownTableText(outside, 'value')).toBe(false);
+    expect(runMarkdownTableAction(outside, 'format')).toBe(false);
+
+    const view = createView(VALID_TABLE, views);
+    setCursor(view, VALID_TABLE.indexOf('A') + 1);
+    expect(pasteMarkdownTableText(view, 'x')).toBe(true);
+    expect(view.state.doc.toString()).toContain('| Ax | 2 |');
+    expect(runMarkdownTableAction(view, 'alignLeft')).toBe(false);
+
+    selectCells(view, [1, 0], [2, 1]);
+    expect(runMarkdownTableAction(view, 'sortAscending')).toBe(false);
+    expect(runMarkdownTableAction(view, 'copy')).toBe(true);
+    expect(runMarkdownTableAction(view, 'clear')).toBe(true);
+
+    const singleCell = createView(VALID_TABLE, views);
+    contextMenu(cell(singleCell, 1, 0));
+    expect(runMarkdownTableAction(singleCell, 'insertBefore')).toBe(false);
+
+    for (const { action, source, column } of [
+      {
+        action: 'sortAscending',
+        source: '| Name | Value |\n| --- | ---: |\n| B | 10 |\n| A | 2 |',
+        column: 0,
+      },
+      { action: 'alignLeft', source: VALID_TABLE, column: 0 },
+      { action: 'alignRight', source: VALID_TABLE, column: 0 },
+    ] as const) {
+      const actionable = createView(source, views);
+      selectCells(actionable, [0, column], [2, column]);
+      expect(runMarkdownTableAction(actionable, action)).toBe(true);
+    }
+  });
+
+  it('returns no clipboard text for an empty cell and pastes a multiline grid from an active cell', () => {
+    const view = createView('| H | V |\n| --- | --- |\n|  | old |', views);
+    contextMenu(cell(view, 1, 0));
+    expect(markdownTableSelectionTsv(view)).toBeNull();
+
+    setCursor(view, Number(cell(view, 1, 0).dataset['cellFrom']));
+    expect(pasteMarkdownTableText(view, 'first\nsecond')).toBe(true);
+    expect(view.state.doc.toString()).toBe(
+      '| H | V |\n| --- | --- |\n| first | old |\n| second |  |',
+    );
+  });
+
+  it('leaves a no-op boundary move open in the menu so the user can choose another action', () => {
+    const view = createView(VALID_TABLE, views);
+    contextMenu(cell(view, 0, 0));
+    const menu = requiredMenu(view);
+
+    menu.querySelector<HTMLButtonElement>('[aria-label="Move before · Row"]')!.click();
+
+    expect(view.state.doc.toString()).toBe(VALID_TABLE);
+    expect(view.dom.querySelector('[role="menu"]')).toBe(menu);
+  });
+
+  it('shows only range-safe commands for a rectangular partial-table selection', () => {
+    const source = '| A | B | C |\n| --- | --- | --- |\n| 1 | 2 | 3 |\n| 4 | 5 | 6 |';
+    const view = createView(source, views);
+    selectCells(view, [1, 0], [2, 1]);
+    contextMenu(cell(view, 1, 0));
+    const menu = requiredMenu(view);
+
+    expect(menu.querySelector('[aria-label^="Insert before"]')).toBeNull();
+    expect(menu.querySelector('[aria-label="Sort ascending"]')).toBeNull();
+    expect(menu.querySelector('[aria-label="Align center"]')).not.toBeNull();
+  });
+
+  it('keeps a multi-column sort request as a no-op in the menu', () => {
+    const source = '| A | B | C |\n| --- | --- | --- |\n| 2 | 1 | x |\n| 1 | 2 | y |';
+    const view = createView(source, views);
+    selectCells(view, [0, 0], [2, 1]);
+    contextMenu(cell(view, 1, 0));
+    const menu = requiredMenu(view);
+
+    menu.querySelector<HTMLButtonElement>('[aria-label="Sort ascending"]')!.click();
+
+    expect(view.state.doc.toString()).toBe(source);
+    expect(view.dom.querySelector('[role="menu"]')).toBe(menu);
+  });
+
+  it('ignores malformed or unrelated delegated table-control events', () => {
+    const view = createView(VALID_TABLE, views);
+    const original = view.state.doc.toString();
+    const unrelated = document.createElement('span');
+    const unknownControl = document.createElement('button');
+    unknownControl.dataset['tableAction'] = 'unknown';
+    const incompleteDrag = document.createElement('button');
+    incompleteDrag.dataset['tableAction'] = 'drag-row';
+    const incompleteAdd = document.createElement('button');
+    incompleteAdd.dataset['tableAction'] = 'add-row';
+    const incompleteCell = document.createElement('span');
+    incompleteCell.dataset['tableCell'] = 'true';
+    const invalidControl = document.createElement('button');
+    invalidControl.dataset['tableAction'] = 'add-row';
+    invalidControl.dataset['tableFrom'] = 'not-a-number';
+    const staleControl = document.createElement('button');
+    staleControl.dataset['tableAction'] = 'add-row';
+    staleControl.dataset['tableFrom'] = '999';
+    const invalidCell = document.createElement('span');
+    invalidCell.dataset['tableCell'] = 'true';
+    invalidCell.dataset['tableFrom'] = 'bad';
+    invalidCell.dataset['row'] = '0';
+    invalidCell.dataset['column'] = '0';
+    invalidCell.dataset['cellFrom'] = 'bad';
+    const staleEmptyCell = document.createElement('span');
+    staleEmptyCell.dataset['tableCell'] = 'true';
+    staleEmptyCell.dataset['emptyCell'] = 'true';
+    staleEmptyCell.dataset['tableFrom'] = '999';
+    staleEmptyCell.dataset['row'] = '0';
+    staleEmptyCell.dataset['column'] = '0';
+    staleEmptyCell.dataset['cellFrom'] = '0';
+    const staleDrag = document.createElement('button');
+    staleDrag.dataset['tableAction'] = 'drag-row';
+    staleDrag.dataset['tableFrom'] = '999';
+    staleDrag.dataset['index'] = '0';
+    view.contentDOM.append(
+      unrelated,
+      unknownControl,
+      incompleteDrag,
+      incompleteAdd,
+      incompleteCell,
+      invalidControl,
+      staleControl,
+      invalidCell,
+      staleEmptyCell,
+      staleDrag,
+    );
+
+    pointer(unrelated, 'pointerdown', { pointerType: 'mouse' });
+    pointer(unrelated, 'pointermove', { pointerType: 'mouse' });
+    pointer(unrelated, 'pointerup', { pointerType: 'mouse' });
+    pointer(unrelated, 'pointercancel', { pointerType: 'mouse' });
+    unrelated.click();
+    pointer(unknownControl, 'pointerdown', { pointerType: 'mouse' });
+    unknownControl.click();
+    pointer(incompleteDrag, 'pointerdown', { pointerType: 'mouse' });
+    incompleteAdd.click();
+    invalidControl.click();
+    staleControl.click();
+    pointer(incompleteCell, 'pointerdown', { pointerType: 'mouse' });
+    contextMenu(incompleteCell);
+    pointer(invalidCell, 'pointerdown', { pointerType: 'mouse' });
+    contextMenu(invalidCell);
+    pointer(staleEmptyCell, 'pointerdown', { pointerType: 'mouse' });
+    pointer(staleDrag, 'pointerdown', { pointerType: 'mouse' });
+    contextMenu(unrelated);
+
+    expect(view.state.doc.toString()).toBe(original);
+    expect(view.dom.querySelector('[role="menu"]')).toBeNull();
+  });
+
+  it('handles a delegated add control even when it has no rendered row anchor', () => {
+    const view = createView(VALID_TABLE, views);
+    const detachedControl = document.createElement('button');
+    detachedControl.dataset['tableAction'] = 'add-row';
+    detachedControl.dataset['tableFrom'] = '0';
+    view.contentDOM.append(detachedControl);
+
+    detachedControl.click();
+
+    expect(view.state.doc.toString().split('\n')).toHaveLength(5);
+  });
+
+  it('lets ordinary editor key bindings handle table-only keys outside a table', () => {
+    const view = createView('ordinary prose', views);
+    setCursor(view, 3);
+    jest.spyOn(view, 'moveVertically').mockReturnValue(EditorSelection.cursor(3));
+    const original = view.state.doc.toString();
+
+    for (const [keyValue, options] of [
+      ['Tab', {}],
+      ['Tab', { shiftKey: true }],
+      ['Enter', { shiftKey: true }],
+      ['ArrowLeft', {}],
+      ['ArrowRight', {}],
+      ['ArrowUp', {}],
+      ['ArrowDown', {}],
+      ['ArrowLeft', { shiftKey: true }],
+      ['ArrowRight', { shiftKey: true }],
+      ['ArrowUp', { shiftKey: true }],
+      ['ArrowDown', { shiftKey: true }],
+      ['Backspace', {}],
+      ['Delete', {}],
+      ['F10', { shiftKey: true }],
+      ['|', {}],
+    ] as const) {
+      key(view, keyValue, options);
+    }
+
+    expect(view.state.doc.toString()).toBe(original);
+    expect(view.dom.querySelector('[role="menu"]')).toBeNull();
+  });
+
+  it('does not escape a pipe typed with a modifier or during IME composition', () => {
+    const view = createView(VALID_TABLE, views);
+    setCursor(view, VALID_TABLE.indexOf('A') + 1);
+    const original = view.state.doc.toString();
+
+    key(view, '|', { metaKey: true });
+    key(view, '|', { ctrlKey: true });
+    key(view, '|', { altKey: true });
+    key(view, '|', { isComposing: true });
+
+    expect(view.state.doc.toString()).toBe(original);
+  });
+
+  it('opens the keyboard table menu directly from an active cell without a prior range', () => {
+    const view = createView(VALID_TABLE, views);
+    setCursor(view, VALID_TABLE.indexOf('A'));
+
+    expect(key(view, 'F10', { shiftKey: true }).defaultPrevented).toBe(true);
+    expect(requiredMenu(view)).not.toBeNull();
+    expect(view.state.field(markdownTableSelectionState).anchor).toEqual({ row: 1, column: 0 });
+  });
+
+  it('removes a table at the document end together with its preceding separator newline', () => {
+    const view = createView(`before\n${VALID_TABLE}`, views);
+    setCursor(view, view.state.doc.toString().indexOf('A'));
+
+    expect(runMarkdownTableAction(view, 'deleteTable')).toBe(true);
+    expect(view.state.doc.toString()).toBe('before');
+  });
+
+  it.each([
+    { label: 'Insert before · Row', row: 1, column: 0 },
+    { label: 'Insert after · Row', row: 1, column: 0 },
+    { label: 'Duplicate · Row', row: 1, column: 0 },
+    { label: 'Move before · Row', row: 1, column: 0 },
+    { label: 'Move after · Row', row: 1, column: 0 },
+    { label: 'Insert before · Column', row: 1, column: 1 },
+    { label: 'Insert after · Column', row: 1, column: 0 },
+    { label: 'Duplicate · Column', row: 1, column: 0 },
+    { label: 'Move before', row: 1, column: 1 },
+    { label: 'Move after', row: 1, column: 0 },
+    { label: 'Sort ascending', row: 1, column: 1 },
+    { label: 'Sort descending', row: 1, column: 0 },
+    { label: 'Align left', row: 1, column: 0 },
+    { label: 'Align center', row: 1, column: 0 },
+    { label: 'Align right', row: 1, column: 0 },
+  ])(
+    'runs the visible context-menu action $label and keeps it undoable',
+    ({ label, row, column }) => {
+      const source = '| H | V |\n| --- | --- |\n| A | 2 |\n| B | 1 |';
+      const view = createView(source, views);
+      contextMenu(cell(view, row, column));
+      const item = requiredMenu(view).querySelector<HTMLButtonElement>(`[aria-label="${label}"]`);
+
+      expect(item).not.toBeNull();
+      item!.click();
+
+      expect(view.state.doc.toString()).not.toBe(source);
+      expect(view.dom.querySelector('[role="menu"]')).toBeNull();
+      expect(undo(view)).toBe(true);
+      expect(view.state.doc.toString()).toBe(source);
+    },
+  );
+
+  it.each([
+    { label: 'Clear', expected: '| H | V |\n| --- | --- |\n|  | 2 |' },
+    { label: 'Delete', expected: '| H | V |\n| --- | --- |\n|  | 2 |' },
+  ])('applies the range-level $label command from the visible menu', ({ label, expected }) => {
+    const view = createView('| H | V |\n| --- | --- |\n| A | 2 |', views);
+    contextMenu(cell(view, 1, 0));
+
+    requiredMenu(view).querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!.click();
+
+    expect(view.state.doc.toString()).toBe(expected);
+    expect(view.dom.querySelector('[role="menu"]')).toBeNull();
+  });
+
+  it('formats and deletes a table through the visible menu commands', () => {
+    const source = 'before\n\nH | V\n--- | ---\nA | 2\n\nafter';
+    const view = createView(source, views);
+    contextMenu(cell(view, 1, 0));
+    requiredMenu(view).querySelector<HTMLButtonElement>('[aria-label="Format table"]')!.click();
+
+    expect(view.state.doc.toString()).toContain('| H   | V   |\n| --- | --- |\n| A   | 2   |');
+
+    contextMenu(cell(view, 1, 0));
+    requiredMenu(view).querySelector<HTMLButtonElement>('[aria-label="Delete table"]')!.click();
+
+    expect(view.state.doc.toString()).toBe('before\n\n\nafter');
+  });
+
+  it('supports ArrowUp, Home, and End roving focus in the table menu', () => {
+    const view = createView(VALID_TABLE, views);
+    contextMenu(cell(view, 1, 0));
+    const menu = requiredMenu(view);
+    const items = [...menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')];
+
+    items[0]!.focus();
+    expect(key(items[0]!, 'ArrowUp').defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(items.at(-1));
+    items[2]!.focus();
+    expect(key(items[2]!, 'ArrowUp').defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(items[1]);
+    expect(key(document.activeElement as HTMLElement, 'Home').defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(items[0]);
+    expect(key(items[0]!, 'End').defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(items.at(-1));
+    expect(key(document.activeElement as HTMLElement, 'Unidentified').defaultPrevented).toBe(false);
+  });
+
+  it('copies and cuts through the async Clipboard API, preserving a changed selection before cut resolves', async () => {
+    let resolveWrite: (() => void) | undefined;
+    const writeText = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveWrite = resolve;
+        }),
+    );
+    const originalClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    try {
+      const copyView = createView(VALID_TABLE, views);
+      contextMenu(cell(copyView, 1, 0));
+      requiredMenu(copyView).querySelector<HTMLButtonElement>('[aria-label="Copy"]')!.click();
+      expect(writeText).toHaveBeenCalledWith('A');
+      resolveWrite!();
+      await Promise.resolve();
+      expect(copyView.dom.querySelector('[role="menu"]')).toBeNull();
+
+      const cutView = createView(VALID_TABLE, views);
+      contextMenu(cell(cutView, 1, 0));
+      requiredMenu(cutView).querySelector<HTMLButtonElement>('[aria-label="Cut"]')!.click();
+      selectCells(cutView, [2, 0], [2, 0]);
+      resolveWrite!();
+      await Promise.resolve();
+      expect(cutView.state.doc.toString()).toBe(VALID_TABLE);
+      expect(cutView.dom.querySelector('[role="menu"]')).toBeNull();
+
+      const completedCutView = createView(VALID_TABLE, views);
+      contextMenu(cell(completedCutView, 1, 0));
+      requiredMenu(completedCutView)
+        .querySelector<HTMLButtonElement>('[aria-label="Cut"]')!
+        .click();
+      resolveWrite!();
+      await Promise.resolve();
+      expect(completedCutView.state.doc.toString()).toContain('|  | 2 |');
+      expect(completedCutView.dom.querySelector('[role="menu"]')).toBeNull();
+    } finally {
+      if (originalClipboard === undefined) {
+        Reflect.deleteProperty(navigator, 'clipboard');
+      } else {
+        Object.defineProperty(navigator, 'clipboard', originalClipboard);
+      }
+    }
+  });
+
+  it('reports an asynchronous Clipboard API rejection without closing the menu', async () => {
+    const originalClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: jest.fn().mockRejectedValue(new Error('denied')) },
+    });
+
+    try {
+      const view = createView(VALID_TABLE, views);
+      contextMenu(cell(view, 1, 0));
+      const menu = requiredMenu(view);
+      menu.querySelector<HTMLButtonElement>('[aria-label="Copy"]')!.click();
+      await Promise.resolve();
+
+      expect(menu.querySelector('[role="status"]')?.textContent).toBe('Clipboard unavailable');
+      expect(view.dom.querySelector('[role="menu"]')).toBe(menu);
+
+      menu.querySelector<HTMLButtonElement>('[aria-label="Copy"]')!.click();
+      await Promise.resolve();
+      expect(menu.querySelectorAll('[role="status"]')).toHaveLength(1);
+    } finally {
+      if (originalClipboard === undefined) {
+        Reflect.deleteProperty(navigator, 'clipboard');
+      } else {
+        Object.defineProperty(navigator, 'clipboard', originalClipboard);
+      }
+    }
+  });
+
+  it('handles textual paste events in an active cell and leaves file or empty clipboard events untouched', () => {
+    const view = createView(VALID_TABLE, views);
+    setCursor(view, VALID_TABLE.indexOf('A') + 1);
+
+    const textPaste = clipboardEvent('paste', 'x\ty');
+    view.contentDOM.dispatchEvent(textPaste);
+    expect(textPaste.defaultPrevented).toBe(true);
+    expect(view.state.doc.toString()).toContain('| x | y |');
+
+    const filePaste = clipboardEvent('paste', '', [{ kind: 'file' }]);
+    const beforeIgnoredPastes = view.state.doc.toString();
+    view.contentDOM.dispatchEvent(filePaste);
+    expect(view.state.doc.toString()).toBe(beforeIgnoredPastes);
+
+    const emptyPaste = clipboardEvent('paste', '');
+    view.contentDOM.dispatchEvent(emptyPaste);
+    expect(view.state.doc.toString()).toBe(beforeIgnoredPastes);
+
+    const missingClipboard = new Event('paste', { bubbles: true, cancelable: true });
+    view.contentDOM.dispatchEvent(missingClipboard);
+    expect(view.state.doc.toString()).toBe(beforeIgnoredPastes);
+
+    const outside = createView('outside', views);
+    setCursor(outside, outside.state.doc.length);
+    const outsidePaste = clipboardEvent('paste', 'text');
+    outside.contentDOM.dispatchEvent(outsidePaste);
+    expect(outside.state.doc.toString()).toBe('outsidetext');
+  });
+
+  it('copies a semantic selection and ignores copy or cut events without usable clipboard data', () => {
+    const view = createView(VALID_TABLE, views);
+    contextMenu(cell(view, 1, 0));
+    const writes: Record<string, string> = {};
+    const copy = new Event('copy', { bubbles: true, cancelable: true });
+    Object.defineProperty(copy, 'clipboardData', {
+      value: {
+        setData: (format: string, value: string): void => {
+          writes[format] = value;
+        },
+      },
+    });
+    view.contentDOM.dispatchEvent(copy);
+    expect(copy.defaultPrevented).toBe(true);
+    expect(writes['text/plain']).toBe('A');
+    expect(view.state.doc.toString()).toBe(VALID_TABLE);
+
+    const missingClipboard = new Event('cut', { bubbles: true, cancelable: true });
+    view.contentDOM.dispatchEvent(missingClipboard);
+    expect(view.state.doc.toString()).toBe(VALID_TABLE);
+
+    const outside = createView('outside', views);
+    const outsideCopy = new Event('copy', { bubbles: true, cancelable: true });
+    outside.contentDOM.dispatchEvent(outsideCopy);
+    expect(outside.state.doc.toString()).toBe('outside');
+  });
+
+  it('preserves remote and non-history annotations on a table content edit', () => {
+    const view = createView(VALID_TABLE, views);
+    const position = VALID_TABLE.indexOf('A') + 1;
+    setCursor(view, position);
+
+    view.dispatch({
+      changes: { from: position, insert: 'x' },
+      selection: EditorSelection.cursor(position + 1),
+      annotations: [Transaction.addToHistory.of(false), Transaction.remote.of(true)],
+      userEvent: 'input.type',
+    });
+
+    expect(view.state.doc.toString()).toContain('| Ax | 2 |');
+    expect(undo(view)).toBe(false);
+  });
+
+  it('keeps compact tables without outer pipes editable through the same paste contract', () => {
+    const source = 'H | V\n--- | ---\nA | B';
+    const view = createView(source, views);
+    setCursor(view, source.indexOf('A') + 1);
+
+    expect(pasteMarkdownTableText(view, 'x')).toBe(true);
+    expect(view.state.doc.toString()).toBe('H | V\n--- | ---\nAx | B');
+  });
+
+  it('classifies scroll preservation from observable editor updates and active-cell state', () => {
+    const source = `${VALID_TABLE}\n\noutside`;
+    const view = createView(source, views);
+    const decisions: boolean[] = [];
+    view.dispatch({
+      effects: StateEffect.appendConfig.of(
+        EditorView.updateListener.of((update: ViewUpdate) => {
+          decisions.push(markdownTableUpdatePreservesExternalScroll(update));
+        }),
+      ),
+    });
+    setCursor(view, source.indexOf('A') + 1);
+    expect(markdownTableInputPreservesExternalScroll(view.state)).toBe(true);
+    view.dispatch(view.state.replaceSelection('x'), {
+      annotations: Transaction.userEvent.of('input.type'),
+    });
+    expect(decisions.at(-1)).toBe(true);
+    expect(undo(view)).toBe(true);
+    expect(decisions.at(-1)).toBe(true);
+    expect(redo(view)).toBe(true);
+    expect(decisions.at(-1)).toBe(true);
+
+    setCursor(view, view.state.doc.toString().indexOf('outside'));
+    expect(markdownTableInputPreservesExternalScroll(view.state)).toBe(false);
+    view.dispatch(view.state.replaceSelection('y'), {
+      annotations: Transaction.userEvent.of('input.type'),
+    });
+    expect(decisions.at(-1)).toBe(false);
+
+    setCursor(view, view.state.doc.toString().indexOf('A'));
+    expect(runMarkdownTableAction(view, 'format')).toBe(true);
+    expect(decisions.at(-1)).toBe(true);
+    expect(undo(view)).toBe(true);
+    expect(decisions.at(-1)).toBe(true);
+    expect(redo(view)).toBe(true);
+    expect(decisions.at(-1)).toBe(true);
+  });
 });
 
 function createView(doc: string, views: EditorView[], withLineNumbers = false): EditorView {
@@ -2463,6 +3012,21 @@ function requiredMenu(view: EditorView): HTMLElement {
   return menu;
 }
 
+function clipboardEvent(
+  type: 'paste',
+  text: string,
+  items: readonly { readonly kind: string }[] = [],
+): Event {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'clipboardData', {
+    value: {
+      items,
+      getData: (format: string): string => (format === 'text/plain' ? text : ''),
+    },
+  });
+  return event;
+}
+
 function setCursor(view: EditorView, position: number): void {
   view.dispatch({ selection: { anchor: position } });
   view.focus();
@@ -2471,14 +3035,26 @@ function setCursor(view: EditorView, position: number): void {
 function key(
   target: EditorView | HTMLElement,
   keyValue: string,
-  options: { shiftKey?: boolean } = {},
+  options: {
+    shiftKey?: boolean;
+    metaKey?: boolean;
+    ctrlKey?: boolean;
+    altKey?: boolean;
+    isComposing?: boolean;
+  } = {},
 ): KeyboardEvent {
   const event = new KeyboardEvent('keydown', {
     key: keyValue,
     bubbles: true,
     cancelable: true,
     shiftKey: options.shiftKey,
+    metaKey: options.metaKey,
+    ctrlKey: options.ctrlKey,
+    altKey: options.altKey,
   });
+  if (options.isComposing === true) {
+    Object.defineProperty(event, 'isComposing', { value: true });
+  }
   (target instanceof EditorView ? target.contentDOM : target).dispatchEvent(event);
   return event;
 }

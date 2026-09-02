@@ -42,11 +42,7 @@ import type { SyntaxNode, Tree } from '@lezer/common';
 import {
   applyMarkdownTableGrid,
   classifyMarkdownTableSelection,
-  clearMarkdownTableColumns,
-  clearMarkdownTableRows,
   clearMarkdownTableSelection,
-  deleteMarkdownTableColumns,
-  deleteMarkdownTableRows,
   deleteMarkdownTableSelection,
   duplicateMarkdownTableColumns,
   duplicateMarkdownTableRows,
@@ -102,6 +98,7 @@ export interface MarkdownTableEditorPhrases {
 export interface MarkdownTableEditorConfig {
   readonly locale: string;
   readonly phrases: MarkdownTableEditorPhrases;
+  readonly captureScrollAnchor?: (view: EditorView, element: HTMLElement) => void;
 }
 
 export interface MarkdownTableEditorSelection {
@@ -720,7 +717,8 @@ class TableControlWidget extends WidgetType {
   }
 
   override updateDOM(dom: HTMLElement): boolean {
-    return dom instanceof HTMLButtonElement ? this.updateButton(dom) !== null : false;
+    this.updateButton(dom as HTMLButtonElement);
+    return true;
   }
 
   override ignoreEvent(): boolean {
@@ -790,10 +788,6 @@ class TableColumnEdgeSegmentWidget extends WidgetType {
 }
 
 class TableDelimiterWidget extends WidgetType {
-  override eq(): boolean {
-    return true;
-  }
-
   override get estimatedHeight(): number {
     return 0;
   }
@@ -815,10 +809,7 @@ const markdownTableCursorLayer = layer({
     if (!ownsTableCursor(view.state)) {
       return [];
     }
-    const active = activeTableCell(view.state);
-    if (active === null) {
-      return [];
-    }
+    const active = activeTableCell(view.state)!;
     const cell = renderedTableCell(view, active.layout.from, active.cell);
     if (cell === null) {
       return [];
@@ -894,15 +885,15 @@ class EmptyTableCellWidget extends WidgetType {
 
   override coordsAt(dom: HTMLElement): Rect {
     const bounds = dom.getBoundingClientRect();
-    const styles = dom.ownerDocument.defaultView?.getComputedStyle(dom);
-    const padding = cssPixels(styles?.paddingInlineStart ?? styles?.paddingLeft, 0);
-    const fontSize = cssPixels(styles?.fontSize, 16);
+    const styles = dom.ownerDocument.defaultView!.getComputedStyle(dom);
+    const padding = cssPixels(styles.paddingInlineStart, 0);
+    const fontSize = cssPixels(styles.fontSize, 16);
     const lineHeight = Math.min(
       bounds.height,
-      cssPixels(styles?.lineHeight, Math.max(fontSize * 1.2, 1)),
+      cssPixels(styles.lineHeight, Math.max(fontSize * 1.2, 1)),
     );
     const left =
-      styles?.direction === 'rtl'
+      styles.direction === 'rtl'
         ? Math.max(bounds.left, bounds.right - padding)
         : bounds.left + padding;
     const top = bounds.top + Math.max((bounds.height - lineHeight) / 2, 0);
@@ -919,17 +910,17 @@ class EmptyTableCellWidget extends WidgetType {
   }
 }
 
-function cssPixels(value: string | undefined, fallback: number): number {
-  const parsed = Number.parseFloat(value ?? '');
+function cssPixels(value: string, fallback: number): number {
+  const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function ownsTableCursor(state: EditorState): boolean {
-  const tableSelection = state.field(markdownTableSelectionState, false);
+  const tableSelection = state.field(markdownTableSelectionState);
   return (
     state.selection.ranges.length === 1 &&
     state.selection.main.empty &&
-    tableSelection?.anchor === null &&
+    tableSelection.anchor === null &&
     activeTableCell(state) !== null
   );
 }
@@ -987,7 +978,7 @@ function domTextCaretCoordinates(element: HTMLElement, offset: number): Rect | n
   for (let current = walker.nextNode(); current !== null; current = walker.nextNode()) {
     if (
       current instanceof Text &&
-      current.parentElement?.closest('.cm-markdown-table-control') === null
+      current.parentElement!.closest('.cm-markdown-table-control') === null
     ) {
       textNodes.push(current);
     }
@@ -1033,13 +1024,13 @@ function domTextCaretCoordinates(element: HTMLElement, offset: number): Rect | n
 
 function fallbackCellCaretCoordinates(element: HTMLElement, atEnd: boolean): Rect {
   const bounds = element.getBoundingClientRect();
-  const styles = element.ownerDocument.defaultView?.getComputedStyle(element);
-  const paddingStart = cssPixels(styles?.paddingInlineStart ?? styles?.paddingLeft, 0);
-  const paddingEnd = cssPixels(styles?.paddingInlineEnd ?? styles?.paddingRight, 0);
-  const fontSize = cssPixels(styles?.fontSize, 16);
+  const styles = element.ownerDocument.defaultView!.getComputedStyle(element);
+  const paddingStart = cssPixels(styles.paddingInlineStart, 0);
+  const paddingEnd = cssPixels(styles.paddingInlineEnd, 0);
+  const fontSize = cssPixels(styles.fontSize, 16);
   const lineHeight = Math.min(
     bounds.height,
-    cssPixels(styles?.lineHeight, Math.max(fontSize * 1.2, 1)),
+    cssPixels(styles.lineHeight, Math.max(fontSize * 1.2, 1)),
   );
   const left = atEnd ? bounds.right - paddingEnd : bounds.left + paddingStart;
   const top = bounds.top + Math.max((bounds.height - lineHeight) / 2, 0);
@@ -1091,6 +1082,22 @@ export function markdownTableEditor(config: MarkdownTableEditorConfig): Extensio
         { key: 'Enter', run: fromEditorContent((view) => navigateTableCell(view, 1, true)) },
         { key: 'Shift-Enter', run: fromEditorContent(insertTableHardBreak) },
         {
+          key: 'Shift-ArrowLeft',
+          run: fromEditorContent((view) => extendTableCellSelection(view, 'left')),
+        },
+        {
+          key: 'Shift-ArrowRight',
+          run: fromEditorContent((view) => extendTableCellSelection(view, 'right')),
+        },
+        {
+          key: 'Shift-ArrowUp',
+          run: fromEditorContent((view) => extendTableCellSelection(view, 'up')),
+        },
+        {
+          key: 'Shift-ArrowDown',
+          run: fromEditorContent((view) => extendTableCellSelection(view, 'down')),
+        },
+        {
           key: 'ArrowLeft',
           run: fromEditorContent((view) => navigateTableArrow(view, 'left')),
         },
@@ -1131,6 +1138,22 @@ export function markdownTableEditor(config: MarkdownTableEditorConfig): Extensio
       paste: (event, view) => handlePaste(event, view),
     }),
   ];
+}
+
+export function markdownTableUpdatePreservesExternalScroll(update: ViewUpdate): boolean {
+  return update.transactions.some(
+    (transaction) =>
+      transaction.docChanged &&
+      (transaction.annotation(tableStructureChange) === true ||
+        (isTableContentEdit(transaction) && activeTableCell(transaction.startState) !== null) ||
+        (isHistoryTransaction(transaction) &&
+          (activeTableCell(transaction.startState) !== null ||
+            activeTableCell(transaction.state) !== null))),
+  );
+}
+
+export function markdownTableInputPreservesExternalScroll(state: EditorState): boolean {
+  return activeTableCell(state) !== null;
 }
 
 class TableOutsidePointerPlugin {
@@ -1175,18 +1198,15 @@ export function pasteMarkdownTableText(view: EditorView, text: string): boolean 
   const grid = parseMarkdownTableClipboard(text);
   const singleCell = grid.rows.length === 1 ? grid.rows[0] : undefined;
   if (selected === null && singleCell?.length === 1) {
-    view.dispatch(view.state.replaceSelection(singleCell[0] ?? ''), {
+    view.dispatch(view.state.replaceSelection(singleCell[0]!), {
       annotations: Transaction.userEvent.of('input.paste'),
     });
     return true;
   }
-  const layout = selected?.layout ?? active?.layout;
-  if (layout === undefined) {
-    return false;
-  }
+  const layout = selected?.layout ?? active!.layout;
   const start =
     selected === null
-      ? requiredActiveCell(active).cell
+      ? active!.cell
       : {
           rowIndex: markdownTableSelectionBounds(layout.table, selected.selection).minRow,
           columnIndex: markdownTableSelectionBounds(layout.table, selected.selection).minColumn,
@@ -1521,7 +1541,7 @@ function tableCellClasses(
     'cm-markdown-table-cell',
     cell.rowIndex === 0 ? 'cm-markdown-table-cell-first-row' : '',
     cell.columnIndex === layout.table.columnCount - 1 ? 'cm-markdown-table-cell-last-column' : '',
-    `cm-markdown-table-align-${layout.table.alignments[cell.columnIndex] ?? 'none'}`,
+    `cm-markdown-table-align-${layout.table.alignments[cell.columnIndex]!}`,
     active ? 'cm-markdown-table-cell-active' : '',
     selected ? 'cm-markdown-table-cell-selected' : '',
     selected && cell.rowIndex === bounds?.minRow ? 'cm-markdown-table-selection-top' : '',
@@ -1807,6 +1827,12 @@ function handleClick(event: MouseEvent, view: EditorView): boolean {
   if (layout === null) {
     return false;
   }
+  const scrollAnchor = control
+    .closest<HTMLElement>('.cm-markdown-table-row')
+    ?.querySelector<HTMLElement>('[data-table-cell="true"]');
+  if (scrollAnchor !== null && scrollAnchor !== undefined) {
+    requiredConfig(view.state).captureScrollAnchor?.(view, scrollAnchor);
+  }
   event.preventDefault();
   const table =
     action === 'add-row'
@@ -1861,17 +1887,17 @@ function handleEditorKeyDown(event: KeyboardEvent, view: EditorView): boolean {
     const context = selectedTableContext(view.state);
     const active = activeTableCell(view.state);
     const layout = context?.layout ?? active?.layout;
-    const cell =
-      context === null
-        ? active?.cell
-        : {
-            rowIndex: markdownTableSelectionBounds(layout!.table, context.selection).minRow,
-            columnIndex: markdownTableSelectionBounds(layout!.table, context.selection).minColumn,
-            from: selectionCellPosition(layout!, context.selection),
-          };
-    if (layout === undefined || cell === undefined) {
+    if (layout === undefined) {
       return false;
     }
+    const cell =
+      context === null
+        ? active!.cell
+        : {
+            rowIndex: markdownTableSelectionBounds(layout.table, context.selection).minRow,
+            columnIndex: markdownTableSelectionBounds(layout.table, context.selection).minColumn,
+            from: selectionCellPosition(layout, context.selection),
+          };
     event.preventDefault();
     const effects: StateEffect<unknown>[] = [
       setMarkdownTableMenu.of({
@@ -1912,16 +1938,14 @@ function handleEditorKeyDown(event: KeyboardEvent, view: EditorView): boolean {
 
 function handleCopy(event: ClipboardEvent, view: EditorView, cut: boolean): boolean {
   const text = markdownTableSelectionTsv(view);
-  if (text === null || event.clipboardData === null) {
+  if (text === null || event.clipboardData === null || event.clipboardData === undefined) {
     return false;
   }
   event.preventDefault();
   event.clipboardData.setData('text/plain', text);
   if (cut) {
-    const context = selectedTableContext(view.state);
-    if (context !== null) {
-      deleteSelectedRange(view, context.layout, context.selection);
-    }
+    const context = selectedTableContext(view.state)!;
+    deleteSelectedRange(view, context.layout, context.selection);
   }
   return true;
 }
@@ -1993,8 +2017,8 @@ function finishTableDrag(view: EditorView, drag: TableDragState): boolean {
   }
   const length = drag.axis === 'row' ? layout.table.body.length + 1 : layout.table.columnCount;
   const moved = remapMovedIndices(drag.indices, drag.targetGap, length);
-  const first = moved[0] ?? 0;
-  const last = moved[moved.length - 1] ?? first;
+  const first = requiredValue(moved, 0);
+  const last = requiredValue(moved, moved.length - 1);
   const selection: MarkdownTableCellRange =
     drag.axis === 'row'
       ? {
@@ -2055,7 +2079,7 @@ function tableDragTarget(
   const tableFrom = numberData(handle, 'tableFrom');
   const index = numberData(handle, 'index');
   const action = handle.dataset['tableAction'];
-  const axis = action === 'drag-row' ? 'row' : action === 'drag-column' ? 'column' : null;
+  const axis = action === 'drag-row' ? 'row' : 'column';
   if (tableFrom !== drag.tableFrom || index === null || axis !== drag.axis) {
     return null;
   }
@@ -2181,7 +2205,7 @@ function menuGroup(item: TableMenuItem): string {
   if (item.action.startsWith('align')) {
     return 'alignment';
   }
-  return item.axis ?? 'range';
+  return item.axis!;
 }
 
 function runTableMenuItem(view: EditorView, item: TableMenuItem, menu: HTMLElement): void {
@@ -2304,11 +2328,6 @@ function runAxisAction(
       table = moveMarkdownTableRows(context.layout.table, indices, Math.max(0, first - 1));
     } else if (action === 'moveAfter') {
       table = moveMarkdownTableRows(context.layout.table, indices, last + 2);
-    } else if (action === 'clear') {
-      table = clearMarkdownTableRows(context.layout.table, indices);
-    } else if (action === 'delete') {
-      const result = deleteMarkdownTableRows(context.layout.table, indices);
-      table = result.ok ? result.table : null;
     }
   } else if (action === 'insertBefore') {
     table = insertMarkdownTableColumns(context.layout.table, first, 'before', 1);
@@ -2320,11 +2339,6 @@ function runAxisAction(
     table = moveMarkdownTableColumns(context.layout.table, indices, Math.max(0, first - 1));
   } else if (action === 'moveAfter') {
     table = moveMarkdownTableColumns(context.layout.table, indices, last + 2);
-  } else if (action === 'clear') {
-    table = clearMarkdownTableColumns(context.layout.table, indices);
-  } else if (action === 'delete') {
-    const result = deleteMarkdownTableColumns(context.layout.table, indices);
-    table = result.ok ? result.table : null;
   } else if (action === 'sortAscending' || action === 'sortDescending') {
     table =
       indices.length === 1
@@ -2353,7 +2367,14 @@ function navigateTableArrow(
   view: EditorView,
   direction: 'left' | 'right' | 'up' | 'down',
 ): boolean {
-  if (completionStatus(view.state) !== null || !view.state.selection.main.empty) {
+  if (completionStatus(view.state) !== null) {
+    return false;
+  }
+  const selected = selectedTableContext(view.state);
+  if (selected !== null) {
+    return navigateSelectedTableCells(view, selected, direction);
+  }
+  if (!view.state.selection.main.empty) {
     return false;
   }
   const recovery = nextEditableTablePosition(view.state, view.state.selection.main.head);
@@ -2436,6 +2457,147 @@ function navigateTableArrow(
     inline: 'nearest',
   });
   return true;
+}
+
+function navigateSelectedTableCells(
+  view: EditorView,
+  context: SelectionContext,
+  direction: 'left' | 'right' | 'up' | 'down',
+): boolean {
+  const head =
+    context.layout.semanticRows[context.selection.head.row]?.cells[context.selection.head.column];
+  if (head === undefined) {
+    return clearCellSelection(view);
+  }
+  const target = adjacentTableCell(context.layout, head, direction);
+  if (target === null) {
+    const position = direction === 'right' ? head.to : head.cursor;
+    view.dispatch({
+      selection: EditorSelection.cursor(position, direction === 'right' ? -1 : 0),
+      effects: setMarkdownTableSelection.of(emptySelection),
+      scrollIntoView: false,
+      userEvent: 'select',
+    });
+    return navigateTableArrow(view, direction);
+  }
+  const position = direction === 'left' ? target.to : target.cursor;
+  view.dispatch({
+    selection: EditorSelection.cursor(position, direction === 'left' ? -1 : 0),
+    effects: setMarkdownTableSelection.of(emptySelection),
+    scrollIntoView: false,
+    userEvent: 'select',
+  });
+  renderedTableCell(view, context.layout.from, target)?.scrollIntoView?.({
+    block: 'nearest',
+    inline: 'nearest',
+  });
+  return true;
+}
+
+function extendTableCellSelection(
+  view: EditorView,
+  direction: 'left' | 'right' | 'up' | 'down',
+): boolean {
+  if (completionStatus(view.state) !== null || view.state.selection.ranges.length !== 1) {
+    return false;
+  }
+  const semanticSelection = selectedTableContext(view.state);
+  const editorSelection = view.state.selection.main;
+  const anchor =
+    semanticSelection === null
+      ? editableTableCellAtPosition(view.state, editorSelection.anchor)
+      : null;
+  const head =
+    semanticSelection === null
+      ? editableTableCellAtPosition(view.state, editorSelection.head)
+      : null;
+  if (
+    semanticSelection === null &&
+    (anchor === null || head === null || anchor.layout.from !== head.layout.from)
+  ) {
+    return false;
+  }
+  const layout = semanticSelection?.layout ?? head!.layout;
+  const anchorPosition = semanticSelection?.selection.anchor ?? {
+    row: anchor!.cell.rowIndex,
+    column: anchor!.cell.columnIndex,
+  };
+  const headCell =
+    semanticSelection === null
+      ? head!.cell
+      : layout.semanticRows[semanticSelection.selection.head.row]?.cells[
+          semanticSelection.selection.head.column
+        ];
+  if (headCell === undefined) {
+    return false;
+  }
+  if (
+    semanticSelection === null &&
+    ((direction === 'left' && editorSelection.head > headCell.from) ||
+      (direction === 'right' && editorSelection.head < headCell.to))
+  ) {
+    return false;
+  }
+  if (semanticSelection === null && (direction === 'up' || direction === 'down')) {
+    const verticalTarget = editableTableCellAtPosition(
+      view.state,
+      view.moveVertically(editorSelection, direction === 'down').head,
+    );
+    const geometryCrossesRow =
+      verticalTarget !== null &&
+      verticalTarget.layout.from === layout.from &&
+      verticalTarget.cell.rowIndex !== headCell.rowIndex;
+    const wholeCellEndsAtDirectionalBoundary =
+      !editorSelection.empty &&
+      editorSelection.from <= headCell.from &&
+      editorSelection.to >= headCell.to &&
+      (direction === 'down'
+        ? editorSelection.head === headCell.to
+        : editorSelection.head === headCell.from);
+    if (editorSelection.empty ? !geometryCrossesRow : !wholeCellEndsAtDirectionalBoundary) {
+      return false;
+    }
+  }
+  const target = adjacentTableCell(layout, headCell, direction) ?? headCell;
+  view.dispatch({
+    selection: EditorSelection.cursor(
+      layout.semanticRows[anchorPosition.row]?.cells[anchorPosition.column]?.cursor ?? layout.from,
+    ),
+    effects: setMarkdownTableSelection.of({
+      tableFrom: layout.from,
+      anchor: anchorPosition,
+      head: { row: target.rowIndex, column: target.columnIndex },
+    }),
+    scrollIntoView: false,
+    userEvent: 'select',
+  });
+  renderedTableCell(view, layout.from, target)?.scrollIntoView?.({
+    block: 'nearest',
+    inline: 'nearest',
+  });
+  return true;
+}
+
+function adjacentTableCell(
+  layout: TableLayout,
+  cell: TableCellLayout,
+  direction: 'left' | 'right' | 'up' | 'down',
+): TableCellLayout | null {
+  let row = cell.rowIndex;
+  let column = cell.columnIndex;
+  if (direction === 'up' || direction === 'down') {
+    row += direction === 'up' ? -1 : 1;
+  } else {
+    column += direction === 'left' ? -1 : 1;
+    if (column < 0) {
+      row -= 1;
+      column = layout.table.columnCount - 1;
+    } else if (column >= layout.table.columnCount) {
+      row += 1;
+      column = 0;
+    }
+  }
+  return layout.semanticRows[row]?.cells[column] ?? null;
 }
 
 function leaveTableAbove(view: EditorView, layout: TableLayout, visualColumn: number): boolean {
@@ -3039,6 +3201,10 @@ function isTableContentEdit(transaction: Transaction): boolean {
   return transaction.isUserEvent('input') || transaction.isUserEvent('delete');
 }
 
+function isHistoryTransaction(transaction: Transaction): boolean {
+  return transaction.isUserEvent('undo') || transaction.isUserEvent('redo');
+}
+
 function repairTableCaretAfterDocumentChange(update: ViewUpdate): void {
   if (!update.docChanged) {
     return;
@@ -3411,15 +3577,11 @@ function buildRowLayout(
     });
   }
   const structuralRanges: { readonly from: number; readonly to: number }[] = [];
-  if (cells.length === 0) {
-    pushNonEmptyRange(structuralRanges, lineFrom, lineTo);
-  } else {
-    pushNonEmptyRange(structuralRanges, lineFrom, requiredValue(cells, 0).renderFrom);
-    cells.forEach((cell, index) => {
-      const next = cells[index + 1];
-      pushNonEmptyRange(structuralRanges, cell.renderTo, next?.renderFrom ?? lineTo);
-    });
-  }
+  pushNonEmptyRange(structuralRanges, lineFrom, requiredValue(cells, 0).renderFrom);
+  cells.forEach((cell, index) => {
+    const next = cells[index + 1];
+    pushNonEmptyRange(structuralRanges, cell.renderTo, next?.renderFrom ?? lineTo);
+  });
   return {
     semanticIndex,
     from: lineFrom,
@@ -3430,11 +3592,11 @@ function buildRowLayout(
 }
 
 function startsWithWhitespace(value: string): boolean {
-  return value.length > 0 && /\s/u.test(value[0] ?? '');
+  return value.length > 0 && /\s/u.test(value[0]!);
 }
 
 function endsWithWhitespace(value: string): boolean {
-  return value.length > 0 && /\s/u.test(value.at(-1) ?? '');
+  return value.length > 0 && /\s/u.test(value.at(-1)!);
 }
 
 function cellOffset(
@@ -3577,7 +3739,8 @@ function insertionTouchesHiddenStructure(state: EditorState, position: number): 
 
 function selectionCellPosition(layout: TableLayout, selection: MarkdownTableCellRange): number {
   const bounds = markdownTableSelectionBounds(layout.table, selection);
-  return layout.semanticRows[bounds.minRow]?.cells[bounds.minColumn]?.cursor ?? layout.from;
+  return requiredValue(requiredValue(layout.semanticRows, bounds.minRow).cells, bounds.minColumn)
+    .cursor;
 }
 
 function positionInsideSelection(
@@ -3707,41 +3870,17 @@ function serializeRowForPosition(row: MarkdownTableRow): string {
 }
 
 function requiredSemanticIndex(row: TableRowLayout): number {
-  if (row.semanticIndex === null) {
-    throw new Error('Delimiter row has no semantic index');
-  }
-  return row.semanticIndex;
+  return row.semanticIndex!;
 }
 
 function requiredCell(row: MarkdownTableRow, index: number): MarkdownTableRow['cells'][number] {
-  const cell = row.cells[index];
-  if (cell === undefined) {
-    throw new Error(`Missing table cell ${index}`);
-  }
-  return cell;
+  return row.cells[index]!;
 }
 
 function requiredValue<Value>(values: readonly Value[], index: number): Value {
-  const value = values[index];
-  if (value === undefined) {
-    throw new Error(`Missing value ${index}`);
-  }
-  return value;
-}
-
-function requiredActiveCell(
-  active: ReturnType<typeof activeTableCell>,
-): NonNullable<ReturnType<typeof activeTableCell>> {
-  if (active === null) {
-    throw new Error('Active table cell is required');
-  }
-  return active;
+  return values[index]!;
 }
 
 function requiredConfig(state: EditorState): MarkdownTableEditorConfig {
-  const config = state.facet(markdownTableEditorConfig);
-  if (config === null) {
-    throw new Error('Markdown table editor config is required');
-  }
-  return config;
+  return state.facet(markdownTableEditorConfig)!;
 }

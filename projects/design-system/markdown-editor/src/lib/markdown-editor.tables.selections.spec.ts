@@ -50,6 +50,7 @@ const MIXED_SOURCE = [
   'after alpha',
   'after beta',
 ].join('\n');
+const VERTICAL_SOURCE = ['| H1 | H2 |', '| --- | --- |', '| A1 | A2 |', '| B1 | B2 |'].join('\n');
 
 interface SelectionCase {
   readonly name: string;
@@ -270,6 +271,351 @@ describe('Markdown table mixed-selection rendering', () => {
     expect(cell(view, 1, 0).getAttribute('aria-selected')).toBe('true');
     expect(view.dom.querySelector('.cm-selectionLayer')).toBeNull();
   });
+
+  it('switches from text selection to whole-cell selection when Shift+Arrow crosses a cell', () => {
+    const view = createProductionLikeView(MIXED_SOURCE, views);
+    const firstCell = cell(view, 1, 0);
+    const from = Number(firstCell.dataset['cellFrom']);
+    view.dispatch({
+      selection: EditorSelection.range(from, from + 'A1'.length),
+      userEvent: 'select',
+    });
+
+    const event = key(view, 'ArrowRight', true);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(view.state.selection.main.empty).toBe(true);
+    expect(view.state.field(markdownTableSelectionState)).toEqual({
+      tableFrom: requiredIndex(MIXED_SOURCE, '| H1'),
+      anchor: { row: 1, column: 0 },
+      head: { row: 1, column: 1 },
+    });
+    expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(2);
+    expect(view.dom.querySelector('.cm-selectionLayer')).toBeNull();
+  });
+
+  it.each(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'] as const)(
+    'clears a Shift-created whole-cell selection and moves from its head on unmodified %s',
+    (keyValue) => {
+      const view = createProductionLikeView(VERTICAL_SOURCE, views);
+      const firstCell = cell(view, 1, 0);
+      const from = Number(firstCell.dataset['cellFrom']);
+      view.dispatch({
+        selection: EditorSelection.range(from, from + 'A1'.length),
+        userEvent: 'select',
+      });
+      key(view, 'ArrowRight', true);
+      expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(2);
+
+      const event = key(view, keyValue);
+      const expectedTarget = {
+        ArrowLeft: { column: 0, position: VERTICAL_SOURCE.indexOf('A1') + 2, row: 1 },
+        ArrowRight: { column: 0, position: VERTICAL_SOURCE.indexOf('B1'), row: 2 },
+        ArrowUp: { column: 1, position: VERTICAL_SOURCE.indexOf('H2'), row: 0 },
+        ArrowDown: { column: 1, position: VERTICAL_SOURCE.indexOf('B2'), row: 2 },
+      }[keyValue];
+      const targetCell = cell(view, expectedTarget.row, expectedTarget.column);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(view.state.doc.toString()).toBe(VERTICAL_SOURCE);
+      expect(view.state.selection.main.empty).toBe(true);
+      expect(view.state.selection.main.head).toBe(expectedTarget.position);
+      expect(view.state.field(markdownTableSelectionState)).toEqual({
+        tableFrom: null,
+        anchor: null,
+        head: null,
+      });
+      expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(0);
+      expect(view.dom.querySelectorAll('.cm-markdown-table-cell-active')).toHaveLength(1);
+      expect(targetCell.classList).toContain('cm-markdown-table-cell-active');
+    },
+  );
+
+  it.each([
+    {
+      anchor: [1, 1],
+      direction: 'ArrowLeft',
+      expectedPosition: VERTICAL_SOURCE.indexOf('H1'),
+      head: [0, 0],
+    },
+    {
+      anchor: [1, 0],
+      direction: 'ArrowRight',
+      expectedPosition: VERTICAL_SOURCE.indexOf('B2') + 'B2'.length,
+      head: [2, 1],
+    },
+  ] as const)(
+    'clears semantic selection without crossing the $direction outer horizontal boundary',
+    ({ anchor, direction, expectedPosition, head }) => {
+      const view = createProductionLikeView(VERTICAL_SOURCE, views);
+      selectCells(view, anchor, head);
+
+      const event = key(view, direction);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(view.state.selection.main.empty).toBe(true);
+      expect(view.state.selection.main.head).toBe(expectedPosition);
+      expect(view.state.field(markdownTableSelectionState).anchor).toBeNull();
+      expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(0);
+    },
+  );
+
+  it('clears semantic selection and leaves the table through its upper boundary', () => {
+    const source = `above\n${VERTICAL_SOURCE}`;
+    const view = createProductionLikeView(source, views);
+    selectCells(view, [1, 0], [0, 1]);
+
+    const event = key(view, 'ArrowUp');
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(view.state.selection.main).toEqual(EditorSelection.cursor(0));
+    expect(view.state.field(markdownTableSelectionState).anchor).toBeNull();
+    expect(view.dom.querySelectorAll('.cm-markdown-table-cell-active')).toHaveLength(0);
+  });
+
+  it('clears semantic selection before native movement through the lower boundary', () => {
+    const source = `${VERTICAL_SOURCE}\nbelow`;
+    const view = createProductionLikeView(source, views);
+    selectCells(view, [1, 0], [2, 1]);
+    const expectedPosition = source.indexOf('B2');
+
+    const event = key(view, 'ArrowDown');
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(view.state.selection.main).toEqual(EditorSelection.cursor(expectedPosition));
+    expect(view.state.field(markdownTableSelectionState).anchor).toBeNull();
+    expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(0);
+  });
+
+  it('extends a reverse text selection into the preceding whole cell', () => {
+    const view = createProductionLikeView(MIXED_SOURCE, views);
+    const secondCell = cell(view, 1, 1);
+    const from = Number(secondCell.dataset['cellFrom']);
+    view.dispatch({
+      selection: EditorSelection.range(from + 'A2'.length, from),
+      userEvent: 'select',
+    });
+
+    const event = key(view, 'ArrowLeft', true);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(view.state.field(markdownTableSelectionState)).toEqual({
+      tableFrom: requiredIndex(MIXED_SOURCE, '| H1'),
+      anchor: { row: 1, column: 1 },
+      head: { row: 1, column: 0 },
+    });
+    expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(2);
+  });
+
+  it('wraps a whole-cell Shift selection onto the first cell of the next row', () => {
+    const view = createProductionLikeView(MIXED_SOURCE, views);
+    const lastCell = cell(view, 1, 2);
+    const from = Number(lastCell.dataset['cellFrom']);
+    view.dispatch({
+      selection: EditorSelection.range(from, from + 'A3'.length),
+      userEvent: 'select',
+    });
+
+    const event = key(view, 'ArrowRight', true);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(view.state.field(markdownTableSelectionState)).toEqual({
+      tableFrom: requiredIndex(MIXED_SOURCE, '| H1'),
+      anchor: { row: 1, column: 2 },
+      head: { row: 2, column: 0 },
+    });
+    expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(6);
+  });
+
+  it('moves vertical whole-cell selection by one semantic row even if editor geometry skips', () => {
+    const view = createProductionLikeView(MIXED_SOURCE, views);
+    const firstCell = cell(view, 1, 0);
+    const from = Number(firstCell.dataset['cellFrom']);
+    view.dispatch({
+      selection: EditorSelection.range(from, from + 'A1'.length),
+      userEvent: 'select',
+    });
+    jest
+      .spyOn(view, 'moveVertically')
+      .mockReturnValue(EditorSelection.cursor(Number(cell(view, 2, 2).dataset['cellFrom'])));
+
+    const event = key(view, 'ArrowDown', true);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(view.state.field(markdownTableSelectionState)).toEqual({
+      tableFrom: requiredIndex(MIXED_SOURCE, '| H1'),
+      anchor: { row: 1, column: 0 },
+      head: { row: 2, column: 0 },
+    });
+  });
+
+  it.each([
+    { column: 0, direction: 'ArrowDown', startRow: 1, targetRow: 2, value: 'A1' },
+    { column: 1, direction: 'ArrowDown', startRow: 1, targetRow: 2, value: 'A2' },
+    { column: 0, direction: 'ArrowUp', startRow: 2, targetRow: 1, value: 'B1' },
+    { column: 1, direction: 'ArrowUp', startRow: 2, targetRow: 1, value: 'B2' },
+  ] as const)(
+    'extends a fully selected value with $direction from column $column without resolved geometry',
+    ({ column, direction, startRow, targetRow, value }) => {
+      const view = createProductionLikeView(VERTICAL_SOURCE, views);
+      const startCell = cell(view, startRow, column);
+      const from = Number(startCell.dataset['cellFrom']);
+      view.dispatch({
+        selection:
+          direction === 'ArrowDown'
+            ? EditorSelection.range(from, from + value.length)
+            : EditorSelection.range(from + value.length, from),
+        userEvent: 'select',
+      });
+      const delimiterPosition = Number(
+        cell(view, direction === 'ArrowDown' ? 2 : 1, column).dataset['cellFrom'],
+      );
+      jest.spyOn(view, 'moveVertically').mockReturnValue(EditorSelection.cursor(delimiterPosition));
+
+      const event = key(view, direction, true);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(view.state.doc.toString()).toBe(VERTICAL_SOURCE);
+      expect(view.state.selection.main.empty).toBe(true);
+      expect(view.state.field(markdownTableSelectionState)).toEqual({
+        tableFrom: 0,
+        anchor: { row: startRow, column },
+        head: { row: targetRow, column },
+      });
+      expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(2);
+    },
+  );
+
+  it.each([
+    { column: 0, direction: 'ArrowDown', row: 1, value: 'A1' },
+    { column: 1, direction: 'ArrowDown', row: 1, value: 'A2' },
+    { column: 0, direction: 'ArrowUp', row: 2, value: 'B1' },
+    { column: 1, direction: 'ArrowUp', row: 2, value: 'B2' },
+  ] as const)(
+    'keeps partial $direction text selection native in column $column when geometry is unresolved',
+    ({ column, direction, row, value }) => {
+      const view = createProductionLikeView(VERTICAL_SOURCE, views);
+      const startCell = cell(view, row, column);
+      const from = Number(startCell.dataset['cellFrom']);
+      const selection =
+        direction === 'ArrowDown'
+          ? EditorSelection.range(from + 1, from + value.length)
+          : EditorSelection.range(from + value.length - 1, from);
+      view.dispatch({ selection, userEvent: 'select' });
+      const delimiterPosition =
+        VERTICAL_SOURCE.indexOf('| --- |') + (column === 0 ? '| '.length : '| --- | '.length);
+      jest.spyOn(view, 'moveVertically').mockReturnValue(EditorSelection.cursor(delimiterPosition));
+
+      key(view, direction, true);
+
+      expect(view.state.field(markdownTableSelectionState).anchor).toBeNull();
+      expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(0);
+    },
+  );
+
+  it.each([
+    { direction: 'ArrowDown', row: 1, value: 'A2' },
+    { direction: 'ArrowUp', row: 2, value: 'B2' },
+  ] as const)(
+    'keeps a full reverse-direction $direction selection native',
+    ({ direction, row, value }) => {
+      const view = createProductionLikeView(VERTICAL_SOURCE, views);
+      const startCell = cell(view, row, 1);
+      const from = Number(startCell.dataset['cellFrom']);
+      const selection =
+        direction === 'ArrowDown'
+          ? EditorSelection.range(from + value.length, from)
+          : EditorSelection.range(from, from + value.length);
+      view.dispatch({ selection, userEvent: 'select' });
+      jest
+        .spyOn(view, 'moveVertically')
+        .mockReturnValue(
+          EditorSelection.cursor(
+            Number(cell(view, direction === 'ArrowDown' ? 2 : 1, 1).dataset['cellFrom']),
+          ),
+        );
+
+      key(view, direction, true);
+
+      expect(view.state.field(markdownTableSelectionState).anchor).toBeNull();
+      expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(0);
+    },
+  );
+
+  it('extends an upward Shift selection into the preceding semantic row', () => {
+    const view = createProductionLikeView(MIXED_SOURCE, views);
+    const lastCell = cell(view, 2, 2);
+    const from = Number(lastCell.dataset['cellFrom']);
+    view.dispatch({
+      selection: EditorSelection.range(from + 'B3'.length, from),
+      userEvent: 'select',
+    });
+    jest
+      .spyOn(view, 'moveVertically')
+      .mockReturnValue(EditorSelection.cursor(Number(cell(view, 1, 2).dataset['cellFrom'])));
+
+    const event = key(view, 'ArrowUp', true);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(view.state.field(markdownTableSelectionState)).toEqual({
+      tableFrom: requiredIndex(MIXED_SOURCE, '| H1'),
+      anchor: { row: 2, column: 2 },
+      head: { row: 1, column: 2 },
+    });
+  });
+
+  it('keeps native vertical text selection while it remains in the same cell', () => {
+    const view = createProductionLikeView(MIXED_SOURCE, views);
+    const firstCell = cell(view, 1, 0);
+    const from = Number(firstCell.dataset['cellFrom']);
+    view.dispatch({ selection: EditorSelection.cursor(from), userEvent: 'select' });
+    jest.spyOn(view, 'moveVertically').mockReturnValue(EditorSelection.cursor(from + 1));
+
+    key(view, 'ArrowDown', true);
+
+    expect(view.state.field(markdownTableSelectionState).anchor).toBeNull();
+  });
+
+  it('contains Shift selection at an outer table boundary', () => {
+    const view = createProductionLikeView(MIXED_SOURCE, views);
+    const firstCell = cell(view, 0, 0);
+    const from = Number(firstCell.dataset['cellFrom']);
+    view.dispatch({
+      selection: EditorSelection.range(from + 'H1'.length, from),
+      userEvent: 'select',
+    });
+
+    const event = key(view, 'ArrowLeft', true);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(view.state.selection.main.empty).toBe(true);
+    expect(view.state.field(markdownTableSelectionState)).toEqual({
+      tableFrom: requiredIndex(MIXED_SOURCE, '| H1'),
+      anchor: { row: 0, column: 0 },
+      head: { row: 0, column: 0 },
+    });
+    expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(1);
+  });
+
+  it('contains forward Shift selection at the final table boundary', () => {
+    const view = createProductionLikeView(MIXED_SOURCE, views);
+    const lastCell = cell(view, 2, 2);
+    const from = Number(lastCell.dataset['cellFrom']);
+    view.dispatch({
+      selection: EditorSelection.range(from, from + 'B3'.length),
+      userEvent: 'select',
+    });
+
+    const event = key(view, 'ArrowRight', true);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(view.state.selection.main.empty).toBe(true);
+    expect(view.state.field(markdownTableSelectionState)).toEqual({
+      tableFrom: requiredIndex(MIXED_SOURCE, '| H1'),
+      anchor: { row: 2, column: 2 },
+      head: { row: 2, column: 2 },
+    });
+  });
 });
 
 function buildSelectionCases(source: string): readonly SelectionCase[] {
@@ -426,11 +772,16 @@ function createProductionLikeView(doc: string, views: EditorView[]): EditorView 
   return view;
 }
 
-function key(view: EditorView, keyValue: 'Backspace' | 'Delete'): KeyboardEvent {
+function key(
+  view: EditorView,
+  keyValue: 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown' | 'Backspace' | 'Delete',
+  shiftKey = false,
+): KeyboardEvent {
   const event = new KeyboardEvent('keydown', {
     key: keyValue,
     bubbles: true,
     cancelable: true,
+    shiftKey,
   });
   view.contentDOM.dispatchEvent(event);
   return event;

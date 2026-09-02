@@ -22,9 +22,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subscription, defer, take, throwIfEmpty } from 'rxjs';
 import {
-  acceptCompletion,
   closeBracketsKeymap,
-  completionStatus,
   nextSnippetField,
   prevSnippetField,
   snippet,
@@ -62,7 +60,6 @@ import {
   MarkdownTransactionResult,
   applyMarkdownCommandTransaction,
   autoCloseMarkdownFenceTransaction,
-  continueMarkdownBlockTransaction,
   findMarkdownEditorCommand,
   formatMarkdownShortcut,
   indentMarkdownLinesTransaction,
@@ -72,7 +69,12 @@ import {
   markdownEditorFoundationExtensions,
 } from './markdown-editor.extensions';
 import { markdownPresentation } from './markdown-editor.presentation';
-import { markdownTableEditor, type MarkdownTableEditorPhrases } from './markdown-editor.tables';
+import {
+  markdownTableEditor,
+  markdownTableInputPreservesExternalScroll,
+  markdownTableUpdatePreservesExternalScroll,
+  type MarkdownTableEditorPhrases,
+} from './markdown-editor.tables';
 import { WikiLinkCompletionData, setWikiLinkCompletionData } from './markdown-editor.wiki-links';
 
 type AuthoringMode = 'edit' | 'source';
@@ -214,6 +216,19 @@ interface ExternalScrollSnapshot {
   left: number;
 }
 
+interface TableScrollSnapshot {
+  external: ExternalScrollSnapshot;
+  anchor: TableScrollAnchor;
+  anchorTop: number;
+  anchorLeft: number;
+}
+
+interface TableScrollAnchor {
+  tableFrom: string;
+  row: string;
+  column: string;
+}
+
 interface FullscreenSnapshot {
   focusedElement: Element | null;
   externalScroll: ExternalScrollSnapshot | null;
@@ -304,9 +319,12 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   private renderedPreviewValue = '';
   private renderedPreviewDocument = '';
   private renderedPreviewActive = false;
+  private tableInputScrollSnapshot: TableScrollSnapshot | null = null;
+  private pendingTableScrollSnapshot: TableScrollSnapshot | null = null;
+  private tableScrollRestoreGeneration = 0;
   private readonly editorScrollMouseDownListener = (event: MouseEvent): void => {
-    const view = this.editorView;
-    if (view === null || event.target !== view.scrollDOM) {
+    const view = this.editorView!;
+    if (event.target !== view.scrollDOM) {
       return;
     }
     this.handleEditorMouseDown(event, view);
@@ -377,11 +395,10 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   protected readonly imagePickerInteractionsEnabled = computed(
     () => this.imagePickerEnabled() && !this.imageInteractionsDisabled(),
   );
-  protected readonly acceptedImageMimeTypes = computed(
-    () =>
-      this.imageConfig()
-        ?.upload?.acceptedMimeTypes.filter((mimeType) => mimeType.startsWith('image/'))
-        .join(',') ?? '',
+  protected readonly acceptedImageMimeTypes = computed(() =>
+    this.imageConfig()!
+      .upload!.acceptedMimeTypes.filter((mimeType) => mimeType.startsWith('image/'))
+      .join(','),
   );
   protected readonly previewHtml = computed(() => {
     const rendered = this.markdownRenderer.render(this.internalValue(), {
@@ -466,19 +483,12 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
         )
         .subscribe({
           next: (groups) => {
-            if (this.wikiLinks() !== wikiLinks) {
-              return;
-            }
             this.updateWikiLinkCompletionData({
               namespaces: wikiLinks.namespaces,
               groups,
             });
           },
-          error: () => {
-            if (this.wikiLinks() === wikiLinks) {
-              this.wikiLinkRegistryUnavailable.set(true);
-            }
-          },
+          error: () => this.wikiLinkRegistryUnavailable.set(true),
         });
       onCleanup(() => subscription.unsubscribe());
     });
@@ -508,6 +518,10 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   ngAfterViewChecked(): void {
+    const pendingTableScrollSnapshot = this.pendingTableScrollSnapshot;
+    this.pendingTableScrollSnapshot = null;
+    this.restoreTableScroll(pendingTableScrollSnapshot);
+
     const previewConfig = this.imageConfig()?.preview ?? null;
     const previewRevision = previewConfig?.kind === 'blob' ? previewConfig.revision : null;
     const value = this.internalValue();
@@ -561,6 +575,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
     if (mode === this.mode()) {
       return;
     }
+    this.cancelTableScrollRestore();
     const externalScroll = this.captureExternalScroll();
     if (mode === 'preview') {
       this.restoreEditorFocus = this.editorView?.hasFocus ?? false;
@@ -582,14 +597,8 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   protected onModeTabKeydown(event: KeyboardEvent): void {
-    const target = event.currentTarget;
-    if (!(target instanceof HTMLButtonElement)) {
-      return;
-    }
-    const tablist = target.parentElement;
-    if (tablist === null) {
-      return;
-    }
+    const target = event.currentTarget as HTMLButtonElement;
+    const tablist = target.parentElement!;
     const tabs = Array.from(tablist.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
     const currentIndex = tabs.indexOf(target);
     const nextIndex = modeTabIndex(event.key, currentIndex, tabs.length);
@@ -598,7 +607,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
     }
     event.preventDefault();
     event.stopPropagation();
-    tabs[nextIndex]?.focus();
+    tabs[nextIndex]!.focus();
   }
 
   protected onContainerKeydown(event: KeyboardEvent): void {
@@ -641,14 +650,8 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   protected onToolbarKeydown(event: KeyboardEvent): void {
-    const target = event.currentTarget;
-    if (!(target instanceof HTMLButtonElement)) {
-      return;
-    }
-    const toolbar = target.closest<HTMLElement>('[role="toolbar"]');
-    if (toolbar === null) {
-      return;
-    }
+    const target = event.currentTarget as HTMLButtonElement;
+    const toolbar = target.closest<HTMLElement>('[role="toolbar"]')!;
     const buttons = Array.from(
       toolbar.querySelectorAll<HTMLButtonElement>('[data-markdown-command]:not(:disabled)'),
     );
@@ -661,14 +664,11 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
     buttons.forEach((button, index) => {
       button.tabIndex = index === nextIndex ? 0 : -1;
     });
-    buttons[nextIndex]?.focus();
+    buttons[nextIndex]!.focus();
   }
 
   protected executeToolbarCommand(command: MarkdownEditorCommandDefinition): void {
-    const view = this.editorView;
-    if (view === null || command.id === 'togglePreview') {
-      return;
-    }
+    const view = this.editorView!;
     const handled = this.executeCommand(command.id, view);
     if (handled && command.id !== 'search' && command.id !== 'image') {
       this.focusEditor(view);
@@ -688,12 +688,9 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   protected onShortcutsKeydown(event: KeyboardEvent): void {
-    const summary = event.currentTarget;
-    if (!(summary instanceof HTMLElement)) {
-      return;
-    }
-    const details = summary.parentElement;
-    if (event.key !== 'Escape' || !(details instanceof HTMLDetailsElement) || !details.open) {
+    const summary = event.currentTarget as HTMLElement;
+    const details = summary.parentElement as HTMLDetailsElement;
+    if (event.key !== 'Escape' || !details.open) {
       return;
     }
     event.preventDefault();
@@ -715,10 +712,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
     if (!this.imagePickerInteractionsEnabled()) {
       return;
     }
-    const input = event.currentTarget;
-    if (!(input instanceof HTMLInputElement)) {
-      return;
-    }
+    const input = event.currentTarget as HTMLInputElement;
     const insertionPosition = this.pendingImageInsertionPosition ?? this.currentCursor();
     this.pendingImageInsertionPosition = null;
     this.queueImageUploads(Array.from(input.files ?? []), insertionPosition);
@@ -797,10 +791,6 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
       EditorView.scrollMargins.of(() => this.editorScrollMargins()),
       keymap.of([
         {
-          key: 'Enter',
-          run: (view) => this.applyEnter(view),
-        },
-        {
           key: 'Tab',
           run: (view) => nextSnippetField(view) || this.indentSelection(view, 'more'),
         },
@@ -815,6 +805,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
       ]),
       EditorView.domEventHandlers({
         mousedown: (event, view) => this.handleEditorMouseDown(event, view),
+        beforeinput: (_event, view) => this.prepareTableInputScroll(view),
         keydown: (event, view) => this.handleEditorKeydown(event, view),
         keyup: (event, view) => this.handleEditorKeyup(event, view),
         paste: (event, view) => this.handlePaste(event, view),
@@ -826,20 +817,16 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   private editorScrollMargins(): Pick<Rect, 'top' | 'bottom'> {
-    const browserWindow = this.editorShell.nativeElement.ownerDocument.defaultView;
-    let topDisplacement = 0;
-    let bottomDisplacement = 0;
-    if (browserWindow !== null) {
-      const resolvedTop = Number.parseFloat(
-        browserWindow.getComputedStyle(this.editorHeader.nativeElement).top,
-      );
-      const resolvedBottom = Number.parseFloat(
-        browserWindow.getComputedStyle(this.editorFooter.nativeElement).bottom,
-      );
-      topDisplacement = Number.isFinite(resolvedTop) && resolvedTop > 0 ? resolvedTop : 0;
-      bottomDisplacement =
-        Number.isFinite(resolvedBottom) && resolvedBottom > 0 ? resolvedBottom : 0;
-    }
+    const browserWindow = this.editorShell.nativeElement.ownerDocument.defaultView!;
+    const resolvedTop = Number.parseFloat(
+      browserWindow.getComputedStyle(this.editorHeader.nativeElement).top,
+    );
+    const resolvedBottom = Number.parseFloat(
+      browserWindow.getComputedStyle(this.editorFooter.nativeElement).bottom,
+    );
+    const topDisplacement = Number.isFinite(resolvedTop) && resolvedTop > 0 ? resolvedTop : 0;
+    const bottomDisplacement =
+      Number.isFinite(resolvedBottom) && resolvedBottom > 0 ? resolvedBottom : 0;
     return {
       top: this.editorHeader.nativeElement.offsetHeight + topDisplacement,
       bottom: this.editorFooter.nativeElement.offsetHeight + bottomDisplacement,
@@ -847,6 +834,8 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   private handleEditorUpdate(update: ViewUpdate): void {
+    const tableInputScrollSnapshot = this.tableInputScrollSnapshot;
+    this.tableInputScrollSnapshot = null;
     if (!update.changes.empty && this.uploads().length > 0) {
       this.uploads.update((uploads) =>
         uploads.map((upload) => ({
@@ -858,12 +847,35 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
     if (!update.docChanged || this.syncingInput) {
       return;
     }
+    const externalScroll = markdownTableUpdatePreservesExternalScroll(update)
+      ? (tableInputScrollSnapshot ?? this.captureTableScroll(update.view))
+      : null;
+    if (externalScroll === null) {
+      this.cancelTableScrollRestore();
+    }
+    this.pendingTableScrollSnapshot = externalScroll;
     const value = update.state.doc.toString();
     this.internalValue.set(value);
     this.valueChange.emit(value);
+    this.restoreTableScroll(externalScroll);
+  }
+
+  private captureTableInputScroll(view: EditorView, anchor?: HTMLElement): boolean {
+    if (anchor === undefined && !markdownTableInputPreservesExternalScroll(view.state)) {
+      this.tableInputScrollSnapshot = null;
+    } else if (this.tableInputScrollSnapshot === null) {
+      this.tableInputScrollSnapshot = this.captureTableScroll(view, anchor);
+    }
+    return false;
+  }
+
+  private prepareTableInputScroll(view: EditorView, anchor?: HTMLElement): boolean {
+    this.cancelTableScrollRestore();
+    return this.captureTableInputScroll(view, anchor);
   }
 
   private handleEditorMouseDown(event: MouseEvent, view: EditorView): boolean {
+    this.cancelTableScrollRestore();
     if (event.button !== 0 || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {
       return false;
     }
@@ -883,6 +895,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   private handleEditorKeydown(event: KeyboardEvent, view: EditorView): boolean {
+    this.prepareTableInputScroll(view);
     if (this.consumeComposingEditorShortcut(event)) {
       return true;
     }
@@ -899,6 +912,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   private handleEditorKeyup(event: KeyboardEvent, view: EditorView): boolean {
+    this.tableInputScrollSnapshot = null;
     if (event.isComposing || (event.key !== '`' && event.key !== '~')) {
       return false;
     }
@@ -946,10 +960,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
       command,
       view.state.doc.toString(),
       editorSelections(view),
-    );
-    if (result === null) {
-      return false;
-    }
+    )!;
     this.dispatchTransaction(view, result);
     return true;
   }
@@ -960,10 +971,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
         command,
         view.state.doc.toString(),
         editorSelections(view),
-      );
-      if (result === null) {
-        return false;
-      }
+      )!;
       this.dispatchTransaction(view, result);
       return true;
     }
@@ -975,10 +983,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
         command,
         view.state.doc.toString(),
         editorSelections(view),
-      );
-      if (result === null) {
-        return false;
-      }
+      )!;
       this.dispatchTransaction(view, result);
       return true;
     }
@@ -988,29 +993,6 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
         : '| ${1} | ${2} |\n| --- | --- |\n| ${3} | ${4} |\n${0}';
     snippet(template)(view, null, selection.from, selection.to);
     return true;
-  }
-
-  private applySmartEnter(view: EditorView): boolean {
-    const result = continueMarkdownBlockTransaction(
-      view.state.doc.toString(),
-      editorSelections(view),
-    );
-    if (result === null) {
-      return false;
-    }
-    this.dispatchTransaction(view, result);
-    return true;
-  }
-
-  private applyEnter(view: EditorView): boolean {
-    const status = completionStatus(view.state);
-    if (status !== null) {
-      if (status === 'active') {
-        acceptCompletion(view);
-      }
-      return true;
-    }
-    return this.applySmartEnter(view);
   }
 
   private indentSelection(view: EditorView, direction: 'more' | 'less'): boolean {
@@ -1083,17 +1065,12 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
       return false;
     }
     event.preventDefault();
-    if (event.dataTransfer !== null) {
-      event.dataTransfer.dropEffect = 'copy';
-    }
+    event.dataTransfer!.dropEffect = 'copy';
     return true;
   }
 
   private queueImageUploads(files: readonly File[], anchor: number): void {
-    const uploadConfig = this.imageConfig()?.upload ?? null;
-    if (uploadConfig === null || this.imageInteractionsDisabled()) {
-      return;
-    }
+    const uploadConfig = this.imageConfig()!.upload!;
     const acceptedMimeTypes = new Set(uploadConfig.acceptedMimeTypes);
     const images = files.filter(
       (file) => file.type.startsWith('image/') && acceptedMimeTypes.has(file.type),
@@ -1148,11 +1125,8 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
       )
       .subscribe({
         next: (result) => {
-          const current = this.uploads().find((upload) => upload.id === next.id);
-          const view = this.editorView;
-          if (current === undefined || view === null) {
-            return;
-          }
+          const current = this.uploads().find((upload) => upload.id === next.id)!;
+          const view = this.editorView!;
           view.dispatch({
             changes: {
               from: current.anchor,
@@ -1199,23 +1173,16 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   private loadPreviewImages(previewConfig: MarkdownEditorBlobImagePreviewConfig): void {
-    const browserUrl = this.document.defaultView?.URL;
     const preview = this.editorShell.nativeElement.querySelector<HTMLElement>(
       '[data-testid="markdown-editor-preview-content"]',
-    );
-    if (browserUrl === undefined || preview === null) {
-      return;
-    }
+    )!;
 
     const generation = this.previewGeneration;
     const subscriptions = new Subscription();
     this.previewSubscriptions = subscriptions;
     const images = preview.querySelectorAll<HTMLImageElement>('img');
     for (const [index, source] of this.previewImageSources) {
-      const image = images.item(index);
-      if (image === null) {
-        continue;
-      }
+      const image = images.item(index)!;
       this.loadPreviewImage(previewConfig, index, source, image, generation, subscriptions);
     }
   }
@@ -1228,10 +1195,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
     generation: number,
     subscriptions: Subscription,
   ): void {
-    const browserUrl = this.document.defaultView?.URL;
-    if (browserUrl === undefined) {
-      return;
-    }
+    const browserUrl = this.document.defaultView!.URL;
     subscriptions.add(
       defer(() => previewConfig.load(source))
         .pipe(
@@ -1251,10 +1215,6 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
             if (generation !== this.previewGeneration || !image.isConnected) {
               browserUrl.revokeObjectURL(objectUrl);
               return;
-            }
-            const previousObjectUrl = this.previewObjectUrls.get(image);
-            if (previousObjectUrl !== undefined) {
-              browserUrl.revokeObjectURL(previousObjectUrl);
             }
             this.previewObjectUrls.set(image, objectUrl);
             const onLoad = (): void => image.removeEventListener('error', onError);
@@ -1334,14 +1294,11 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   private currentCursor(): number {
-    return this.editorView?.state.selection.main.head ?? 0;
+    return this.editorView!.state.selection.main.head;
   }
 
   private enterFullscreen(): void {
-    const browserWindow = this.document.defaultView;
-    if (browserWindow === null || this.fullscreen()) {
-      return;
-    }
+    const browserWindow = this.document.defaultView!;
 
     this.fullscreenSnapshot = {
       focusedElement: this.document.activeElement,
@@ -1365,9 +1322,6 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   private armFullscreenEscapeKeyup(): void {
-    if (this.consumeFullscreenEscapeKeyup) {
-      return;
-    }
     this.consumeFullscreenEscapeKeyup = true;
     this.document.addEventListener('keyup', this.fullscreenEscapeKeyupListener, true);
   }
@@ -1381,11 +1335,8 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   private exitFullscreen(): void {
-    const snapshot = this.fullscreenSnapshot;
-    const browserWindow = this.document.defaultView;
-    if (!this.fullscreen() || snapshot === null || browserWindow === null) {
-      return;
-    }
+    const snapshot = this.fullscreenSnapshot!;
+    const browserWindow = this.document.defaultView!;
 
     this.fullscreen.set(false);
     this.fullscreenSnapshot = null;
@@ -1415,10 +1366,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   private restoreFocus(shouldFocus: boolean): void {
-    const view = this.editorView;
-    if (view === null) {
-      return;
-    }
+    const view = this.editorView!;
     if (shouldFocus) {
       this.focusEditor(view);
       this.document.defaultView?.requestAnimationFrame(() => {
@@ -1442,10 +1390,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
-    const browserWindow = this.document.defaultView;
-    if (browserWindow === null) {
-      return null;
-    }
+    const browserWindow = this.document.defaultView!;
 
     let container = this.editorHost.nativeElement.parentElement;
     while (container !== null) {
@@ -1475,10 +1420,10 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
   }
 
   private restoreExternalScroll(snapshot: ExternalScrollSnapshot | null): void {
-    const browserWindow = this.document.defaultView;
-    if (snapshot === null || browserWindow === null) {
+    if (snapshot === null) {
       return;
     }
+    const browserWindow = this.document.defaultView!;
     const restore = (): void => {
       if (this.destroyRef.destroyed) {
         return;
@@ -1486,10 +1431,95 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
       snapshot.container.scrollTop = snapshot.top;
       snapshot.container.scrollLeft = snapshot.left;
     };
+    restore();
     browserWindow.requestAnimationFrame(() => {
       restore();
       browserWindow.requestAnimationFrame(restore);
     });
+  }
+
+  private captureTableScroll(view: EditorView, anchor?: HTMLElement): TableScrollSnapshot | null {
+    const external = this.captureExternalScroll();
+    if (external === null || !this.tableEditorFitsViewport(external.container)) {
+      return null;
+    }
+    const element =
+      anchor ??
+      view.dom.querySelector<HTMLElement>('[data-table-cell="true"][data-active-cell="true"]') ??
+      view.dom.querySelector<HTMLElement>('[data-table-cell="true"]');
+    const tableFrom = element?.dataset['tableFrom'];
+    const row = element?.dataset['row'];
+    const column = element?.dataset['column'];
+    if (element === null || tableFrom === undefined || row === undefined || column === undefined) {
+      return null;
+    }
+    const anchorBounds = element.getBoundingClientRect();
+    return {
+      external,
+      anchor: { tableFrom, row, column },
+      anchorTop: anchorBounds.top,
+      anchorLeft: anchorBounds.left,
+    };
+  }
+
+  private restoreTableScroll(snapshot: TableScrollSnapshot | null): void {
+    const browserWindow = this.document.defaultView;
+    if (snapshot === null || browserWindow === null) {
+      return;
+    }
+    const generation = ++this.tableScrollRestoreGeneration;
+    const restore = (): void => {
+      if (this.destroyRef.destroyed || generation !== this.tableScrollRestoreGeneration) {
+        return;
+      }
+      const { tableFrom, row, column } = snapshot.anchor;
+      const element = this.editorHost.nativeElement.querySelector<HTMLElement>(
+        `[data-table-cell="true"][data-table-from="${tableFrom}"][data-row="${row}"][data-column="${column}"]`,
+      );
+      if (element === null) {
+        this.scrollElementInstantly(
+          snapshot.external.container,
+          snapshot.external.top,
+          snapshot.external.left,
+        );
+        return;
+      }
+      const anchorBounds = element.getBoundingClientRect();
+      this.scrollElementInstantly(
+        snapshot.external.container,
+        snapshot.external.container.scrollTop + anchorBounds.top - snapshot.anchorTop,
+        snapshot.external.container.scrollLeft + anchorBounds.left - snapshot.anchorLeft,
+      );
+    };
+    restore();
+    browserWindow.requestAnimationFrame(() => {
+      restore();
+      browserWindow.requestAnimationFrame(restore);
+    });
+  }
+
+  private tableEditorFitsViewport(container: Element): boolean {
+    const browserWindow = this.document.defaultView!;
+    const editorBounds = this.editorShell.nativeElement.getBoundingClientRect();
+    const viewportBounds =
+      container === this.document.scrollingElement
+        ? { bottom: browserWindow.innerHeight, top: 0 }
+        : container.getBoundingClientRect();
+    return editorBounds.top > viewportBounds.top && editorBounds.bottom <= viewportBounds.bottom;
+  }
+
+  private cancelTableScrollRestore(): void {
+    this.tableScrollRestoreGeneration += 1;
+    this.pendingTableScrollSnapshot = null;
+  }
+
+  private scrollElementInstantly(container: Element, top: number, left: number): void {
+    if (typeof container.scrollTo === 'function') {
+      container.scrollTo({ behavior: 'instant', left, top });
+      return;
+    }
+    container.scrollTop = top;
+    container.scrollLeft = left;
   }
 
   private consumeKeyboardEvent(event: KeyboardEvent): void {
@@ -1558,6 +1588,9 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
       markdownTableEditor({
         locale: this.document.documentElement.lang || 'en',
         phrases: this.labels().table,
+        captureScrollAnchor: (view, element) => {
+          this.prepareTableInputScroll(view, element);
+        },
       }),
     ];
   }
@@ -1581,11 +1614,7 @@ function resolveShortcutGroups(): readonly ResolvedShortcutGroup[] {
   return MARKDOWN_EDITOR_SHORTCUT_GROUPS.map((group) => ({
     id: group.id,
     commands: group.commandIds.map((commandId) => {
-      const command = commandsById.get(commandId);
-      if (command === undefined) {
-        throw new Error(`Unknown Markdown editor command: ${commandId}`);
-      }
-      return command;
+      return commandsById.get(commandId)!;
     }),
   }));
 }

@@ -38,4 +38,67 @@ module.exports = {
   ],
   coverageDirectory: '<rootDir>/coverage',
   coverageReporters: ['text', 'lcov', 'cobertura'],
+  coverageThreshold: {
+    'projects/design-system/markdown-editor/src/lib/markdown-editor.commands.ts': {
+      branches: 95,
+      functions: 100,
+      lines: 98,
+      statements: 98,
+    },
+    'projects/design-system/markdown-editor/src/lib/markdown-editor.component.ts': {
+      branches: 96,
+      functions: 98,
+      lines: 98,
+      statements: 98,
+    },
+    'projects/design-system/markdown-editor/src/lib/markdown-editor.extensions.ts': {
+      branches: 100,
+      functions: 100,
+      lines: 100,
+      statements: 100,
+    },
+    'projects/design-system/markdown-editor/src/lib/markdown-editor.presentation.ts': {
+      branches: 98,
+      functions: 100,
+      lines: 99,
+      statements: 98,
+    },
+    'projects/design-system/markdown-editor/src/lib/markdown-editor.sticky-bottom-inset.directive.ts':
+      {
+        branches: 95,
+        functions: 100,
+        lines: 100,
+        statements: 100,
+      },
+    'projects/design-system/markdown-editor/src/lib/markdown-editor.tables.ts': {
+      branches: 95,
+      functions: 99,
+      lines: 97,
+      statements: 97,
+    },
+    'projects/design-system/markdown-editor/src/lib/markdown-editor.wiki-links.ts': {
+      branches: 100,
+      functions: 100,
+      lines: 100,
+      statements: 100,
+    },
+    'projects/design-system/markdown-editor/src/lib/markdown-table.ts': {
+      branches: 98,
+      functions: 100,
+      lines: 99,
+      statements: 99,
+    },
+    'projects/design-system/markdown/src/lib/markdown-renderer.service.ts': {
+      branches: 100,
+      functions: 100,
+      lines: 100,
+      statements: 100,
+    },
+    'projects/design-system/markdown/src/lib/markdown-syntax-highlighter.ts': {
+      branches: 95,
+      functions: 100,
+      lines: 100,
+      statements: 100,
+    },
+  },
 };

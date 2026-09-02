@@ -1,11 +1,18 @@
-import { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
+import {
+  Completion,
+  CompletionContext,
+  CompletionResult,
+  startCompletion,
+} from '@codemirror/autocomplete';
 import { EditorSelection, EditorState, type SelectionRange } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { markdownEditorLanguage } from './markdown-editor.extensions';
 import {
+  activeWikiLinkContext,
   WikiLinkCompletionData,
   markdownEditorWikiLinks,
   setWikiLinkCompletionData,
+  wikiLinkCompletionData,
   wikiLinkCompletionSource,
 } from './markdown-editor.wiki-links';
 
@@ -120,6 +127,101 @@ describe('Markdown editor wiki-link completions', () => {
     view.destroy();
   });
 
+  it('preserves an existing alias when completing the target before its separator', () => {
+    const { state, cursor } = markedState('Before [[matrix:kn¦|Known alias]] after');
+    const result = completionResult(state, cursor);
+    const view = new EditorView({ state });
+
+    applyCompletion(view, result, 'known-question');
+
+    expect(view.state.doc.toString()).toBe('Before [[matrix:known-question|Known alias]] after');
+    expect(view.state.selection.main.head).toBe(view.state.doc.toString().indexOf('|'));
+    view.destroy();
+  });
+
+  it('preserves an existing escaped alias separator inside a Markdown table', () => {
+    const { state, cursor } = markedState('| [[matrix:kn¦\\|Known alias]] |');
+    const result = completionResult(state, cursor);
+    const view = new EditorView({ state });
+
+    applyCompletion(view, result, 'known-question');
+
+    expect(view.state.doc.toString()).toBe('| [[matrix:known-question\\|Known alias]] |');
+    expect(view.state.selection.main.head).toBe(view.state.doc.toString().indexOf('\\|'));
+    view.destroy();
+  });
+
+  it('does not open suggestions solely because the cursor is inside an incomplete wiki-link', () => {
+    const { state } = markedState('Before [[matrix:¦|Known alias]] after');
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const view = new EditorView({ state, parent });
+
+    expect(view.dom.querySelector('[role="listbox"]')).toBeNull();
+
+    view.destroy();
+    parent.remove();
+  });
+
+  it('renders activated suggestions through the positioned CodeMirror tooltip', async () => {
+    const { state } = markedState('Before [[matrix:¦|Known alias]] after');
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const view = new EditorView({ state, parent });
+
+    expect(startCompletion(view)).toBe(true);
+    await waitFor(() => view.dom.querySelector('.cm-tooltip-autocomplete') !== null);
+    expect(view.dom.querySelector('.cm-tooltip-autocomplete [role="listbox"]')).not.toBeNull();
+    expect(view.dom.querySelector('.cm-wiki-link-completion-panel')).toBeNull();
+    expect(
+      [...view.dom.querySelectorAll('.cm-wiki-link-completion-label')].map(
+        (element) => element.textContent,
+      ),
+    ).toEqual(['Черновой вопрос', 'Известный вопрос']);
+    expect(
+      [...view.dom.querySelectorAll('.cm-wiki-link-completion-description')].map(
+        (element) => element.textContent,
+      ),
+    ).toEqual(['Черновик', 'Опубликовано']);
+    expect(view.dom.querySelector('.cm-wiki-link-completion-badge')?.textContent).toBe('Draft');
+    expect(view.dom.querySelectorAll('.cm-wiki-link-completion-option')).toHaveLength(2);
+
+    view.destroy();
+    parent.remove();
+  });
+
+  it('renders domain suggestions without target-only metadata or option styling', async () => {
+    const { state } = markedState('[[');
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const view = new EditorView({ state, parent });
+
+    expect(startCompletion(view)).toBe(true);
+    await waitFor(() => view.dom.querySelector('.cm-tooltip-autocomplete') !== null);
+
+    expect(view.dom.querySelector('.cm-wiki-link-completion-metadata')).toBeNull();
+    expect(view.dom.querySelector('.cm-wiki-link-completion-option')).toBeNull();
+
+    view.destroy();
+    parent.remove();
+  });
+
+  it('closes an open suggestion list when IME composition starts', async () => {
+    const { state } = markedState('[[matrix:');
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const view = new EditorView({ state, parent });
+
+    expect(startCompletion(view)).toBe(true);
+    await waitFor(() => view.dom.querySelector('.cm-tooltip-autocomplete') !== null);
+
+    view.contentDOM.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+    await waitFor(() => view.dom.querySelector('.cm-tooltip-autocomplete') === null);
+
+    view.destroy();
+    parent.remove();
+  });
+
   it('adds missing closing brackets without touching neighboring Markdown', () => {
     const { state, cursor } = markedState('**Before** [[matrix:kn');
     const result = completionResult(state, cursor);
@@ -154,6 +256,72 @@ describe('Markdown editor wiki-link completions', () => {
     const { state, cursor } = markedState('[[matrix:', emptyMatrixData);
 
     expect(completionResult(state, cursor).options).toEqual([]);
+  });
+
+  it('returns empty suggestions when completion data or a matching target group is absent', () => {
+    const domainStateWithoutData = EditorState.create({
+      doc: '[[',
+      selection: EditorSelection.cursor(2),
+      extensions: [markdownEditorLanguage, markdownEditorWikiLinks],
+    });
+    const stateWithoutData = EditorState.create({
+      doc: '[[matrix:',
+      selection: EditorSelection.cursor('[[matrix:'.length),
+      extensions: [markdownEditorLanguage, markdownEditorWikiLinks],
+    });
+    const stateWithoutGroup = configuredState(
+      '[[missing:',
+      EditorSelection.cursor('[[missing:'.length),
+      completionData,
+    );
+
+    expect(wikiLinkCompletionData(EditorState.create())).toBeNull();
+    expect(
+      completionResult(domainStateWithoutData, domainStateWithoutData.selection.main.head).options,
+    ).toEqual([]);
+    expect(
+      completionResult(stateWithoutData, stateWithoutData.selection.main.head).options,
+    ).toEqual([]);
+    expect(
+      completionResult(stateWithoutGroup, stateWithoutGroup.selection.main.head).options,
+    ).toEqual([]);
+  });
+
+  it('omits optional target metadata when the source explicitly has none', async () => {
+    const data: WikiLinkCompletionData = {
+      namespaces: [{ key: 'articles', label: 'Articles' }],
+      groups: [
+        {
+          namespace: 'articles',
+          targets: [{ key: 'plain', label: 'Plain', description: null, badge: null }],
+        },
+      ],
+    };
+    const { state } = markedState('[[articles:', data);
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const view = new EditorView({ state, parent });
+
+    expect(startCompletion(view)).toBe(true);
+    await waitFor(() => view.dom.querySelector('.cm-wiki-link-completion-label') !== null);
+
+    expect(view.dom.querySelector('.cm-wiki-link-completion-label')?.textContent).toBe('Plain');
+    expect(view.dom.querySelector('.cm-wiki-link-completion-description')).toBeNull();
+    expect(view.dom.querySelector('.cm-wiki-link-completion-badge')).toBeNull();
+
+    view.destroy();
+    parent.remove();
+  });
+
+  it.each([
+    ['uppercase domain', '[[Matrix'],
+    ['domain beginning with a digit', '[[1matrix'],
+    ['empty domain before a colon', '[[:key'],
+    ['closing bracket inside a slug', '[[matrix:key]tail'],
+  ])('rejects an invalid %s', (_name, document) => {
+    const { state, cursor } = markedState(document);
+
+    expect(activeWikiLinkContext(state, cursor)).toBeNull();
   });
 
   it.each([
@@ -261,4 +429,14 @@ function applyCompletion(view: EditorView, result: CompletionResult, label: stri
     result.from,
     result.to ?? view.state.selection.main.head,
   );
+}
+
+async function waitFor(predicate: () => boolean): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (predicate()) {
+      return;
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error('Timed out waiting for wiki-link completions');
 }
