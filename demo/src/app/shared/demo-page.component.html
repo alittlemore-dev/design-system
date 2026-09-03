@@ -1,0 +1,34 @@
+<article class="demo-page" data-demo-page>
+  <header class="demo-page-header">
+    <p class="demo-page-kicker">Component showcase</p>
+    <h1>{{ title() }}</h1>
+    <p>{{ description() }}</p>
+  </header>
+
+  <div
+    class="demo-stage"
+    [class.demo-stage-preview-only]="!showControls()"
+    [class.demo-stage-stacked]="stacked()"
+  >
+    <section class="demo-panel" aria-labelledby="demo-preview-title">
+      <div class="demo-panel-heading">
+        <p class="demo-panel-eyebrow">Rendered consumer view</p>
+        <h2 id="demo-preview-title">Preview</h2>
+      </div>
+      <div class="demo-preview">
+        <ng-content select="[demo-preview]" />
+      </div>
+    </section>
+
+    @if (showControls()) {
+      <aside class="demo-panel demo-controls" aria-labelledby="demo-controls-title">
+        <div class="demo-panel-heading">
+          <p class="demo-panel-eyebrow">Initialization parameters</p>
+          <h2 id="demo-controls-title">Inputs</h2>
+        </div>
+        <p class="demo-controls-hint">Change a value to see its effect immediately.</p>
+        <ng-content select="[demo-controls]" />
+      </aside>
+    }
+  </div>
+</article>

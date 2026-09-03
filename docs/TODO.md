@@ -15,6 +15,7 @@
 - [ ] Configure strict push-to-main npm publication for unique versions, bootstrap 0.1.0 through CI, migrate the package to trusted publishing, and revoke the bootstrap token.
 - [ ] Document the local packed-archive, stable-release, semantic-versioning, and changelog workflows.
 - [x] Add a repository-owned Angular demo that installs the packed archive through public entry points and exercises the current UI, UI styles, theme preload, SSR, hydration, and strict CSP.
+- [x] Preserve owning-page scroll when ArrowUp or ArrowDown moves between visible Markdown-table cells immediately after input.
 - [ ] add dependabot
 
 ## Design tokens and shared styles

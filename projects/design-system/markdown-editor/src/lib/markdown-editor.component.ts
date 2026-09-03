@@ -896,11 +896,21 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
 
   private handleEditorKeydown(event: KeyboardEvent, view: EditorView): boolean {
     this.prepareTableInputScroll(view);
+    const verticalTableNavigationScroll =
+      !event.isComposing &&
+      !event.shiftKey &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      (event.key === 'ArrowUp' || event.key === 'ArrowDown')
+        ? this.tableInputScrollSnapshot
+        : null;
     if (this.consumeComposingEditorShortcut(event)) {
       return true;
     }
     const command = findMarkdownEditorCommand(event, this.editorPlatform());
     if (command === null) {
+      this.restoreTableScroll(verticalTableNavigationScroll);
       return false;
     }
 

@@ -13,6 +13,12 @@ async function waitForText(page, selector, expected) {
   assert.equal((await page.locator(selector).textContent())?.trim(), expected);
 }
 
+async function navigateToDemoPage(page, name, path) {
+  await page.locator('[data-testid="demo-nav-item"]').filter({ hasText: name }).click();
+  await page.waitForURL(`**${path}`);
+  assert.equal(await page.getByRole('heading', { name, level: 1, exact: true }).count(), 1);
+}
+
 async function assertAndResetInlineStyleViolations(page, browserErrors, expectedCount) {
   const violations = await page.evaluate(() => window.__demoCspViolations);
   assert.equal(violations.length, expectedCount);
@@ -28,7 +34,71 @@ async function assertAndResetInlineStyleViolations(page, browserErrors, expected
   browserErrors.splice(0);
 }
 
-test('hydrates the packed showcase, tracks the known Source-mode CSP gap, and keeps other interactions CSP-clean', async (t) => {
+test('navigates the component catalogue and applies Site select inputs live', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const browser = await chromium.launch({ headless: true });
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+
+  await page.goto(server.url, { waitUntil: 'networkidle' });
+  assert.equal(await page.locator('[data-demo-sidebar]').count(), 1);
+  await page.getByRole('button', { name: 'Site select', exact: true }).click();
+  await page.waitForURL('**/components/site-select');
+  assert.equal(await page.getByRole('heading', { name: 'Site select', level: 1 }).count(), 1);
+  assert.equal(
+    await page
+      .getByRole('button', { name: 'Site select', exact: true })
+      .getAttribute('aria-current'),
+    'page',
+  );
+
+  await page.goBack({ waitUntil: 'networkidle' });
+  assert.equal(await page.getByRole('heading', { name: 'Overview', level: 1 }).count(), 1);
+  assert.equal(
+    await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'),
+    'page',
+  );
+
+  await page.getByRole('button', { name: 'Site select', exact: true }).click();
+  const siteSelect = page.locator('[data-testid="demo-site-select"]');
+  await page.locator('[data-demo-site-appearance]').selectOption('bordered');
+  await page.locator('[data-demo-site-size]').selectOption('small');
+  await page.locator('[data-demo-site-invalid]').check();
+  await page.locator('[data-demo-site-disabled]').check();
+  assert.equal(
+    await siteSelect.evaluate((element) =>
+      element.classList.contains('site-select-trigger-bordered'),
+    ),
+    true,
+  );
+  assert.equal(
+    await siteSelect.evaluate((element) => element.classList.contains('site-select-trigger-small')),
+    true,
+  );
+  assert.equal(await siteSelect.getAttribute('aria-invalid'), 'true');
+  assert.equal(await siteSelect.isDisabled(), true);
+
+  await page.locator('[data-demo-site-disabled]').uncheck();
+  await siteSelect.click();
+  await page.locator('[role="option"][data-value="beta"]').click();
+  await waitForText(page, '[data-demo-site-selection]', 'Selected: beta');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileNavigation = page.locator('[data-demo-sidebar-tree]');
+  assert.equal(await mobileNavigation.isHidden(), true);
+  await page.getByRole('button', { name: 'Browse components' }).click();
+  await mobileNavigation.waitFor({ state: 'visible' });
+  assert.equal(await mobileNavigation.isVisible(), true);
+  assert.equal(
+    await page
+      .getByRole('button', { name: 'Site select', exact: true })
+      .getAttribute('aria-current'),
+    'page',
+  );
+});
+
+test('hydrates the routed showcase, tracks the known Source-mode CSP gap, and keeps interactions CSP-clean', async (t) => {
   const server = await startDemoServer(process.cwd());
   t.after(() => stopDemoServer(server.child));
   const browser = await chromium.launch({ headless: true });
@@ -48,7 +118,8 @@ test('hydrates the packed showcase, tracks the known Source-mode CSP gap, and ke
 
   await page.goto(server.url, { waitUntil: 'networkidle' });
   assert.equal(await page.locator('[data-demo-shell]').count(), 1);
-  await waitForText(page, '[data-demo-localized-date]', 'Formatted date: Aug 28, 2026');
+
+  await navigateToDemoPage(page, 'Form validation', '/components/form-validation');
 
   const validationInput = page.locator('[data-demo-validation-input]');
   assert.equal(await validationInput.count(), 1);
@@ -71,9 +142,11 @@ test('hydrates the packed showcase, tracks the known Source-mode CSP gap, and ke
   );
   assert.equal(await validationInput.getAttribute('aria-invalid'), null);
 
+  await navigateToDemoPage(page, 'Error message', '/components/error-message');
   await page.getByRole('button', { name: 'Retry' }).click();
   await waitForText(page, '[data-demo-retry-count]', 'Retries: 1');
 
+  await navigateToDemoPage(page, 'Notifications', '/components/notifications');
   await page.getByRole('button', { name: 'Show success notification' }).click();
   const notification = page.locator('ds-notification-area [role="alert"]');
   await notification.waitFor();
@@ -81,13 +154,17 @@ test('hydrates the packed showcase, tracks the known Source-mode CSP gap, and ke
   await notification.getByRole('button', { name: 'Close notification' }).click();
   await notification.waitFor({ state: 'detached' });
 
+  await navigateToDemoPage(page, 'Foldable tree', '/components/foldable-tree');
   await page.getByRole('button', { name: 'Guides', exact: true }).click();
   await waitForText(page, '[data-demo-tree-selection]', 'Selected: guides');
 
+  await navigateToDemoPage(page, 'Site select', '/components/site-select');
   await page.locator('#demo-site').click();
   await page.locator('[role="option"][data-value="beta"]').click();
   await waitForText(page, '[data-demo-site-selection]', 'Selected: beta');
 
+  await navigateToDemoPage(page, 'Localized date picker', '/components/localized-date-picker');
+  await waitForText(page, '[data-demo-localized-date]', 'Formatted date: Aug 28, 2026');
   await page.locator('[data-testid="date-picker-toggle"]').click();
   await page.locator('[data-date="2026-08-29"]').click();
   await waitForText(page, '[data-demo-date-selection]', 'Selected: 2026-08-29');
@@ -98,6 +175,7 @@ test('hydrates the packed showcase, tracks the known Source-mode CSP gap, and ke
   );
   assert.equal(await page.locator('html').getAttribute('data-bs-theme'), 'dark');
 
+  await navigateToDemoPage(page, 'Modal scroll', '/components/modal-scroll');
   await page.getByRole('button', { name: 'Open modal scroll demo' }).click();
   const modal = page.locator('[data-demo-modal]');
   await modal.waitFor();
@@ -129,6 +207,7 @@ test('hydrates the packed showcase, tracks the known Source-mode CSP gap, and ke
     false,
   );
 
+  await navigateToDemoPage(page, 'Markdown editor', '/markdown/editor');
   const markdownDemo = page.locator('#markdown-demo');
   const standaloneMarkdown = markdownDemo.locator('[data-demo-rendered-markdown]');
   assert.equal(await standaloneMarkdown.locator('code.language-ts').count(), 1);
@@ -258,6 +337,8 @@ test('hydrates the packed showcase, tracks the known Source-mode CSP gap, and ke
   assert.doesNotMatch((await markdownValue.textContent()) ?? '', /\]\]\|the editor contract/);
   await assertAndResetInlineStyleViolations(page, browserErrors, 0);
 
+  await page.locator('#editor-wiki-links').uncheck();
+
   const shortTable = ['| Column A | Column B |', '| --- | --- |', '| Row 1 A | Row 1 B |'].join(
     '\n',
   );
@@ -269,14 +350,15 @@ test('hydrates the packed showcase, tracks the known Source-mode CSP gap, and ke
   await assertAndResetInlineStyleViolations(page, browserErrors, 0);
   const addRow = editor.getByRole('button', { name: 'Add row', exact: true });
   await addRow.scrollIntoViewIfNeeded();
-  const shellBeforeAddingRow = await editor
-    .locator('[data-testid="markdown-editor-shell"]')
-    .boundingBox();
-  assert.notEqual(shellBeforeAddingRow, null);
-  assert.ok(shellBeforeAddingRow.y > 0);
-  assert.ok(shellBeforeAddingRow.y + shellBeforeAddingRow.height <= page.viewportSize().height);
   const previousLastRowCell = editor.locator(
     '[data-table-cell="true"][data-row="1"][data-column="0"]',
+  );
+  assert.equal(
+    await previousLastRowCell.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      return bounds.top >= 0 && bounds.bottom <= window.innerHeight;
+    }),
+    true,
   );
   const cellBeforeAddingRow = await previousLastRowCell.boundingBox();
   await addRow.click();

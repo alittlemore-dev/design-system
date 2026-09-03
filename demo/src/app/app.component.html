@@ -1,14 +1,9 @@
-<main class="showcase-page" data-demo-shell>
-  <ds-notification-area closeLabel="Close notification" />
-
-  <header class="showcase-hero">
+<main class="demo-shell" data-demo-shell>
+  <header class="demo-header">
     <div>
-      <p class="showcase-kicker">Packed archive consumer</p>
-      <h1>Design system demo</h1>
-      <p class="showcase-intro">
-        A repository-owned Angular application rendering the package through its public UI and style
-        entry points.
-      </p>
+      <p class="demo-kicker">Packed archive consumer</p>
+      <p class="demo-title">Design system</p>
+      <p class="demo-subtitle">Interactive component catalogue</p>
     </div>
     <div class="theme-switcher" aria-label="Theme">
       <button
@@ -34,205 +29,41 @@
     </div>
   </header>
 
-  <section class="showcase-grid" aria-label="Independent UI components">
-    <article class="showcase-card">
-      <h2>Empty state</h2>
-      <p class="showcase-description">Consumer-owned copy in a reusable empty presentation.</p>
-      <div class="component-frame">
-        <ds-empty-state message="Nothing has been added yet." />
-      </div>
-    </article>
-
-    <article class="showcase-card">
-      <h2>Loading spinner</h2>
-      <p class="showcase-description">An accessible named loading status.</p>
-      <div class="component-frame">
-        <ds-loading-spinner ariaLabel="Loading example content" />
-      </div>
-    </article>
-
-    <article class="showcase-card showcase-card-wide">
-      <h2>Error message</h2>
-      <p class="showcase-description">Retry remains consumer-controlled through an output.</p>
-      <ds-error-message
-        [error]="error"
-        retryLabel="Retry"
-        (retry)="retryCount.update((count) => count + 1)"
-      />
-      <p class="showcase-output" data-demo-retry-count>Retries: {{ retryCount() }}</p>
-    </article>
-
-    <article class="showcase-card showcase-card-wide">
-      <h2>Notifications</h2>
-      <p class="showcase-description">
-        Polite live-region alerts with consumer-owned messages and close labels.
-      </p>
-      <div class="showcase-actions">
+  <div class="demo-layout">
+    <aside class="demo-sidebar" data-demo-sidebar aria-label="Component navigation">
+      <div class="demo-sidebar-heading">
+        <p class="demo-sidebar-label">Catalogue</p>
         <button
           type="button"
-          class="btn btn-success"
-          (click)="notificationService.success('Demo notification saved')"
+          class="btn btn-sm btn-outline-secondary demo-sidebar-toggle"
+          [attr.aria-expanded]="mobileNavigationOpen()"
+          aria-controls="demo-sidebar-tree"
+          (click)="mobileNavigationOpen.set(!mobileNavigationOpen())"
         >
-          Show success notification
-        </button>
-        <button
-          type="button"
-          class="btn btn-danger"
-          (click)="notificationService.error('Demo notification failed')"
-        >
-          Show error notification
+          {{ mobileNavigationOpen() ? 'Hide components' : 'Browse components' }}
         </button>
       </div>
-    </article>
-
-    <article class="showcase-card showcase-card-wide">
-      <h2>Form validation state</h2>
-      <p class="showcase-description">
-        Native text controls become visibly and semantically invalid only after Angular Forms marks
-        them touched.
-      </p>
-      <form [formGroup]="validationForm" novalidate>
-        <label class="form-label" for="demo-required-field">Required example</label>
-        <input
-          id="demo-required-field"
-          class="form-control"
-          data-demo-validation-input
-          formControlName="requiredField"
-          aria-describedby="demo-validation-hint"
-        />
-        <p id="demo-validation-hint" class="showcase-output">
-          Leave this blank and move focus away to see the shared validation state.
-        </p>
-      </form>
-    </article>
-
-    <article class="showcase-card showcase-card-wide">
-      <h2>Modal scroll infrastructure</h2>
-      <p class="showcase-description">
-        Reference-counted CDK page locking with wheel and touch routing inside a modal.
-      </p>
-      <button #modalTrigger type="button" class="btn btn-primary" (click)="openModal(modalTrigger)">
-        Open modal scroll demo
-      </button>
-
-      @if (modalOpen()) {
-        <section
-          class="demo-modal-backdrop"
-          data-demo-modal
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="demo-modal-title"
-          [dsModalScroll]="modalBody"
-          [cdkTrapFocus]="true"
-          [cdkTrapFocusAutoCapture]="true"
-          (keydown.escape)="closeModal()"
-        >
-          <article class="demo-modal">
-            <header class="demo-modal-header" data-demo-modal-header>
-              <h3 id="demo-modal-title">Modal scroll demo</h3>
-              <button
-                type="button"
-                class="btn-close"
-                aria-label="Close modal scroll demo"
-                cdkFocusInitial
-                (click)="closeModal()"
-              ></button>
-            </header>
-            <div #modalBody class="demo-modal-body" data-demo-modal-body tabindex="0">
-              <p>Scroll input over this body keeps the browser's native scrolling behavior.</p>
-              <p>Scroll input over the header is redirected into this body by the directive.</p>
-              <p>The page remains locked through Angular CDK while the modal is present.</p>
-              <p>Nested consumers share the same reference-counted page lock.</p>
-              <p>Wheel deltas in pixels, lines, and pages are normalized before scrolling.</p>
-              <p>Single-touch gestures over modal chrome are routed to this body.</p>
-              <p>Touch state is cleared when a gesture ends or is cancelled.</p>
-              <p>Removing the final modal restores the previous page scroll position.</p>
-            </div>
-          </article>
-        </section>
-      }
-    </article>
-
-    <article class="showcase-card">
-      <h2>Foldable tree</h2>
-      <p class="showcase-description">Sections and item selection use neutral package contracts.</p>
-      <ds-foldable-tree
-        [rootItems]="rootItems"
-        [sections]="treeSections"
-        emptyMessage="No navigation items"
-        [selectedItemKey]="selectedTreeKey()"
-        [defaultExpandedSectionKeys]="['documentation']"
-        sectionTestId="demo-tree-section"
-        itemTestId="demo-tree-item"
-        (itemSelected)="selectedTreeKey.set($event)"
-      />
-      <p class="showcase-output" data-demo-tree-selection>Selected: {{ selectedTreeKey() }}</p>
-    </article>
-
-    <article class="showcase-card">
-      <h2>Site select</h2>
-      <p class="showcase-description">A controlled select-only combobox.</p>
-      <label class="form-label" for="demo-site">Workspace</label>
-      <ds-site-select
-        inputId="demo-site"
-        [options]="siteOptions"
-        [value]="selectedSite()"
-        controlSize="default"
-        appearance="bordered"
-        [required]="true"
-        [invalid]="false"
-        [controlDisabled]="false"
-        testId="demo-site-select"
-        (valueChange)="selectedSite.set($event)"
-      />
-      <p class="showcase-output" data-demo-site-selection>Selected: {{ selectedSite() }}</p>
-    </article>
-
-    <article class="showcase-card showcase-card-wide">
-      <h2>Localized date picker</h2>
-      <p class="showcase-description">Canonical ISO state with locale-owned display labels.</p>
-      <p class="showcase-output" data-demo-localized-date>Formatted date: {{ formattedDate }}</p>
-      <label class="form-label" for="demo-date">Review date</label>
-      <ds-localized-date-picker
-        inputId="demo-date"
-        [value]="selectedDate()"
-        controlSize="default"
-        dateLocale="en-US"
-        [labels]="dateLabels"
-        [required]="false"
-        [invalid]="false"
-        [controlDisabled]="false"
-        [readonly]="false"
-        min="2026-08-01"
-        max="2026-09-30"
-        [disabledDates]="[]"
-        (valueChange)="selectedDate.set($event)"
-      />
-      <p class="showcase-output" data-demo-date-selection>Selected: {{ selectedDate() }}</p>
-    </article>
-
-    <article id="markdown-demo" class="showcase-card showcase-card-wide">
-      <h2>Markdown renderer and editor</h2>
-      <p class="showcase-description">
-        Both secondary entry points come from the packed package. The editor enables picker, paste,
-        and drop uploads independently, uses direct image preview, and resolves a generic
-        <code>docs</code> wiki namespace.
-      </p>
       <div
-        class="rendered-markdown showcase-markdown-renderer"
-        data-demo-rendered-markdown
-        [innerHTML]="renderedMarkdown()"
-      ></div>
-      <ds-markdown-editor
-        [value]="markdownValue()"
-        accessibleLabel="Demo Markdown body"
-        [labels]="markdownEditorLabels"
-        [imageConfig]="markdownImageConfig"
-        [imageInteractionsDisabled]="false"
-        [wikiLinks]="markdownWikiLinks"
-        (valueChange)="markdownValue.set($event)"
-      />
-      <pre class="showcase-markdown-value" data-demo-markdown-value>{{ markdownValue() }}</pre>
-    </article>
-  </section>
+        id="demo-sidebar-tree"
+        class="demo-sidebar-tree"
+        data-demo-sidebar-tree
+        [class.demo-sidebar-tree-open]="mobileNavigationOpen()"
+      >
+        <ds-foldable-tree
+          [rootItems]="rootItems"
+          [sections]="sections"
+          emptyMessage="No demo pages"
+          [selectedItemKey]="selectedRoute()"
+          [defaultExpandedSectionKeys]="expandedSectionKeys"
+          sectionTestId="demo-nav-section"
+          itemTestId="demo-nav-item"
+          (itemSelected)="navigate($event)"
+        />
+      </div>
+    </aside>
+
+    <div class="demo-content">
+      <router-outlet />
+    </div>
+  </div>
 </main>
