@@ -407,7 +407,7 @@ describe('Markdown table mixed-selection rendering', () => {
     expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(2);
   });
 
-  it('wraps a whole-cell Shift selection onto the first cell of the next row', () => {
+  it('contains a whole-cell Shift selection at the right edge of its current row', () => {
     const view = createProductionLikeView(MIXED_SOURCE, views);
     const lastCell = cell(view, 1, 2);
     const from = Number(lastCell.dataset['cellFrom']);
@@ -422,10 +422,31 @@ describe('Markdown table mixed-selection rendering', () => {
     expect(view.state.field(markdownTableSelectionState)).toEqual({
       tableFrom: requiredIndex(MIXED_SOURCE, '| H1'),
       anchor: { row: 1, column: 2 },
-      head: { row: 2, column: 0 },
+      head: { row: 1, column: 2 },
     });
-    expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(6);
+    expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(1);
   });
+
+  it.each([
+    { direction: 'ArrowRight', anchor: [1, 1], edge: [1, 2] },
+    { direction: 'ArrowLeft', anchor: [1, 1], edge: [1, 0] },
+  ] as const)(
+    'does not turn repeated Shift+$direction selection from the middle into a multi-row rectangle',
+    ({ direction, anchor, edge }) => {
+      const view = createProductionLikeView(MIXED_SOURCE, views);
+      selectCells(view, anchor, edge);
+
+      const event = key(view, direction, true);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(view.state.field(markdownTableSelectionState)).toEqual({
+        tableFrom: requiredIndex(MIXED_SOURCE, '| H1'),
+        anchor: { row: anchor[0], column: anchor[1] },
+        head: { row: edge[0], column: edge[1] },
+      });
+      expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(2);
+    },
+  );
 
   it('moves vertical whole-cell selection by one semantic row even if editor geometry skips', () => {
     const view = createProductionLikeView(MIXED_SOURCE, views);
@@ -492,7 +513,7 @@ describe('Markdown table mixed-selection rendering', () => {
     { column: 0, direction: 'ArrowUp', row: 2, value: 'B1' },
     { column: 1, direction: 'ArrowUp', row: 2, value: 'B2' },
   ] as const)(
-    'keeps partial $direction text selection native in column $column when geometry is unresolved',
+    'converts partial $direction text selection in column $column when geometry reaches hidden table source',
     ({ column, direction, row, value }) => {
       const view = createProductionLikeView(VERTICAL_SOURCE, views);
       const startCell = cell(view, row, column);
@@ -506,10 +527,16 @@ describe('Markdown table mixed-selection rendering', () => {
         VERTICAL_SOURCE.indexOf('| --- |') + (column === 0 ? '| '.length : '| --- | '.length);
       jest.spyOn(view, 'moveVertically').mockReturnValue(EditorSelection.cursor(delimiterPosition));
 
-      key(view, direction, true);
+      const event = key(view, direction, true);
 
-      expect(view.state.field(markdownTableSelectionState).anchor).toBeNull();
-      expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(0);
+      expect(event.defaultPrevented).toBe(true);
+      expect(view.state.selection.main.empty).toBe(true);
+      expect(view.state.field(markdownTableSelectionState)).toEqual({
+        tableFrom: 0,
+        anchor: { row, column },
+        head: { row: direction === 'ArrowDown' ? row + 1 : row - 1, column },
+      });
+      expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(2);
     },
   );
 
@@ -517,7 +544,7 @@ describe('Markdown table mixed-selection rendering', () => {
     { direction: 'ArrowDown', row: 1, value: 'A2' },
     { direction: 'ArrowUp', row: 2, value: 'B2' },
   ] as const)(
-    'keeps a full reverse-direction $direction selection native',
+    'converts a full reverse-direction $direction selection to adjacent semantic cells',
     ({ direction, row, value }) => {
       const view = createProductionLikeView(VERTICAL_SOURCE, views);
       const startCell = cell(view, row, 1);
@@ -535,10 +562,15 @@ describe('Markdown table mixed-selection rendering', () => {
           ),
         );
 
-      key(view, direction, true);
+      const event = key(view, direction, true);
 
-      expect(view.state.field(markdownTableSelectionState).anchor).toBeNull();
-      expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(0);
+      expect(event.defaultPrevented).toBe(true);
+      expect(view.state.field(markdownTableSelectionState)).toEqual({
+        tableFrom: 0,
+        anchor: { row, column: 1 },
+        head: { row: direction === 'ArrowDown' ? row + 1 : row - 1, column: 1 },
+      });
+      expect(view.dom.querySelectorAll('.cm-markdown-table-cell-selected')).toHaveLength(2);
     },
   );
 

@@ -2090,16 +2090,11 @@ describe('Markdown table editor extension', () => {
     expect(view.state.selection.main.head).toBe(lastRowPosition);
   });
 
-  it('scrolls rendered target cells instead of hidden source geometry in both directions', () => {
+  it('moves across rendered target cells without requesting hidden source scrolling', () => {
     const source = '| ABC | D |\n| --- | --- |\n| xy | zzzz |';
     const view = createView(source, views);
     const previousCellEnd = source.indexOf('ABC') + 'ABC'.length;
     const currentCellStart = source.indexOf('D');
-    const scrollRenderedCell = jest.fn();
-    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
-      configurable: true,
-      value: scrollRenderedCell,
-    });
     const scrollRequests: boolean[] = [];
     view.dispatch({
       effects: StateEffect.appendConfig.of(
@@ -2118,30 +2113,20 @@ describe('Markdown table editor extension', () => {
     expect(view.state.selection.main.head).toBe(previousCellEnd);
     expect(view.state.selection.main.assoc).toBe(-1);
     expect(scrollRequests).toEqual([false]);
-    expect(scrollRenderedCell).toHaveBeenCalledWith({
-      block: 'nearest',
-      inline: 'nearest',
-    });
-    expect(scrollRenderedCell.mock.instances[0]).toBe(cell(view, 0, 0));
+    expect(cell(view, 0, 0).classList).toContain('cm-markdown-table-cell-active');
 
     expect(key(view, 'ArrowRight').defaultPrevented).toBe(true);
 
     expect(view.state.selection.main.head).toBe(currentCellStart);
     expect(scrollRequests).toEqual([false, false]);
-    expect(scrollRenderedCell).toHaveBeenCalledTimes(2);
-    expect(scrollRenderedCell.mock.instances[1]).toBe(cell(view, 0, 1));
+    expect(cell(view, 0, 1).classList).toContain('cm-markdown-table-cell-active');
   });
 
-  it('scrolls rendered target cells instead of hidden source geometry vertically', () => {
+  it('moves vertically through rendered target cells without hidden source scrolling', () => {
     const source = '| ABC | D |\n| --- | --- |\n| xy | zzzz |';
     const view = createView(source, views);
     const headerPosition = source.indexOf('ABC') + 1;
     const bodyPosition = source.indexOf('xy') + 1;
-    const scrollRenderedCell = jest.fn();
-    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
-      configurable: true,
-      value: scrollRenderedCell,
-    });
     const scrollRequests: boolean[] = [];
     view.dispatch({
       effects: StateEffect.appendConfig.of(
@@ -2159,18 +2144,13 @@ describe('Markdown table editor extension', () => {
 
     expect(view.state.selection.main.head).toBe(bodyPosition);
     expect(scrollRequests).toEqual([false]);
-    expect(scrollRenderedCell).toHaveBeenCalledWith({
-      block: 'nearest',
-      inline: 'nearest',
-    });
-    expect(scrollRenderedCell.mock.instances[0]).toBe(cell(view, 1, 0));
+    expect(cell(view, 1, 0).classList).toContain('cm-markdown-table-cell-active');
 
     expect(key(view, 'ArrowUp').defaultPrevented).toBe(true);
 
     expect(view.state.selection.main.head).toBe(headerPosition);
     expect(scrollRequests).toEqual([false, false]);
-    expect(scrollRenderedCell).toHaveBeenCalledTimes(2);
-    expect(scrollRenderedCell.mock.instances[1]).toBe(cell(view, 0, 0));
+    expect(cell(view, 0, 0).classList).toContain('cm-markdown-table-cell-active');
   });
 
   it('enters the rendered table from the ordinary line above without scrolling source geometry', () => {
@@ -2178,11 +2158,6 @@ describe('Markdown table editor extension', () => {
     const view = createView(source, views);
     const lineAbove = view.state.doc.line(2);
     const headerPosition = source.indexOf('ABC') + 1;
-    const scrollRenderedCell = jest.fn();
-    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
-      configurable: true,
-      value: scrollRenderedCell,
-    });
     const scrollRequests: boolean[] = [];
     view.dispatch({
       effects: StateEffect.appendConfig.of(
@@ -2201,11 +2176,7 @@ describe('Markdown table editor extension', () => {
 
     expect(view.state.selection.main.head).toBe(headerPosition);
     expect(scrollRequests).toEqual([false]);
-    expect(scrollRenderedCell).toHaveBeenCalledWith({
-      block: 'nearest',
-      inline: 'nearest',
-    });
-    expect(scrollRenderedCell.mock.instances[0]).toBe(cell(view, 0, 0));
+    expect(cell(view, 0, 0).classList).toContain('cm-markdown-table-cell-active');
   });
 
   it('enters the rendered table without source scrolling after a vertical geometry jump', () => {
@@ -2214,11 +2185,6 @@ describe('Markdown table editor extension', () => {
     const lineAbove = view.state.doc.line(2);
     const headerStart = source.indexOf('ABC');
     const bodyStart = source.indexOf('xy');
-    const scrollRenderedCell = jest.fn();
-    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
-      configurable: true,
-      value: scrollRenderedCell,
-    });
     const scrollRequests: boolean[] = [];
     view.dispatch({
       effects: StateEffect.appendConfig.of(
@@ -2237,11 +2203,7 @@ describe('Markdown table editor extension', () => {
 
     expect(view.state.selection.main.head).toBe(headerStart);
     expect(scrollRequests).toEqual([false]);
-    expect(scrollRenderedCell).toHaveBeenCalledWith({
-      block: 'nearest',
-      inline: 'nearest',
-    });
-    expect(scrollRenderedCell.mock.instances[0]).toBe(cell(view, 0, 0));
+    expect(cell(view, 0, 0).classList).toContain('cm-markdown-table-cell-active');
   });
 
   it('uses the rendered adjacent row when a horizontal arrow crosses a row boundary', () => {
@@ -2249,24 +2211,17 @@ describe('Markdown table editor extension', () => {
     const view = createView(source, views);
     const secondHeaderEnd = source.indexOf('D') + 'D'.length;
     const firstBodyStart = source.indexOf('xy');
-    const scrollRenderedCell = jest.fn();
-    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
-      configurable: true,
-      value: scrollRenderedCell,
-    });
-
     setCursor(view, secondHeaderEnd);
     expect(key(view, 'ArrowRight').defaultPrevented).toBe(true);
 
     expect(view.state.selection.main.head).toBe(firstBodyStart);
-    expect(scrollRenderedCell.mock.instances[0]).toBe(cell(view, 1, 0));
+    expect(cell(view, 1, 0).classList).toContain('cm-markdown-table-cell-active');
 
     setCursor(view, firstBodyStart);
-    scrollRenderedCell.mockClear();
     expect(key(view, 'ArrowLeft').defaultPrevented).toBe(true);
 
     expect(view.state.selection.main.head).toBe(secondHeaderEnd);
-    expect(scrollRenderedCell.mock.instances[0]).toBe(cell(view, 0, 1));
+    expect(cell(view, 0, 1).classList).toContain('cm-markdown-table-cell-active');
   });
 
   it('repairs a vertical geometry jump from ordinary text below a table', () => {

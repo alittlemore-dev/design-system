@@ -17,6 +17,7 @@ import {
   Transaction,
   type Extension,
   type Range,
+  type SelectionRange,
   type TransactionSpec,
 } from '@codemirror/state';
 import {
@@ -158,6 +159,11 @@ interface TableCaretTarget {
   readonly cell: TableCellLayout | null;
 }
 
+interface TableEscapeSequence {
+  readonly from: number;
+  readonly to: number;
+}
+
 interface ClearedTableCellRepair {
   readonly changes: readonly { readonly from: number; readonly insert: string }[];
   readonly cursor: number;
@@ -260,6 +266,9 @@ const markdownTableEditorTheme = EditorView.theme({
     {
       display: 'none',
     },
+  '.cm-markdown-table-escape-marker': {
+    display: 'none',
+  },
   '.cm-markdown-table-cell': {
     position: 'relative',
     display: 'block',
@@ -801,6 +810,29 @@ class TableDelimiterWidget extends WidgetType {
 }
 
 const tableDelimiterWidget = new TableDelimiterWidget();
+const tableCellVerticalScrollMeasureKey = {};
+const pendingTableCellScrollTargets = new WeakMap<EditorView, PendingTableCellScrollTarget>();
+
+interface PendingTableCellScrollTarget {
+  readonly tableFrom: number;
+  readonly row: number;
+  readonly column: number;
+  readonly head: number;
+  readonly scrollStack: readonly ElementScrollPosition[];
+  cancelled: boolean;
+}
+
+interface TableCellVerticalScrollMeasure {
+  readonly nativeVisualViewportTarget: HTMLElement | null;
+  readonly scroller: HTMLElement;
+  readonly scrollTop: number;
+}
+
+interface ElementScrollPosition {
+  readonly element: HTMLElement;
+  readonly left: number;
+  readonly top: number;
+}
 
 const markdownTableCursorLayer = layer({
   above: true,
@@ -916,11 +948,11 @@ function cssPixels(value: string, fallback: number): number {
 }
 
 function ownsTableCursor(state: EditorState): boolean {
-  const tableSelection = state.field(markdownTableSelectionState);
+  const tableSelection = state.field(markdownTableSelectionState, false);
   return (
     state.selection.ranges.length === 1 &&
     state.selection.main.empty &&
-    tableSelection.anchor === null &&
+    tableSelection?.anchor === null &&
     activeTableCell(state) !== null
   );
 }
@@ -940,6 +972,373 @@ function renderedTableCell(
   );
 }
 
+function requestRenderedTableCellVerticalScroll(
+  view: EditorView,
+  tableFrom: number,
+  cell: TableCellLayout,
+): void {
+  const scheduledElement = renderedTableCell(view, tableFrom, cell);
+  const scheduledScroller =
+    scheduledElement === null ? null : nearestVerticalScrollContainer(scheduledElement);
+  const scheduledScrollTop = scheduledScroller?.scrollTop;
+  view.requestMeasure<TableCellVerticalScrollMeasure | null>({
+    key: tableCellVerticalScrollMeasureKey,
+    read: (measuredView) =>
+      measureRenderedTableCellVerticalScroll(
+        measuredView,
+        tableFrom,
+        cell,
+        scheduledScroller,
+        scheduledScrollTop,
+      ),
+    write: applyRenderedTableCellVerticalScroll,
+  });
+}
+
+function measureRenderedTableCellVerticalScroll(
+  view: EditorView,
+  tableFrom: number,
+  cell: TableCellLayout,
+  scheduledScroller: HTMLElement | null,
+  scheduledScrollTop: number | undefined,
+): TableCellVerticalScrollMeasure | null {
+  if (!isCurrentTableCellScrollTarget(view.state, tableFrom, cell)) {
+    return null;
+  }
+  const target = renderedTableCell(view, tableFrom, cell);
+  if (target === null || !target.isConnected) {
+    return null;
+  }
+  const scroller = nearestVerticalScrollContainer(target);
+  if (
+    scheduledScroller !== null &&
+    (scroller !== scheduledScroller || scroller.scrollTop !== scheduledScrollTop)
+  ) {
+    return null;
+  }
+  const targetBounds = target.getBoundingClientRect();
+  const viewport = verticalScrollViewport(scroller);
+  const above = targetBounds.top - viewport.top;
+  const below = targetBounds.bottom - viewport.bottom;
+  const delta =
+    above < 0 && below > 0
+      ? Math.abs(above) <= below
+        ? above
+        : below
+      : above < 0
+        ? above
+        : below > 0
+          ? below
+          : 0;
+  if (delta === 0) {
+    return null;
+  }
+  const nativeVisualViewportTarget = needsNativeVisualViewportScroll(scroller, targetBounds)
+    ? target
+    : null;
+  const scrollTop = Math.max(
+    0,
+    Math.min(
+      scroller.scrollTop + delta / viewport.scaleY,
+      scroller.scrollHeight - scroller.clientHeight,
+    ),
+  );
+  return scrollTop === scroller.scrollTop && nativeVisualViewportTarget === null
+    ? null
+    : { nativeVisualViewportTarget, scroller, scrollTop };
+}
+
+function applyRenderedTableCellVerticalScroll(
+  measure: TableCellVerticalScrollMeasure | null,
+): void {
+  if (measure === null) {
+    return;
+  }
+  restoreElementScrollStack(
+    [
+      {
+        element: measure.scroller,
+        left: measure.scroller.scrollLeft,
+        top: measure.scrollTop,
+      },
+    ],
+    true,
+  );
+  if (measure.nativeVisualViewportTarget !== null) {
+    const scrollStack = elementScrollStack(measure.nativeVisualViewportTarget);
+    try {
+      measure.nativeVisualViewportTarget.scrollIntoView({ block: 'nearest' });
+    } finally {
+      restoreElementScrollStack(scrollStack, false);
+    }
+  }
+}
+
+function pendingTableCellScrollTarget(
+  view: EditorView,
+  tableFrom: number,
+  cell: TableCellLayout,
+  head: number,
+): PendingTableCellScrollTarget {
+  const target: PendingTableCellScrollTarget = {
+    tableFrom,
+    row: cell.rowIndex,
+    column: cell.columnIndex,
+    head,
+    scrollStack: (() => {
+      const element = renderedTableCell(view, tableFrom, cell);
+      return element === null ? [] : elementScrollStack(element);
+    })(),
+    cancelled: false,
+  };
+  pendingTableCellScrollTargets.set(view, target);
+  return target;
+}
+
+function finishPendingTableCellScrollTarget(
+  view: EditorView,
+  target: PendingTableCellScrollTarget,
+  cell: TableCellLayout,
+): void {
+  // Chrome may scroll the DOM selection while CodeMirror and the host component finish their
+  // current and follow-up layout frames. Hold the pre-arrow position across both frames, then
+  // reveal only a genuinely clipped rendered cell using its own geometry.
+  view.dom.ownerDocument.defaultView?.requestAnimationFrame(() => {
+    if (!pendingTableCellScrollIsCurrent(view, target, cell)) {
+      return;
+    }
+    restoreElementScrollStack(target.scrollStack, true);
+    view.dom.ownerDocument.defaultView?.requestAnimationFrame(() => {
+      if (!pendingTableCellScrollIsCurrent(view, target, cell)) {
+        return;
+      }
+      restoreElementScrollStack(target.scrollStack, true);
+      applyRenderedTableCellVerticalScroll(
+        measureRenderedTableCellVerticalScroll(view, target.tableFrom, cell, null, undefined),
+      );
+      if (pendingTableCellScrollTargets.get(view) === target) {
+        pendingTableCellScrollTargets.delete(view);
+      }
+    });
+  });
+}
+
+function pendingTableCellScrollIsCurrent(
+  view: EditorView,
+  target: PendingTableCellScrollTarget,
+  cell: TableCellLayout,
+): boolean {
+  const current =
+    pendingTableCellScrollTargets.get(view) === target &&
+    !target.cancelled &&
+    isCurrentTableCellScrollTarget(view.state, target.tableFrom, cell);
+  if (!current && pendingTableCellScrollTargets.get(view) === target) {
+    pendingTableCellScrollTargets.delete(view);
+  }
+  return current;
+}
+
+function cancelPendingTableCellVerticalScroll(view: EditorView): void {
+  const target = pendingTableCellScrollTargets.get(view);
+  if (target !== undefined) {
+    target.cancelled = true;
+  }
+}
+
+function dispatchPreservingRenderedTableCellScroll(
+  view: EditorView,
+  tableFrom: number,
+  cell: TableCellLayout,
+  transaction: TransactionSpec,
+): void {
+  const target = renderedTableCell(view, tableFrom, cell);
+  const scrollStack = target === null ? [] : elementScrollStack(target);
+  view.dispatch(transaction);
+  restoreElementScrollStack(scrollStack, true);
+}
+
+function consumePendingTableCellCodeMirrorScroll(
+  view: EditorView,
+  range: SelectionRange,
+  options: {
+    readonly x: string;
+    readonly y: string;
+    readonly xMargin: number;
+    readonly yMargin: number;
+  },
+): boolean {
+  const target = pendingTableCellScrollTargets.get(view);
+  if (
+    target === undefined ||
+    range.head !== target.head ||
+    options.x !== 'center' ||
+    options.y !== 'center' ||
+    options.xMargin !== 0 ||
+    options.yMargin !== 0 ||
+    !isCurrentTableCellScrollTarget(view.state, target.tableFrom, {
+      rowIndex: target.row,
+      columnIndex: target.column,
+    })
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function elementScrollStack(target: HTMLElement): readonly ElementScrollPosition[] {
+  const stack: ElementScrollPosition[] = [];
+  for (let element: HTMLElement | null = target; element !== null;) {
+    stack.push({ element, left: element.scrollLeft, top: element.scrollTop });
+    element = composedParentElement(element);
+  }
+  return stack;
+}
+
+function restoreElementScrollStack(
+  stack: readonly ElementScrollPosition[],
+  restoreVertical: boolean,
+): void {
+  for (const position of stack) {
+    const top = restoreVertical ? position.top : position.element.scrollTop;
+    if (position.element.scrollTop === top && position.element.scrollLeft === position.left) {
+      continue;
+    }
+    if (typeof position.element.scrollTo === 'function') {
+      position.element.scrollTo({
+        behavior: 'instant',
+        left: position.left,
+        top,
+      });
+    } else {
+      position.element.scrollTop = top;
+      position.element.scrollLeft = position.left;
+    }
+  }
+}
+
+function isCurrentTableCellScrollTarget(
+  state: EditorState,
+  tableFrom: number,
+  cell: Pick<TableCellLayout, 'rowIndex' | 'columnIndex'>,
+): boolean {
+  const selected = selectedTableContext(state);
+  if (selected !== null) {
+    return (
+      selected.layout.from === tableFrom &&
+      selected.selection.head.row === cell.rowIndex &&
+      selected.selection.head.column === cell.columnIndex
+    );
+  }
+  const active = activeTableCell(state);
+  return (
+    active !== null &&
+    active.layout.from === tableFrom &&
+    active.cell.rowIndex === cell.rowIndex &&
+    active.cell.columnIndex === cell.columnIndex
+  );
+}
+
+function nearestVerticalScrollContainer(element: HTMLElement): HTMLElement {
+  const ownerWindow = element.ownerDocument.defaultView;
+  if (ownerWindow !== null) {
+    for (let ancestor = composedParentElement(element); ancestor !== null;) {
+      const overflow = ownerWindow.getComputedStyle(ancestor).overflowY;
+      if (
+        (overflow === 'auto' ||
+          overflow === 'scroll' ||
+          overflow === 'overlay' ||
+          overflow === 'hidden') &&
+        ancestor.scrollHeight > ancestor.clientHeight
+      ) {
+        return ancestor;
+      }
+      ancestor = composedParentElement(ancestor);
+    }
+  }
+  const scrollingElement = element.ownerDocument.scrollingElement;
+  return scrollingElement instanceof HTMLElement
+    ? scrollingElement
+    : element.ownerDocument.documentElement;
+}
+
+function verticalScrollViewport(scroller: HTMLElement): {
+  readonly top: number;
+  readonly bottom: number;
+  readonly scaleY: number;
+} {
+  const ownerWindow = scroller.ownerDocument.defaultView;
+  const viewportTop = ownerWindow?.visualViewport?.offsetTop ?? 0;
+  const viewportBottom =
+    viewportTop + (ownerWindow?.visualViewport?.height ?? ownerWindow?.innerHeight ?? 0);
+  if (isRootVerticalScrollContainer(scroller)) {
+    return { top: viewportTop, bottom: viewportBottom, scaleY: 1 };
+  }
+  const scrollerViewport = elementVerticalClientViewport(scroller);
+  let top = Math.max(scrollerViewport.top, viewportTop);
+  let bottom = Math.min(scrollerViewport.bottom, viewportBottom);
+  for (let ancestor = composedParentElement(scroller); ancestor !== null;) {
+    if (isRootVerticalScrollContainer(ancestor)) {
+      break;
+    }
+    const overflow = ownerWindow?.getComputedStyle(ancestor).overflowY;
+    if (overflow !== undefined && overflow !== '' && overflow !== 'visible') {
+      const ancestorViewport = elementVerticalClientViewport(ancestor);
+      top = Math.max(top, ancestorViewport.top);
+      bottom = Math.min(bottom, ancestorViewport.bottom);
+    }
+    ancestor = composedParentElement(ancestor);
+  }
+  const scaleY = scrollerViewport.scaleY;
+  return { top, bottom, scaleY };
+}
+
+function elementVerticalClientViewport(element: HTMLElement): {
+  readonly top: number;
+  readonly bottom: number;
+  readonly scaleY: number;
+} {
+  const bounds = element.getBoundingClientRect();
+  const measuredScaleY = element.offsetHeight > 0 ? bounds.height / element.offsetHeight : 1;
+  const scaleY = Number.isFinite(measuredScaleY) && measuredScaleY > 0 ? measuredScaleY : 1;
+  const top = bounds.top + element.clientTop * scaleY;
+  return { top, bottom: top + element.clientHeight * scaleY, scaleY };
+}
+
+function composedParentElement(element: HTMLElement): HTMLElement | null {
+  if (element.assignedSlot !== null) {
+    return element.assignedSlot;
+  }
+  if (element.parentElement !== null) {
+    return element.parentElement;
+  }
+  const parent = element.parentNode;
+  return parent !== null && parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE
+    ? ((parent as ShadowRoot).host as HTMLElement)
+    : null;
+}
+
+function needsNativeVisualViewportScroll(scroller: HTMLElement, target: DOMRect): boolean {
+  const ownerWindow = scroller.ownerDocument.defaultView;
+  const viewport = ownerWindow?.visualViewport;
+  return (
+    isRootVerticalScrollContainer(scroller) &&
+    ownerWindow !== null &&
+    viewport !== null &&
+    viewport !== undefined &&
+    ownerWindow.innerHeight - viewport.height > 1 &&
+    (target.top > viewport.offsetTop + viewport.height || target.bottom < viewport.offsetTop)
+  );
+}
+
+function isRootVerticalScrollContainer(scroller: HTMLElement): boolean {
+  const ownerDocument = scroller.ownerDocument;
+  return (
+    scroller === ownerDocument.scrollingElement ||
+    scroller === ownerDocument.documentElement ||
+    scroller === ownerDocument.body
+  );
+}
+
 function tableCursorCoordinates(
   view: EditorView,
   cell: TableCellLayout,
@@ -956,7 +1355,7 @@ function tableCursorCoordinates(
     return nativeCoordinates;
   }
   return (
-    domTextCaretCoordinates(element, Math.max(position - cell.from, 0)) ??
+    domTextCaretCoordinates(element, tableCellVisibleOffset(view.state, cell, position)) ??
     fallbackCellCaretCoordinates(element, position >= cell.to && cell.from < cell.to)
   );
 }
@@ -978,7 +1377,9 @@ function domTextCaretCoordinates(element: HTMLElement, offset: number): Rect | n
   for (let current = walker.nextNode(); current !== null; current = walker.nextNode()) {
     if (
       current instanceof Text &&
-      current.parentElement!.closest('.cm-markdown-table-control') === null
+      current.parentElement!.closest(
+        '.cm-markdown-table-control, .cm-markdown-table-escape-marker',
+      ) === null
     ) {
       textNodes.push(current);
     }
@@ -1049,6 +1450,7 @@ export function markdownTableEditor(config: MarkdownTableEditorConfig): Extensio
     EditorView.editorAttributes.of((view) => ({
       class: ownsTableCursor(view.state) ? 'cm-markdown-table-cursor-owned' : '',
     })),
+    EditorView.scrollHandler.of(consumePendingTableCellCodeMirrorScroll),
     markdownTableEditorConfig.of(config),
     markdownTableSelectionState,
     markdownTableDragState,
@@ -1069,6 +1471,7 @@ export function markdownTableEditor(config: MarkdownTableEditorConfig): Extensio
     ),
     EditorView.updateListener.of(repairTableCaretAfterDocumentChange),
     ViewPlugin.fromClass(TableOutsidePointerPlugin),
+    ViewPlugin.fromClass(TableScrollIntentPlugin),
     EditorState.transactionFilter.of((transaction) => protectTableStructure(transaction)),
     decorationsField,
     EditorView.blockWrappers.of((view) => buildBlockWrappers(view.state, config.phrases)),
@@ -1177,6 +1580,26 @@ class TableOutsidePointerPlugin {
 
   destroy(): void {
     this.ownerDocument.removeEventListener('pointerdown', this.handlePointerDown, true);
+  }
+}
+
+class TableScrollIntentPlugin {
+  private readonly ownerDocument: Document;
+  private readonly cancelPendingScroll = (): void => {
+    cancelPendingTableCellVerticalScroll(this.view);
+  };
+
+  constructor(private readonly view: EditorView) {
+    this.ownerDocument = view.dom.ownerDocument;
+    this.ownerDocument.addEventListener('pointerdown', this.cancelPendingScroll, true);
+    this.ownerDocument.addEventListener('touchmove', this.cancelPendingScroll, true);
+    this.ownerDocument.addEventListener('wheel', this.cancelPendingScroll, true);
+  }
+
+  destroy(): void {
+    this.ownerDocument.removeEventListener('pointerdown', this.cancelPendingScroll, true);
+    this.ownerDocument.removeEventListener('touchmove', this.cancelPendingScroll, true);
+    this.ownerDocument.removeEventListener('wheel', this.cancelPendingScroll, true);
   }
 }
 
@@ -1475,6 +1898,15 @@ function buildDecorations(
               },
             }).range(cell.renderFrom, cell.renderTo),
           );
+          for (const escape of tableEscapeSequences(state, cell)) {
+            ranges.push(
+              Decoration.mark({
+                class: 'cm-markdown-table-escape-marker',
+                attributes: { 'aria-hidden': 'true' },
+              }).range(escape.from, escape.from + 1),
+            );
+            atomic.push(Decoration.mark({}).range(escape.from, escape.to));
+          }
         } else {
           ranges.push(
             Decoration.widget({
@@ -2367,7 +2799,7 @@ function navigateTableArrow(
   view: EditorView,
   direction: 'left' | 'right' | 'up' | 'down',
 ): boolean {
-  if (completionStatus(view.state) !== null) {
+  if (completionStatus(view.state) === 'active') {
     return false;
   }
   const selected = selectedTableContext(view.state);
@@ -2379,16 +2811,41 @@ function navigateTableArrow(
   }
   const recovery = nextEditableTablePosition(view.state, view.state.selection.main.head);
   if (recovery !== null) {
-    view.dispatch({
-      selection: EditorSelection.cursor(recovery.position),
-      scrollIntoView: false,
+    const selection = EditorSelection.cursor(recovery.position);
+    const pendingTarget =
+      recovery.cell !== null && (direction === 'up' || direction === 'down')
+        ? pendingTableCellScrollTarget(view, recovery.layout.from, recovery.cell, selection.head)
+        : undefined;
+    const transaction: TransactionSpec = {
+      selection,
+      effects:
+        pendingTarget === undefined
+          ? undefined
+          : EditorView.scrollIntoView(selection, {
+              x: 'center',
+              y: 'center',
+              xMargin: 0,
+              yMargin: 0,
+            }),
+      scrollIntoView: recovery.cell === null && (direction === 'up' || direction === 'down'),
       userEvent: 'select',
-    });
+    };
+    if (recovery.cell === null) {
+      view.dispatch(transaction);
+    } else {
+      dispatchPreservingRenderedTableCellScroll(
+        view,
+        recovery.layout.from,
+        recovery.cell,
+        transaction,
+      );
+    }
     if (recovery.cell !== null) {
-      renderedTableCell(view, recovery.layout.from, recovery.cell)?.scrollIntoView?.({
-        block: 'nearest',
-        inline: 'nearest',
-      });
+      if (pendingTarget === undefined) {
+        requestRenderedTableCellVerticalScroll(view, recovery.layout.from, recovery.cell);
+      } else {
+        finishPendingTableCellScrollTarget(view, pendingTarget, recovery.cell);
+      }
     }
     return true;
   }
@@ -2429,7 +2886,7 @@ function navigateTableArrow(
     targetPosition = direction === 'left' ? 'end' : 'start';
   } else {
     rowIndex += direction === 'up' ? -1 : 1;
-    targetPosition = Math.max(0, position - activeStart);
+    targetPosition = tableCellVisibleOffset(view.state, active.cell, position);
   }
 
   const target = active.layout.semanticRows[rowIndex]?.cells[columnIndex];
@@ -2443,19 +2900,43 @@ function navigateTableArrow(
       ? target.cursor
       : targetPosition === 'end'
         ? target.to
-        : target.cursor + Math.min(targetPosition, target.to - target.from);
-  view.dispatch({
+        : tableCellPositionAtVisibleOffset(view.state, target, targetPosition);
+  const association =
+    typeof targetPosition === 'number'
+      ? cursor === target.to && target.from < target.to
+        ? -1
+        : cursor === target.from
+          ? 1
+          : 0
+      : targetPosition === 'end'
+        ? -1
+        : 0;
+  const selection = EditorSelection.create([EditorSelection.cursor(cursor, association)]);
+  const pendingTarget = horizontal
+    ? undefined
+    : pendingTableCellScrollTarget(view, active.layout.from, target, selection.main.head);
+  dispatchPreservingRenderedTableCellScroll(view, active.layout.from, target, {
     // Keep CodeMirror's geometry on the previous cell side of the hidden Markdown boundary.
-    selection: EditorSelection.create([
-      EditorSelection.cursor(cursor, targetPosition === 'end' ? -1 : 0),
-    ]),
+    selection,
+    // Replace a pending input target, then consume this tagged target before CodeMirror can use
+    // hidden Markdown-source geometry. The rendered-cell measure below owns vertical scrolling.
+    effects:
+      pendingTarget === undefined
+        ? undefined
+        : EditorView.scrollIntoView(selection.main, {
+            x: 'center',
+            y: 'center',
+            xMargin: 0,
+            yMargin: 0,
+          }),
     scrollIntoView: false,
     userEvent: 'select',
   });
-  renderedTableCell(view, active.layout.from, target)?.scrollIntoView?.({
-    block: 'nearest',
-    inline: 'nearest',
-  });
+  if (pendingTarget === undefined) {
+    requestRenderedTableCellVerticalScroll(view, active.layout.from, target);
+  } else {
+    finishPendingTableCellScrollTarget(view, pendingTarget, target);
+  }
   return true;
 }
 
@@ -2487,10 +2968,7 @@ function navigateSelectedTableCells(
     scrollIntoView: false,
     userEvent: 'select',
   });
-  renderedTableCell(view, context.layout.from, target)?.scrollIntoView?.({
-    block: 'nearest',
-    inline: 'nearest',
-  });
+  requestRenderedTableCellVerticalScroll(view, context.layout.from, target);
   return true;
 }
 
@@ -2543,22 +3021,16 @@ function extendTableCellSelection(
       view.state,
       view.moveVertically(editorSelection, direction === 'down').head,
     );
-    const geometryCrossesRow =
+    const geometryStaysInCell =
       verticalTarget !== null &&
       verticalTarget.layout.from === layout.from &&
-      verticalTarget.cell.rowIndex !== headCell.rowIndex;
-    const wholeCellEndsAtDirectionalBoundary =
-      !editorSelection.empty &&
-      editorSelection.from <= headCell.from &&
-      editorSelection.to >= headCell.to &&
-      (direction === 'down'
-        ? editorSelection.head === headCell.to
-        : editorSelection.head === headCell.from);
-    if (editorSelection.empty ? !geometryCrossesRow : !wholeCellEndsAtDirectionalBoundary) {
+      verticalTarget.cell.rowIndex === headCell.rowIndex &&
+      verticalTarget.cell.columnIndex === headCell.columnIndex;
+    if (geometryStaysInCell) {
       return false;
     }
   }
-  const target = adjacentTableCell(layout, headCell, direction) ?? headCell;
+  const target = adjacentSelectionTableCell(layout, headCell, direction) ?? headCell;
   view.dispatch({
     selection: EditorSelection.cursor(
       layout.semanticRows[anchorPosition.row]?.cells[anchorPosition.column]?.cursor ?? layout.from,
@@ -2571,11 +3043,20 @@ function extendTableCellSelection(
     scrollIntoView: false,
     userEvent: 'select',
   });
-  renderedTableCell(view, layout.from, target)?.scrollIntoView?.({
-    block: 'nearest',
-    inline: 'nearest',
-  });
+  requestRenderedTableCellVerticalScroll(view, layout.from, target);
   return true;
+}
+
+function adjacentSelectionTableCell(
+  layout: TableLayout,
+  cell: TableCellLayout,
+  direction: 'left' | 'right' | 'up' | 'down',
+): TableCellLayout | null {
+  if (direction === 'up' || direction === 'down') {
+    return adjacentTableCell(layout, cell, direction);
+  }
+  const column = cell.columnIndex + (direction === 'left' ? -1 : 1);
+  return layout.semanticRows[cell.rowIndex]?.cells[column] ?? null;
 }
 
 function adjacentTableCell(
@@ -2630,10 +3111,7 @@ function repairSkippedTableLineMovement(view: EditorView, direction: 'up' | 'dow
       scrollIntoView: false,
       userEvent: 'select',
     });
-    renderedTableCell(view, target.layout.from, target.cell)?.scrollIntoView?.({
-      block: 'nearest',
-      inline: 'nearest',
-    });
+    requestRenderedTableCellVerticalScroll(view, target.layout.from, target.cell);
     return true;
   }
   const movementFrom = Math.min(selection.head, moved.head);
@@ -2656,10 +3134,7 @@ function repairSkippedTableLineMovement(view: EditorView, direction: 'up' | 'dow
       scrollIntoView: false,
       userEvent: 'select',
     });
-    renderedTableCell(view, target.layout.from, target.cell)?.scrollIntoView?.({
-      block: 'nearest',
-      inline: 'nearest',
-    });
+    requestRenderedTableCellVerticalScroll(view, target.layout.from, target.cell);
     return true;
   }
   view.dispatch({
@@ -2757,6 +3232,18 @@ function protectOrDeleteTableStructure(
   const position = selection.head;
   const activeStart = active.cell.from === active.cell.to ? active.cell.cursor : active.cell.from;
   const activeEnd = active.cell.from === active.cell.to ? active.cell.cursor : active.cell.to;
+  const escaped = tableEscapeSequenceForDeletion(view.state, active.cell, position, direction);
+  if (escaped !== null) {
+    view.dispatch({
+      changes: { from: escaped.from, to: escaped.to, insert: '' },
+      selection: EditorSelection.cursor(escaped.from, 1),
+      annotations: Transaction.userEvent.of(
+        direction === 'backward' ? 'delete.backward' : 'delete.forward',
+      ),
+      scrollIntoView: false,
+    });
+    return true;
+  }
   if (direction === 'backward') {
     const before = position > 0 ? view.state.sliceDoc(position - 1, position) : '';
     return isStructuralCharacter(before) || position <= activeStart;
@@ -3423,6 +3910,94 @@ function editableCellContainsPosition(cell: TableCellLayout, position: number): 
   return cell.from === cell.to
     ? position === cell.cursor
     : position >= cell.from && position <= cell.to;
+}
+
+function tableEscapeSequences(state: EditorState, cell: TableCellLayout): TableEscapeSequence[] {
+  const sequences: TableEscapeSequence[] = [];
+  const source = state.sliceDoc(cell.from, cell.to);
+  for (let offset = 0; offset + 1 < source.length; offset += 1) {
+    if (
+      source[offset] !== '\\' ||
+      !isMarkdownEscapableCharacter(source[offset + 1]!) ||
+      !isVisibleTableEscape(state, cell.from + offset, source[offset + 1]!)
+    ) {
+      continue;
+    }
+    sequences.push({ from: cell.from + offset, to: cell.from + offset + 2 });
+    offset += 1;
+  }
+  return sequences;
+}
+
+function isVisibleTableEscape(state: EditorState, from: number, escapedCharacter: string): boolean {
+  if (escapedCharacter === '|') {
+    return true;
+  }
+  const node = syntaxTree(state).resolveInner(from, 1);
+  return node.name === 'Escape' && node.from === from && node.to === from + 2;
+}
+
+function tableEscapeSequenceForDeletion(
+  state: EditorState,
+  cell: TableCellLayout,
+  position: number,
+  direction: 'backward' | 'forward',
+): TableEscapeSequence | null {
+  return (
+    tableEscapeSequences(state, cell).find((sequence) =>
+      direction === 'backward'
+        ? position > sequence.from && position <= sequence.to
+        : position >= sequence.from && position < sequence.to,
+    ) ?? null
+  );
+}
+
+function tableCellVisibleOffset(
+  state: EditorState,
+  cell: TableCellLayout,
+  position: number,
+): number {
+  const limit = Math.max(cell.from, Math.min(position, cell.to));
+  let sourcePosition = cell.from;
+  let visibleOffset = 0;
+  for (const sequence of tableEscapeSequences(state, cell)) {
+    if (sequence.from >= limit) {
+      break;
+    }
+    visibleOffset += sequence.from - sourcePosition;
+    if (limit < sequence.to) {
+      return visibleOffset;
+    }
+    visibleOffset += 1;
+    sourcePosition = sequence.to;
+  }
+  return visibleOffset + (limit - sourcePosition);
+}
+
+function tableCellPositionAtVisibleOffset(
+  state: EditorState,
+  cell: TableCellLayout,
+  requestedOffset: number,
+): number {
+  const visibleTarget = Math.max(0, requestedOffset);
+  let sourcePosition = cell.from;
+  let visibleOffset = 0;
+  for (const sequence of tableEscapeSequences(state, cell)) {
+    const plainLength = sequence.from - sourcePosition;
+    if (visibleTarget <= visibleOffset + plainLength) {
+      return sourcePosition + (visibleTarget - visibleOffset);
+    }
+    visibleOffset += plainLength + 1;
+    if (visibleTarget <= visibleOffset) {
+      return sequence.to;
+    }
+    sourcePosition = sequence.to;
+  }
+  return Math.min(cell.to, sourcePosition + (visibleTarget - visibleOffset));
+}
+
+function isMarkdownEscapableCharacter(value: string): boolean {
+  return /^[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]$/u.test(value);
 }
 
 function selectedTableContext(state: EditorState): SelectionContext | null {

@@ -106,5 +106,14 @@
 - [x] Preserve an existing escaped wiki-link alias separator (`\|`) when completing a target inside a Markdown table.
 - [x] Preserve external scroll while undoing or redoing Markdown-table content and structure changes.
 - [x] Ignore malformed table copy/cut events without clipboard data instead of reporting a browser error.
+- [x] Convert vertical Shift+Arrow selection to semantic cells whenever native geometry leaves a populated Markdown-table cell.
+- [x] Keep horizontal Shift+Arrow cell selection within its current Markdown-table row instead of wrapping into a rectangle.
+- [x] Render escaped Markdown-table punctuation without its escape marker and delete each visible escaped character atomically.
+- [x] Preserve the visible character column and active target cell when ArrowUp or ArrowDown moves between populated Markdown-table cells.
+- [x] Keep delayed Markdown-table cursor measurement safe when Source mode removes the table selection StateField.
+- [x] Keep literal backslashes visible and independently editable where punctuation is not syntactically escaped inside Markdown-table inline code or raw HTML.
+- [x] Exclude hidden Markdown-table escape markers from fallback caret geometry so the visible cursor stays aligned around escaped characters.
+- [x] Keep ArrowUp and ArrowDown in the same table column when pressed immediately after typing into an empty cell.
+- [x] Keep table-cell navigation from scrolling a visible target while minimally revealing a genuinely offscreen target.
 - [ ] Eliminate the inline `style` attribute CSP violation from Markdown-editor Source mode without changing its placement or interactions.
 - [ ] Add ordinary-file attachment support with a separate transport and insertion contract, configurable picker, paste, and drop sources, exact MIME and size validation, sequential retryable queues, and non-image preview semantics.
