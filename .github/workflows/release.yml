@@ -1,0 +1,215 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      release_commit:
+        description: Full commit SHA of the published release that is missing its tag
+        required: true
+        type: string
+
+concurrency:
+  group: design-system-release
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  gate:
+    name: Verify unique release and archive
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      package_name: ${{ steps.release.outputs.package_name }}
+      package_version: ${{ steps.release.outputs.package_version }}
+      tag: ${{ steps.release.outputs.tag }}
+      tag_message: ${{ steps.release.outputs.tag_message }}
+      archive_filename: ${{ steps.release.outputs.archive_filename }}
+      archive_sha256: ${{ steps.archive.outputs.sha256 }}
+
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.16.0
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Run checks and build distributable archive
+        run: make pack
+
+      - name: Validate unique release
+        id: release
+        run: node tools/release/check-release.mjs prepublish >> "$GITHUB_OUTPUT"
+
+      - name: Record verified archive digest
+        id: archive
+        env:
+          ARCHIVE_PATH: ${{ steps.release.outputs.archive_path }}
+        run: echo "sha256=$(sha256sum "$ARCHIVE_PATH" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve verified archive
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: npm-package-${{ github.sha }}
+          path: ${{ steps.release.outputs.archive_path }}
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  publish:
+    name: Publish verified archive
+    if: github.event_name == 'push'
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Set up Node.js and npm registry
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.16.0
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+
+      - name: Download verified archive
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: npm-package-${{ github.sha }}
+          path: dist/releases
+
+      - name: Verify downloaded archive digest
+        env:
+          ARCHIVE_PATH: dist/releases/${{ needs.gate.outputs.archive_filename }}
+          EXPECTED_SHA256: ${{ needs.gate.outputs.archive_sha256 }}
+        run: echo "$EXPECTED_SHA256  $ARCHIVE_PATH" | sha256sum --check --strict
+
+      - name: Publish verified archive
+        env:
+          ARCHIVE_PATH: dist/releases/${{ needs.gate.outputs.archive_filename }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish "$ARCHIVE_PATH" --access public --registry=https://registry.npmjs.org
+
+      - name: Confirm published package
+        env:
+          PACKAGE_NAME: ${{ needs.gate.outputs.package_name }}
+          PACKAGE_VERSION: ${{ needs.gate.outputs.package_version }}
+        run: |
+          published_version="$(npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version --registry=https://registry.npmjs.org --prefer-online --cache "$RUNNER_TEMP/npm-confirm-cache")"
+          test "$published_version" = "$PACKAGE_VERSION"
+
+  tag:
+    name: Create immutable annotated release tag
+    if: github.event_name == 'push'
+    needs:
+      - gate
+      - publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out exact release commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Create immutable annotated release tag
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+          RELEASE_TAG: ${{ needs.gate.outputs.tag }}
+          RELEASE_TAG_MESSAGE: ${{ needs.gate.outputs.tag_message }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag --annotate "$RELEASE_TAG" --message "$RELEASE_TAG_MESSAGE" "$RELEASE_COMMIT"
+          git push origin "refs/tags/$RELEASE_TAG"
+
+  validate-recovery:
+    name: Validate tag-only recovery
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      release_commit: ${{ steps.commit.outputs.release_commit }}
+      tag: ${{ steps.release.outputs.tag }}
+      tag_message: ${{ steps.release.outputs.tag_message }}
+
+    steps:
+      - name: Check out trusted recovery workflow
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: refs/heads/main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.16.0
+          package-manager-cache: false
+
+      - name: Validate release commit
+        id: commit
+        env:
+          RELEASE_COMMIT: ${{ inputs.release_commit }}
+        run: |
+          node tools/release/check-release.mjs validate-recovery-commit "$RELEASE_COMMIT"
+          echo "release_commit=$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
+
+      - name: Check out release commit
+        env:
+          RELEASE_COMMIT: ${{ inputs.release_commit }}
+        run: git checkout --detach "$RELEASE_COMMIT"
+
+      - name: Validate tag-only recovery
+        id: release
+        run: node tools/release/check-release.mjs recover-tag >> "$GITHUB_OUTPUT"
+
+  recover-tag:
+    name: Create recovered release tag
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate-recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out validated release commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.validate-recovery.outputs.release_commit }}
+
+      - name: Create immutable annotated release tag
+        env:
+          RELEASE_COMMIT: ${{ needs.validate-recovery.outputs.release_commit }}
+          RELEASE_TAG: ${{ needs.validate-recovery.outputs.tag }}
+          RELEASE_TAG_MESSAGE: ${{ needs.validate-recovery.outputs.tag_message }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag --annotate "$RELEASE_TAG" --message "$RELEASE_TAG_MESSAGE" "$RELEASE_COMMIT"
+          git push origin "refs/tags/$RELEASE_TAG"

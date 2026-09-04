@@ -4,6 +4,10 @@
   "description": "Application-independent Angular UI and Markdown building blocks.",
   "author": "Dmitriy Lunev",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alittlemore-dev/design-system.git"
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"

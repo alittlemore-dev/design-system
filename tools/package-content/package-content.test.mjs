@@ -42,6 +42,11 @@ const expectedDependencies = {
   tslib: '^2.3.0',
 };
 
+const expectedRepository = {
+  type: 'git',
+  url: 'https://github.com/alittlemore-dev/design-system.git',
+};
+
 function createValidFixture() {
   return {
     builtPackageJson: {
@@ -52,6 +57,7 @@ function createValidFixture() {
         access: 'public',
         registry: 'https://registry.npmjs.org',
       },
+      repository: structuredClone(expectedRepository),
       exports: structuredClone(expectedExports),
       peerDependencies: structuredClone(expectedPeerDependencies),
       dependencies: structuredClone(expectedDependencies),
@@ -60,6 +66,7 @@ function createValidFixture() {
     sourcePackageJson: {
       name: '@scope/package',
       version: '0.1.0',
+      repository: structuredClone(expectedRepository),
     },
     packResult: {
       name: '@scope/package',
@@ -295,6 +302,23 @@ test('rejects package identity, publication metadata, and export-map drift', () 
       'manifest-field-mismatch',
       'manifest-field-mismatch',
     ],
+  );
+});
+
+test('rejects repository metadata drift in the distributable manifest', () => {
+  const fixture = createValidFixture();
+  fixture.builtPackageJson.repository.url = 'https://github.com/example/design-system.git';
+
+  const violations = findPackageContentViolations({
+    ...fixture,
+    expectedDependencies,
+    expectedExports,
+    expectedPeerDependencies,
+  });
+
+  assert.deepEqual(
+    violations.map(({ code, field }) => ({ code, field })),
+    [{ code: 'manifest-field-mismatch', field: 'repository' }],
   );
 });
 

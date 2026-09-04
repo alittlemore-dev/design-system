@@ -2,12 +2,19 @@
 
 Status: accepted on 2026-09-04.
 
-## Current state
+## Automation
 
-The local packed-archive workflow described below is available now. The stable-release workflow
-becomes active only after the repository's push-to-`main` publication task is complete. Until then,
-`0.1.0` remains unreleased, changes accumulate under `Unreleased` in the repository changelog, and
-contributors must not publish or create release tags manually.
+Pull requests to `main` run `.github/workflows/ci.yml`, which executes the Make-based package gate
+without write permissions. Every push to `main` runs `.github/workflows/release.yml`, repeats the
+same gate, publishes one unique stable npm version, and creates its annotated release tag. The
+release workflow also exposes a manual tag-only recovery job; it never exposes a manual publish
+path.
+
+Release runs share one non-cancelling FIFO concurrency queue. GitHub retains at most 100 waiting
+runs for a `queue: max` group, so maintainers must stop merging or pushing while that queue is full
+and investigate the blocked release before accepting another `main` update. This operational limit
+preserves the rule that every accepted push is released instead of allowing GitHub to evict an
+older pending run.
 
 ## Local packed-archive workflow
 
@@ -19,6 +26,16 @@ Run the package contract checks and inspect the archive shape without retaining 
 ```sh
 make verify-package
 ```
+
+Run the complete quality gate and retain the distributable archive under `dist/releases/`:
+
+```sh
+make pack
+```
+
+`make pack` runs `make check` before packing, uses an isolated temporary npm cache, recreates the
+release-artifact directory, and records the single archive's npm metadata next to it. Generated
+release artifacts remain ignored by Git.
 
 Run the interactive packed-package demo:
 
@@ -135,13 +152,27 @@ The push to `main`, not a version tag, starts the release. CI must:
 1. install dependencies reproducibly and run the required repository and package checks;
 2. reject a non-stable version, an npm name-and-version pair that already exists, or an existing
    `vX.Y.Z` tag;
-3. publish the already verified archive to the public npm registry;
-4. create and push an immutable annotated `vX.Y.Z` tag on the exact `main` commit, with the message
+3. record the checked archive's SHA-256 digest and transfer that archive to a separate OIDC-only
+   publication job;
+4. verify the downloaded archive digest, publish that exact archive to the public npm registry, and
+   confirm its version from a fresh registry lookup;
+5. create and push an immutable annotated `vX.Y.Z` tag on the exact `main` commit, with the message
    `@alittlemoron/design-system vX.Y.Z`.
+
+The release guard requires the source manifest, built manifest, packed archive metadata, and
+versioned changelog heading to agree. It rejects prerelease or build metadata, a repository URL
+other than `https://github.com/alittlemore-dev/design-system.git`, any existing npm version, and any
+existing release tag. Registry `404` is the only response treated as an absent version; registry,
+authentication, and network failures stop the release.
 
 CI is the only supported publication and release-tag principal. Contributors do not run
 `npm publish`, create release tags, or use a tag to trigger publication. The repository does not
 create GitHub Releases; the versioned changelog section is the release note.
+
+The gate job has read-only repository access and does not receive npm OIDC. The publication job
+receives npm OIDC but never checks out or executes repository code. The tag job receives repository
+write access only after publication succeeds. Third-party Actions are pinned to full commit SHAs;
+their adjacent version comments are review hints, not mutable selectors.
 
 ## Failure recovery
 
@@ -153,3 +184,24 @@ not be reused or republished. Run the CI-owned tag-only recovery path against th
 commit. That path must confirm that the npm version exists, the commit's manifest and changelog both
 name the same version, and the tag is absent before creating it. Never delete, move, or overwrite a
 release tag.
+
+Start the manual `Release` workflow with the original release's full 40-character lowercase commit
+SHA. Recovery accepts only a commit that resolves exactly and belongs to the `origin/main` history.
+Its read-only validation job checks out that commit only after validation and confirms the package,
+changelog, registry, and tag state. A separate repository-write job receives only the validated
+metadata and creates the missing annotated tag without executing code from the release commit.
+Neither recovery job receives npm OIDC or contains a publication command.
+
+## Initial publication and trusted publishing
+
+Bootstrap `0.1.0` through the push workflow with a one-day granular npm token named
+`design-system-bootstrap-2026-09-04`. Restrict it to read/write access for the `@alittlemoron`
+scope, enable bypass 2FA, grant no organization access, and store it only in the repository secret
+`NPM_TOKEN`.
+
+After npm confirms `0.1.0` and CI creates `v0.1.0`, configure the package's GitHub Actions trusted
+publisher for organization `alittlemore-dev`, repository `design-system`, workflow filename
+`release.yml`, no GitHub environment, and direct `npm publish`. Then require 2FA while disallowing
+traditional tokens, delete the GitHub secret, revoke the bootstrap token, and verify both are gone.
+The next ordinary versioned push verifies OIDC end to end; until that release succeeds, the trusted
+publishing TODO remains open.

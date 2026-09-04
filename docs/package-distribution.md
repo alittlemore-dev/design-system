@@ -44,6 +44,10 @@ global style subpath without a concrete package requirement.
 The canonical registry is the public npm registry at `https://registry.npmjs.org`. The scoped
 package is public and declares public access in its publish configuration.
 
+The distributable manifest identifies its private source repository as
+`https://github.com/alittlemore-dev/design-system.git`. Package verification rejects repository
+metadata drift because npm trusted publishing binds publication to that repository.
+
 The package and its distributed source are licensed under MIT. The license file must be included in
 the published archive even while the source repository remains private.
 
@@ -64,7 +68,8 @@ The first publication is a bootstrap exception in authentication, not in publish
 uses a temporary granular npm token with read/write access, bypass-2FA enabled, a short expiration,
 and the narrowest scope npm permits. After publishing `0.1.0`, the owner configures this repository's
 GitHub Actions workflow as the npm trusted publisher, switches publication to OIDC, and immediately
-revokes the temporary token.
+revokes the temporary token. Traditional token publication is then disabled in the package settings,
+and the corresponding GitHub Actions secret is deleted.
 
 A private GitHub source repository can use npm trusted publishing, but npm provenance is unavailable
 while the repository is private. Making the repository public later may enable provenance; it is not
@@ -171,7 +176,7 @@ Both were rejected in favor of strict main-branch publication.
 
 ## Remaining deferred implementation
 
-The local archive workflow, dependency contracts, and package checks are now implemented and
-documented, and the release mechanics are defined in repository documentation. CI workflow files,
-the bootstrap npm credential, trusted-publisher setup, and release-tag automation remain an
-implementation task in `docs/TODO.md`.
+CI, archive construction, release guards, and release-tag automation are implemented in the
+repository. The bootstrap credential, initial `0.1.0` publication, trusted-publisher configuration,
+and credential revocation remain tracked in `docs/TODO.md` until they are completed and an ordinary
+OIDC release verifies the final publishing path.

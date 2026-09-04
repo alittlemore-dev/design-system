@@ -6,6 +6,10 @@ const PUBLICATION_METADATA = {
     access: 'public',
     registry: 'https://registry.npmjs.org',
   },
+  repository: {
+    type: 'git',
+    url: 'https://github.com/alittlemore-dev/design-system.git',
+  },
   sideEffects: ['./theme-preload.js'],
 };
 
@@ -72,6 +76,12 @@ export function findPackageContentViolations({
     'publishConfig',
     builtPackageJson.publishConfig,
     PUBLICATION_METADATA.publishConfig,
+  );
+  compareManifestField(
+    violations,
+    'repository',
+    builtPackageJson.repository,
+    PUBLICATION_METADATA.repository,
   );
   compareManifestField(
     violations,

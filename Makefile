@@ -1,6 +1,6 @@
 NPM ?= npm
 
-.PHONY: install test test-watch test-coverage lint typecheck format format-check build watch verify-package check test-api-surface check-api-surface update-api-surface test-styles check-styles demo check-demo install-demo-browser check-demo-browser
+.PHONY: install test test-watch test-coverage lint typecheck format format-check build watch verify-package pack check test-api-surface check-api-surface update-api-surface test-styles check-styles demo check-demo install-demo-browser check-demo-browser
 
 install:
 	$(NPM) ci
@@ -34,6 +34,9 @@ watch:
 
 verify-package:
 	$(NPM) run verify:package
+
+pack: check
+	$(NPM) run pack:package
 
 check:
 	$(NPM) run check
