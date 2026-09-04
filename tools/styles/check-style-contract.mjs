@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const executeFile = promisify(execFile);
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const packageRoot = join(repositoryRoot, 'dist/alittlemoron/design-system');
+const packageRoot = join(repositoryRoot, 'dist/alittlemore.dev/design-system');
 
 const { stderr, stdout } = await executeFile(
   process.execPath,

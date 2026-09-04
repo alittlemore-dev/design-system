@@ -4,7 +4,7 @@ Status: accepted on 2026-08-26.
 
 ## Decision
 
-`@alittlemoron/design-system` uses a hybrid dependency model. Angular, Angular CDK, RxJS, and
+`@alittlemore.dev/design-system` uses a hybrid dependency model. Angular, Angular CDK, RxJS, and
 Bootstrap are peer dependencies. Markdown, sanitization, syntax highlighting, CodeMirror, and
 Lezer packages are runtime dependencies installed with the design system.
 
@@ -25,7 +25,7 @@ union of those contracts.
 | Package infrastructure | None                                                                                            | tslib                                                                                                               |
 
 The editor must import UI and Markdown capabilities through
-`@alittlemoron/design-system` and `@alittlemoron/design-system/markdown`. It must not replace those
+`@alittlemore.dev/design-system` and `@alittlemore.dev/design-system/markdown`. It must not replace those
 entry-point relationships with source-relative imports. Jest and the repository test configuration
 are not published.
 

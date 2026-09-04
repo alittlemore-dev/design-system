@@ -32,7 +32,7 @@
             "assets": [
               {
                 "glob": "theme-preload.js",
-                "input": "node_modules/@alittlemoron/design-system",
+                "input": "node_modules/@alittlemore.dev/design-system",
                 "output": "/assets/design-system"
               },
               {

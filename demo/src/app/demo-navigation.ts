@@ -1,4 +1,4 @@
-import { type FoldableTreeItem, type FoldableTreeSection } from '@alittlemoron/design-system';
+import { type FoldableTreeItem, type FoldableTreeSection } from '@alittlemore.dev/design-system';
 
 export const DEMO_ROOT_ITEMS: readonly FoldableTreeItem[] = [
   { key: '/overview', label: 'Overview', badgeText: null },

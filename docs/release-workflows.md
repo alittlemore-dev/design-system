@@ -155,15 +155,20 @@ The push to `main`, not a version tag, starts the release. CI must:
 3. record the checked archive's SHA-256 digest and transfer that archive to a separate OIDC-only
    publication job;
 4. verify the downloaded archive digest, publish that exact archive to the public npm registry, and
-   confirm its version from a fresh registry lookup;
+   confirm its version using bounded retries with isolated npm caches;
 5. create and push an immutable annotated `vX.Y.Z` tag on the exact `main` commit, with the message
-   `@alittlemoron/design-system vX.Y.Z`.
+   `@alittlemore.dev/design-system vX.Y.Z`.
 
 The release guard requires the source manifest, built manifest, packed archive metadata, and
 versioned changelog heading to agree. It rejects prerelease or build metadata, a repository URL
 other than `https://github.com/alittlemore-dev/design-system.git`, any existing npm version, and any
 existing release tag. Registry `404` is the only response treated as an absent version; registry,
 authentication, and network failures stop the release.
+
+After publication, CI gives the public registry up to 12 isolated lookups, spaced 10 seconds apart,
+to expose the immutable version. An unexpected successful version response fails immediately. If
+all lookups still report an error, CI stops before tagging and emits the final registry error so the
+tag-only recovery path can be used after propagation completes.
 
 CI is the only supported publication and release-tag principal. Contributors do not run
 `npm publish`, create release tags, or use a tag to trigger publication. The repository does not
@@ -179,11 +184,12 @@ their adjacent version comments are review hints, not mutable selectors.
 If CI fails before npm confirms publication, fix the failure and retry with the same version only
 after confirming that the name-and-version pair is still absent from npm.
 
-If npm publication succeeds but tag creation fails, the npm version is already immutable and must
-not be reused or republished. Run the CI-owned tag-only recovery path against the original release
-commit. That path must confirm that the npm version exists, the commit's manifest and changelog both
-name the same version, and the tag is absent before creating it. Never delete, move, or overwrite a
-release tag.
+If npm publication succeeds but registry confirmation exhausts its bounded retries or tag creation
+fails, the npm version is already immutable and must not be reused or republished. Wait until a
+direct registry lookup confirms the version, then run the CI-owned tag-only recovery path against
+the original release commit. That path must confirm that the npm version exists, the commit's
+manifest and changelog both name the same version, and the tag is absent before creating it. Never
+delete, move, or overwrite a release tag.
 
 Start the manual `Release` workflow with the original release's full 40-character lowercase commit
 SHA. Recovery accepts only a commit that resolves exactly and belongs to the `origin/main` history.
@@ -194,14 +200,16 @@ Neither recovery job receives npm OIDC or contains a publication command.
 
 ## Initial publication and trusted publishing
 
-Bootstrap `0.1.0` through the push workflow with a one-day granular npm token named
-`design-system-bootstrap-2026-09-04`. Restrict it to read/write access for the `@alittlemoron`
-scope, enable bypass 2FA, grant no organization access, and store it only in the repository secret
-`NPM_TOKEN`.
+The repository originally bootstrapped `@alittlemoron/design-system@0.1.0`; its immutable
+`v0.1.0` tag remains the historical record of that release. Bootstrap the replacement
+`@alittlemore.dev/design-system@0.2.0` through the push workflow with a one-day granular npm token
+named `design-system-scope-migration-2026-09-04`. Restrict it to read/write access for the
+`alittlemore.dev` organization package, enable bypass 2FA, grant no unrelated package or
+organization access, and store it only in the repository secret `NPM_TOKEN`.
 
-After npm confirms `0.1.0` and CI creates `v0.1.0`, configure the package's GitHub Actions trusted
+After npm confirms `0.2.0` and CI creates `v0.2.0`, configure that package's GitHub Actions trusted
 publisher for organization `alittlemore-dev`, repository `design-system`, workflow filename
 `release.yml`, no GitHub environment, and direct `npm publish`. Then require 2FA while disallowing
-traditional tokens, delete the GitHub secret, revoke the bootstrap token, and verify both are gone.
-The next ordinary versioned push verifies OIDC end to end; until that release succeeds, the trusted
-publishing TODO remains open.
+traditional tokens, delete the GitHub secret, revoke the scope-migration token, and verify both are
+gone. The next ordinary versioned push verifies OIDC end to end; until that release succeeds, the
+trusted-publishing TODO remains open.

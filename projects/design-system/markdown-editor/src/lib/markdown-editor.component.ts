@@ -44,12 +44,12 @@ import {
   type Rect,
   type ViewUpdate,
 } from '@codemirror/view';
-import { ModalPageScrollLockService } from '@alittlemoron/design-system';
+import { ModalPageScrollLockService } from '@alittlemore.dev/design-system';
 import {
   MarkdownRendererService,
   type MarkdownWikiLinkRenderConfig,
   type MarkdownWikiLinkTargetGroup,
-} from '@alittlemoron/design-system/markdown';
+} from '@alittlemore.dev/design-system/markdown';
 import {
   MARKDOWN_EDITOR_COMMANDS,
   MARKDOWN_EDITOR_SHORTCUT_GROUPS,

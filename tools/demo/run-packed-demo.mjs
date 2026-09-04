@@ -7,18 +7,18 @@ import { fileURLToPath } from 'node:url';
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDirectory, '../..');
 const demoRoot = join(repositoryRoot, 'demo');
-const packageRoot = join(repositoryRoot, 'dist/alittlemoron/design-system');
+const packageRoot = join(repositoryRoot, 'dist/alittlemore.dev/design-system');
 const manifestPaths = [join(demoRoot, 'package.json'), join(demoRoot, 'package-lock.json')];
-const packedPackagePath = join(demoRoot, 'node_modules/@alittlemoron/design-system');
+const packedPackagePath = join(demoRoot, 'node_modules/@alittlemore.dev/design-system');
 const productionStatsPath = join(demoRoot, 'dist/design-system-demo/stats.json');
 const primaryEntryPointBundle =
-  '/@alittlemoron/design-system/fesm2022/alittlemoron-design-system.mjs';
+  '/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system.mjs';
 const markdownEntryPointBundle =
-  '/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown.mjs';
+  '/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system-markdown.mjs';
 const markdownEditorEntryPointBundle =
-  '/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown-editor.mjs';
+  '/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system-markdown-editor.mjs';
 const testingEntryPointBundle =
-  '/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-testing.mjs';
+  '/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system-testing.mjs';
 
 const demoScripts = new Map([
   ['start', 'start'],

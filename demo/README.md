@@ -1,7 +1,7 @@
 # Design-system demo
 
 This standalone Angular SSR application consumes the production archive of
-`@alittlemoron/design-system`. Its manifest and lock file deliberately do not depend on the package:
+`@alittlemore.dev/design-system`. Its manifest and lock file deliberately do not depend on the package:
 the repository runner builds and packs the library, installs the archive temporarily with
 `--no-save --package-lock=false`, runs the selected command, and restores `node_modules` from this
 directory's lock file.

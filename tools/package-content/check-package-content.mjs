@@ -14,7 +14,7 @@ import { findPackageContentViolations, parseNpmPackResult } from './package-cont
 const executeFile = promisify(execFile);
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const sourcePackageJsonPath = join(repositoryRoot, 'projects/design-system/package.json');
-const packageFolder = join(repositoryRoot, 'dist/alittlemoron/design-system');
+const packageFolder = join(repositoryRoot, 'dist/alittlemore.dev/design-system');
 const builtPackageJsonPath = join(packageFolder, 'package.json');
 
 async function main() {

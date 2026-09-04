@@ -4,7 +4,7 @@ import { redo, undo } from '@codemirror/commands';
 import { EditorSelection, Transaction } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { EMPTY, of, Subject, throwError } from 'rxjs';
-import { ModalPageScrollLockService } from '@alittlemoron/design-system';
+import { ModalPageScrollLockService } from '@alittlemore.dev/design-system';
 import {
   MarkdownEditorComponent,
   type MarkdownEditorImageConfig,

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "ng": "ng",
-    "build": "ng build @alittlemoron/design-system --configuration production",
+    "build": "ng build @alittlemore.dev/design-system --configuration production",
     "test": "npm run test:unit && npm run test:tools",
     "test:unit": "jest",
     "test:tools": "npm run test:api-surface && npm run test:package-content && npm run test:release && npm run test:styles",
@@ -34,7 +34,7 @@
     "check:demo": "npm run test:demo-tools && node tools/demo/run-packed-demo.mjs check",
     "install:demo-browser": "node tools/demo/run-packed-demo.mjs install-browser",
     "check:demo:browser": "npm run test:demo-tools && node tools/demo/run-packed-demo.mjs check-browser",
-    "watch": "ng build @alittlemoron/design-system --configuration development --watch"
+    "watch": "ng build @alittlemore.dev/design-system --configuration development --watch"
   },
   "dependencies": {
     "@angular/cdk": "22.1.0",

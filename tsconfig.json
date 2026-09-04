@@ -18,12 +18,12 @@
     "target": "ES2022",
     "module": "ES2022",
     "paths": {
-      "@alittlemoron/design-system": ["./dist/alittlemoron/design-system"],
-      "@alittlemoron/design-system/markdown": ["./dist/alittlemoron/design-system/markdown"],
-      "@alittlemoron/design-system/markdown-editor": [
-        "./dist/alittlemoron/design-system/markdown-editor"
+      "@alittlemore.dev/design-system": ["./dist/alittlemore.dev/design-system"],
+      "@alittlemore.dev/design-system/markdown": ["./dist/alittlemore.dev/design-system/markdown"],
+      "@alittlemore.dev/design-system/markdown-editor": [
+        "./dist/alittlemore.dev/design-system/markdown-editor"
       ],
-      "@alittlemoron/design-system/testing": ["./dist/alittlemoron/design-system/testing"]
+      "@alittlemore.dev/design-system/testing": ["./dist/alittlemore.dev/design-system/testing"]
     }
   },
   "angularCompilerOptions": {

@@ -19,7 +19,10 @@ import {
 const executeFile = promisify(execFile);
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const sourcePackageJsonPath = join(repositoryRoot, 'projects/design-system/package.json');
-const builtPackageJsonPath = join(repositoryRoot, 'dist/alittlemoron/design-system/package.json');
+const builtPackageJsonPath = join(
+  repositoryRoot,
+  'dist/alittlemore.dev/design-system/package.json',
+);
 const releaseDirectory = join(repositoryRoot, 'dist/releases');
 const packResultPath = join(releaseDirectory, 'pack-result.json');
 const changelogPath = join(repositoryRoot, 'CHANGELOG.md');

@@ -1,13 +1,13 @@
-# @alittlemoron/design-system
+# @alittlemore.dev/design-system
 
 Application-independent Angular UI and Markdown building blocks.
 
 The package exposes these TypeScript APIs:
 
-- `@alittlemoron/design-system` for application-independent UI;
-- `@alittlemoron/design-system/markdown` for Markdown rendering;
-- `@alittlemoron/design-system/markdown-editor` for the interactive Markdown editor;
-- `@alittlemoron/design-system/testing` for public test utilities.
+- `@alittlemore.dev/design-system` for application-independent UI;
+- `@alittlemore.dev/design-system/markdown` for Markdown rendering;
+- `@alittlemore.dev/design-system/markdown-editor` for the interactive Markdown editor;
+- `@alittlemore.dev/design-system/testing` for public test utilities.
 
 ## Independent UI components
 
@@ -24,7 +24,7 @@ import {
   NotificationService,
   SiteSelectComponent,
   type SiteSelectOption,
-} from '@alittlemoron/design-system';
+} from '@alittlemore.dev/design-system';
 ```
 
 | Import                         | Selector                   | Purpose                                                         |
@@ -47,7 +47,7 @@ error message; both kinds auto-dismiss after five seconds.
 
 ```ts
 import { Component, inject } from '@angular/core';
-import { NotificationAreaComponent, NotificationService } from '@alittlemoron/design-system';
+import { NotificationAreaComponent, NotificationService } from '@alittlemore.dev/design-system';
 
 @Component({
   standalone: true,
@@ -68,7 +68,7 @@ disabled state through the control, while the consumer continues to own validati
 ```ts
 import { Component } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { SiteSelectComponent, type SiteSelectOption } from '@alittlemoron/design-system';
+import { SiteSelectComponent, type SiteSelectOption } from '@alittlemore.dev/design-system';
 
 @Component({
   standalone: true,
@@ -126,7 +126,7 @@ Import the renderer independently from the editor:
 import {
   MarkdownRendererService,
   type MarkdownWikiLinkRenderConfig,
-} from '@alittlemoron/design-system/markdown';
+} from '@alittlemore.dev/design-system/markdown';
 
 const wikiLinks: MarkdownWikiLinkRenderConfig = {
   namespaces: [{ key: 'docs', label: 'Documentation' }],
@@ -158,7 +158,7 @@ import {
   type MarkdownEditorImageConfig,
   type MarkdownEditorLabels,
   type MarkdownEditorWikiLinkConfig,
-} from '@alittlemoron/design-system/markdown-editor';
+} from '@alittlemore.dev/design-system/markdown-editor';
 ```
 
 ```html
@@ -256,11 +256,11 @@ The public SCSS entry points are:
 Import tokens first, then Bootstrap, followed by only the optional capabilities an application uses:
 
 ```scss
-@use '@alittlemoron/design-system/styles/theme-tokens';
-@use '@alittlemoron/design-system/styles/bootstrap-overrides';
-@use '@alittlemoron/design-system/styles/cdk-overlay';
-@use '@alittlemoron/design-system/styles/ui';
-@use '@alittlemoron/design-system/styles/markdown';
+@use '@alittlemore.dev/design-system/styles/theme-tokens';
+@use '@alittlemore.dev/design-system/styles/bootstrap-overrides';
+@use '@alittlemore.dev/design-system/styles/cdk-overlay';
+@use '@alittlemore.dev/design-system/styles/ui';
+@use '@alittlemore.dev/design-system/styles/markdown';
 ```
 
 `bootstrap-overrides` already emits the Bootstrap base. Do not import Bootstrap separately or the
@@ -277,14 +277,14 @@ the cookie-consent banner, and application Markdown-wrapper selectors.
 
 ## Initial theme preload
 
-`@alittlemoron/design-system/theme-preload` exports the classic `theme-preload.js` web asset. Copy
+`@alittlemore.dev/design-system/theme-preload` exports the classic `theme-preload.js` web asset. Copy
 that file from the installed package into the application's web output, then load the self-hosted
 copy synchronously in `<head>` before application code and without `async` or `defer`:
 
 ```json
 {
   "glob": "theme-preload.js",
-  "input": "node_modules/@alittlemoron/design-system",
+  "input": "node_modules/@alittlemore.dev/design-system",
   "output": "/assets/design-system"
 }
 ```

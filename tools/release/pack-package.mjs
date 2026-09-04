@@ -10,7 +10,7 @@ import { packCommandArguments, resolveArchivePath } from './release.mjs';
 
 const executeFile = promisify(execFile);
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const packageDirectory = join(repositoryRoot, 'dist/alittlemoron/design-system');
+const packageDirectory = join(repositoryRoot, 'dist/alittlemore.dev/design-system');
 const releaseDirectory = join(repositoryRoot, 'dist/releases');
 const packResultPath = join(releaseDirectory, 'pack-result.json');
 

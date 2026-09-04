@@ -2,7 +2,7 @@ import {
   type MarkdownEditorImageConfig,
   type MarkdownEditorLabels,
   type MarkdownEditorWikiLinkConfig,
-} from '@alittlemoron/design-system/markdown-editor';
+} from '@alittlemore.dev/design-system/markdown-editor';
 import { of } from 'rxjs';
 
 export const MARKDOWN_EDITOR_LABELS: MarkdownEditorLabels = {

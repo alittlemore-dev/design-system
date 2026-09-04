@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
-  EXPECTED_PACKAGE_NAME,
   EXPECTED_REPOSITORY,
   classifyRegistryLookup,
   findReleaseViolations,
@@ -14,7 +13,8 @@ import {
   validateRecoveryCommit,
 } from './release.mjs';
 
-const version = '0.1.0';
+const packageName = '@alittlemore.dev/design-system';
+const version = '0.2.0';
 const repository = {
   type: 'git',
   url: EXPECTED_REPOSITORY,
@@ -24,14 +24,14 @@ function validReleaseFixture(mode = 'publish') {
   return {
     mode,
     sourcePackageJson: {
-      name: EXPECTED_PACKAGE_NAME,
+      name: packageName,
       version,
       repository,
     },
     builtPackageJson:
       mode === 'publish'
         ? {
-            name: EXPECTED_PACKAGE_NAME,
+            name: packageName,
             version,
             repository,
           }
@@ -39,9 +39,9 @@ function validReleaseFixture(mode = 'publish') {
     packResult:
       mode === 'publish'
         ? {
-            name: EXPECTED_PACKAGE_NAME,
+            name: packageName,
             version,
-            filename: 'alittlemoron-design-system-0.1.0.tgz',
+            filename: 'alittlemore.dev-design-system-0.2.0.tgz',
           }
         : undefined,
     changelog: `# Changelog\n\n## [${version}] - 2026-09-04\n\n### Added\n\n- Initial release.\n`,
@@ -77,7 +77,7 @@ test('rejects package identity drift across source, build, archive, and reposito
     url: 'https://github.com/example/design-system.git',
   };
   fixture.builtPackageJson.name = '@example/design-system';
-  fixture.packResult.version = '0.2.0';
+  fixture.packResult.version = '0.3.0';
 
   assert.deepEqual(
     findReleaseViolations(fixture).map(({ code }) => code),
@@ -146,35 +146,35 @@ test('classifies a matching npm view result as present', () => {
 test('derives immutable tag and GitHub outputs from package metadata', () => {
   assert.deepEqual(
     releaseMetadata(
-      { name: EXPECTED_PACKAGE_NAME, version: '0.1.0' },
-      '/workspace/dist/releases/alittlemoron-design-system-0.1.0.tgz',
+      { name: packageName, version },
+      '/workspace/dist/releases/alittlemore.dev-design-system-0.2.0.tgz',
     ),
     {
-      packageName: '@alittlemoron/design-system',
-      packageVersion: '0.1.0',
-      tag: 'v0.1.0',
-      tagMessage: '@alittlemoron/design-system v0.1.0',
-      archivePath: '/workspace/dist/releases/alittlemoron-design-system-0.1.0.tgz',
-      archiveFilename: 'alittlemoron-design-system-0.1.0.tgz',
+      packageName,
+      packageVersion: version,
+      tag: 'v0.2.0',
+      tagMessage: '@alittlemore.dev/design-system v0.2.0',
+      archivePath: '/workspace/dist/releases/alittlemore.dev-design-system-0.2.0.tgz',
+      archiveFilename: 'alittlemore.dev-design-system-0.2.0.tgz',
     },
   );
 
   assert.equal(
     formatGithubOutput({
-      packageName: '@alittlemoron/design-system',
-      packageVersion: '0.1.0',
-      tag: 'v0.1.0',
-      tagMessage: '@alittlemoron/design-system v0.1.0',
-      archivePath: '/workspace/dist/releases/alittlemoron-design-system-0.1.0.tgz',
-      archiveFilename: 'alittlemoron-design-system-0.1.0.tgz',
+      packageName,
+      packageVersion: version,
+      tag: 'v0.2.0',
+      tagMessage: '@alittlemore.dev/design-system v0.2.0',
+      archivePath: '/workspace/dist/releases/alittlemore.dev-design-system-0.2.0.tgz',
+      archiveFilename: 'alittlemore.dev-design-system-0.2.0.tgz',
     }),
     [
-      'package_name=@alittlemoron/design-system',
-      'package_version=0.1.0',
-      'tag=v0.1.0',
-      'tag_message=@alittlemoron/design-system v0.1.0',
-      'archive_path=/workspace/dist/releases/alittlemoron-design-system-0.1.0.tgz',
-      'archive_filename=alittlemoron-design-system-0.1.0.tgz',
+      'package_name=@alittlemore.dev/design-system',
+      'package_version=0.2.0',
+      'tag=v0.2.0',
+      'tag_message=@alittlemore.dev/design-system v0.2.0',
+      'archive_path=/workspace/dist/releases/alittlemore.dev-design-system-0.2.0.tgz',
+      'archive_filename=alittlemore.dev-design-system-0.2.0.tgz',
     ].join('\n'),
   );
 });
@@ -182,10 +182,10 @@ test('derives immutable tag and GitHub outputs from package metadata', () => {
 test('resolves only a basename tarball inside the release directory', () => {
   assert.equal(
     resolveArchivePath(
-      { filename: 'alittlemoron-design-system-0.1.0.tgz' },
+      { filename: 'alittlemore.dev-design-system-0.2.0.tgz' },
       '/workspace/dist/releases',
     ),
-    '/workspace/dist/releases/alittlemoron-design-system-0.1.0.tgz',
+    '/workspace/dist/releases/alittlemore.dev-design-system-0.2.0.tgz',
   );
 
   for (const filename of ['', '../package.tgz', 'nested/package.tgz', 'package.zip']) {
@@ -209,19 +209,16 @@ test('packs with an explicit private npm cache instead of the user cache', () =>
 });
 
 test('checks the exact public registry version through a fresh online cache', () => {
-  assert.deepEqual(
-    registryLookupArguments('@alittlemoron/design-system', '0.1.0', '/temporary/npm-cache'),
-    [
-      'view',
-      '@alittlemoron/design-system@0.1.0',
-      'version',
-      '--json',
-      '--registry=https://registry.npmjs.org',
-      '--prefer-online',
-      '--cache',
-      '/temporary/npm-cache',
-    ],
-  );
+  assert.deepEqual(registryLookupArguments(packageName, version, '/temporary/npm-cache'), [
+    'view',
+    '@alittlemore.dev/design-system@0.2.0',
+    'version',
+    '--json',
+    '--registry=https://registry.npmjs.org',
+    '--prefer-online',
+    '--cache',
+    '/temporary/npm-cache',
+  ]);
 });
 
 test('classifies only an npm E404 lookup as absent', () => {

@@ -1,16 +1,20 @@
 # Package distribution
 
-Status: accepted on 2026-08-25.
+Status: amended on 2026-09-04.
 
 ## Decision
 
 The design system is distributed as the public npm package
-`@alittlemoron/design-system`. It is owned by the personal npm account `alittlemoron` and published
-to the public npm registry only by CI.
+`@alittlemore.dev/design-system`. The npm organization `alittlemore.dev` owns the package, and the
+user `alittlemoron` initially administers that organization. Only CI publishes to the public npm
+registry.
 
-The package starts at version `0.1.0` under the MIT license. Once publication is enabled, every push
-to `main`, including documentation-only changes, is a release event and must carry a version that
-has not previously been published.
+The repository first published `@alittlemoron/design-system@0.1.0`. The incompatible move to the
+organization-owned package identity begins at `@alittlemore.dev/design-system@0.2.0`; the existing
+`v0.1.0` tag remains immutable and records the former package release. Both identities use the MIT
+license. Once publication is enabled for the new identity, every push to `main`, including
+documentation-only changes, is a release event and must carry a version that has not previously
+been published.
 
 Local archive integration is exercised by a repository-owned demo application.
 
@@ -18,20 +22,20 @@ Local archive integration is exercised by a repository-owned demo application.
 
 There is one installable and atomically versioned package. Its public TypeScript entry points are:
 
-- `@alittlemoron/design-system` for application-independent UI;
-- `@alittlemoron/design-system/markdown` for Markdown rendering;
-- `@alittlemoron/design-system/markdown-editor` for the interactive Markdown editor;
-- `@alittlemoron/design-system/testing` for public test utilities.
+- `@alittlemore.dev/design-system` for application-independent UI;
+- `@alittlemore.dev/design-system/markdown` for Markdown rendering;
+- `@alittlemore.dev/design-system/markdown-editor` for the interactive Markdown editor;
+- `@alittlemore.dev/design-system/testing` for public test utilities.
 
 Its public SCSS subpaths are:
 
-- `@alittlemoron/design-system/styles/theme-tokens`;
-- `@alittlemoron/design-system/styles/bootstrap-overrides`;
-- `@alittlemoron/design-system/styles/cdk-overlay`;
-- `@alittlemoron/design-system/styles/ui`;
-- `@alittlemoron/design-system/styles/markdown`.
+- `@alittlemore.dev/design-system/styles/theme-tokens`;
+- `@alittlemore.dev/design-system/styles/bootstrap-overrides`;
+- `@alittlemore.dev/design-system/styles/cdk-overlay`;
+- `@alittlemore.dev/design-system/styles/ui`;
+- `@alittlemore.dev/design-system/styles/markdown`.
 
-Its public web-asset subpath is `@alittlemoron/design-system/theme-preload`, which resolves to the
+Its public web-asset subpath is `@alittlemore.dev/design-system/theme-preload`, which resolves to the
 published classic `theme-preload.js` file. Applications copy this file from the package to their web
 output and load the self-hosted copy synchronously in `<head>` without `async` or `defer`. It is not
 bundled into a TypeScript entry point.
@@ -51,25 +55,29 @@ metadata drift because npm trusted publishing binds publication to that reposito
 The package and its distributed source are licensed under MIT. The license file must be included in
 the published archive even while the source repository remains private.
 
-The package name was unregistered when checked on 2026-08-25. Availability is not reserved by this
-document; only the first successful publication reserves the name.
+Availability of `@alittlemore.dev/design-system@0.2.0` must be confirmed immediately before its
+bootstrap publication. This document does not reserve a package name; the npm organization must
+exist and only the first successful publication reserves the new package identity.
 
 ## Ownership and publishing authority
 
-The npm user `alittlemoron` is the sole package owner and maintainer. Publishing authority belongs
-only to the repository's CI workflow:
+The npm organization `alittlemore.dev` owns the package. The npm user `alittlemoron` initially
+administers the organization, while publishing authority belongs only to the repository's CI
+workflow:
 
 - local and manually authenticated `npm publish` commands are not a supported release path;
 - CI publishes only after the required repository checks and package verification pass;
 - npm registry metadata is authoritative for package ownership;
-- adding another maintainer or transferring the package requires an explicit ownership decision.
+- changing organization membership or transferring the package requires an explicit ownership
+  decision.
 
 The first publication is a bootstrap exception in authentication, not in publishing authority. CI
-uses a temporary granular npm token with read/write access, bypass-2FA enabled, a short expiration,
-and the narrowest scope npm permits. After publishing `0.1.0`, the owner configures this repository's
-GitHub Actions workflow as the npm trusted publisher, switches publication to OIDC, and immediately
-revokes the temporary token. Traditional token publication is then disabled in the package settings,
-and the corresponding GitHub Actions secret is deleted.
+uses a temporary granular npm token with read/write access to the `alittlemore.dev` organization
+package, bypass-2FA enabled, a short expiration, and no unrelated package or organization access.
+After publishing `0.2.0`, the organization administrator configures this repository's GitHub Actions
+workflow as the npm trusted publisher, switches publication to OIDC, and immediately revokes the
+temporary token. Traditional token publication is then disabled in the package settings, and the
+corresponding GitHub Actions secret is deleted.
 
 A private GitHub source repository can use npm trusted publishing, but npm provenance is unavailable
 while the repository is private. Making the repository public later may enable provenance; it is not
@@ -131,7 +139,9 @@ ordinary `make check` quality gate.
 
 ## Initial versioning scheme
 
-The package begins at `0.1.0`. All public entry points and styles share this version.
+The repository began at `0.1.0` under the former package identity. The organization-owned package
+begins at `0.2.0` because changing the install name is incompatible and `v0.1.0` already records the
+former release. All public entry points and styles share one version.
 
 Before `1.0.0`:
 
@@ -150,7 +160,7 @@ are defined in [Release workflows](release-workflows.md).
 
 - The public scope makes the package installable without registry credentials.
 - Every file included in the npm archive is publicly inspectable.
-- CI is the only release principal, while the personal npm account remains the sole owner.
+- CI is the only release principal, while the npm organization owns the package.
 - Main represents a released version after publication is enabled.
 - The repository demo provides a repeatable package-faithful local loop.
 - One version covers UI, Markdown rendering, the editor, styles, and test utilities.
@@ -176,7 +186,8 @@ Both were rejected in favor of strict main-branch publication.
 
 ## Remaining deferred implementation
 
-CI, archive construction, release guards, and release-tag automation are implemented in the
-repository. The bootstrap credential, initial `0.1.0` publication, trusted-publisher configuration,
-and credential revocation remain tracked in `docs/TODO.md` until they are completed and an ordinary
-OIDC release verifies the final publishing path.
+CI, archive construction, release guards, release-tag automation, and the former identity's
+`0.1.0` bootstrap are complete. Creating and verifying the `alittlemore.dev` npm organization,
+bootstrapping `@alittlemore.dev/design-system@0.2.0`, configuring trusted publishing, revoking the
+migration credential, and verifying the next ordinary OIDC release remain tracked in
+`docs/TODO.md`.

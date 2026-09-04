@@ -48,6 +48,9 @@ test('push releases are fully queued and isolate gate, OIDC, and tag permissions
   assert.doesNotMatch(publish, /actions\/checkout|contents: write/);
   assert.match(publish, /npm publish "\$ARCHIVE_PATH"/);
   assert.match(publish, /sha256sum --check --strict/);
+  assert.match(publish, /for attempt in \{1\.\.12\}/);
+  assert.match(publish, /sleep 10/);
+  assert.match(publish, /npm-confirm-error\.log/);
 
   const tag = jobBlock(releaseWorkflow, 'tag');
   assert.match(tag, /permissions:\n {6}contents: write/);

@@ -10,12 +10,12 @@ module.exports = {
   testMatch: ['<rootDir>/projects/design-system/**/src/**/*.spec.ts'],
   modulePathIgnorePatterns: ['<rootDir>/dist/'],
   moduleNameMapper: {
-    '^@alittlemoron/design-system$': '<rootDir>/projects/design-system/src/public-api.ts',
-    '^@alittlemoron/design-system/markdown$':
+    '^@alittlemore\\.dev/design-system$': '<rootDir>/projects/design-system/src/public-api.ts',
+    '^@alittlemore\\.dev/design-system/markdown$':
       '<rootDir>/projects/design-system/markdown/src/public-api.ts',
-    '^@alittlemoron/design-system/markdown-editor$':
+    '^@alittlemore\\.dev/design-system/markdown-editor$':
       '<rootDir>/projects/design-system/markdown-editor/src/public-api.ts',
-    '^@alittlemoron/design-system/testing$':
+    '^@alittlemore\\.dev/design-system/testing$':
       '<rootDir>/projects/design-system/testing/src/public-api.ts',
   },
   transform: {

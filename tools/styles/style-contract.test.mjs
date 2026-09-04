@@ -175,7 +175,7 @@ async function compileStyle(packageRoot, entryPoint) {
 
 async function readNotificationAreaStyles() {
   if (process.env['STYLE_PACKAGE_ROOT'] !== undefined) {
-    return readFile(join(sourcePackageRoot, 'fesm2022/alittlemoron-design-system.mjs'), 'utf8');
+    return readFile(join(sourcePackageRoot, 'fesm2022/alittlemore.dev-design-system.mjs'), 'utf8');
   }
   return sass.compile(
     join(sourcePackageRoot, 'src/lib/notifications/notification-area.component.scss'),

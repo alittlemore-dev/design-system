@@ -21,7 +21,7 @@ import {
   type MarkdownWikiLinkNamespace,
   type MarkdownWikiLinkTarget,
   type MarkdownWikiLinkTargetGroup,
-} from '@alittlemoron/design-system/markdown';
+} from '@alittlemore.dev/design-system/markdown';
 
 export interface WikiLinkCompletionData {
   readonly namespaces: readonly MarkdownWikiLinkNamespace[];

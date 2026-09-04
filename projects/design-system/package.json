@@ -1,6 +1,6 @@
 {
-  "name": "@alittlemoron/design-system",
-  "version": "0.1.0",
+  "name": "@alittlemore.dev/design-system",
+  "version": "0.2.0",
   "description": "Application-independent Angular UI and Markdown building blocks.",
   "author": "Dmitriy Lunev",
   "license": "MIT",

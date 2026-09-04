@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { ControlValidationStateDirective } from '@alittlemoron/design-system';
+import { ControlValidationStateDirective } from '@alittlemore.dev/design-system';
 
 @Component({
   selector: 'ds-public-control-validation-state-host',

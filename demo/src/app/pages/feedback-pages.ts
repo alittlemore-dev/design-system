@@ -7,7 +7,7 @@ import {
   NotificationAreaComponent,
   NotificationService,
   type ErrorDisplay,
-} from '@alittlemoron/design-system';
+} from '@alittlemore.dev/design-system';
 
 import { DemoPageComponent } from '../shared/demo-page.component';
 

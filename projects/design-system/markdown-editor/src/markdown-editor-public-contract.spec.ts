@@ -5,7 +5,7 @@ import {
   type MarkdownEditorImageConfig,
   type MarkdownEditorLabels,
   type MarkdownEditorWikiLinkConfig,
-} from '@alittlemoron/design-system/markdown-editor';
+} from '@alittlemore.dev/design-system/markdown-editor';
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;

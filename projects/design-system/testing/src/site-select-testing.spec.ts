@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SiteSelectComponent, type SiteSelectOption } from '@alittlemoron/design-system';
+import { SiteSelectComponent, type SiteSelectOption } from '@alittlemore.dev/design-system';
 import {
   chooseSiteSelectOption,
   siteSelectOptionLabels,
   siteSelectOptionValues,
   siteSelectTrigger,
   siteSelectValue,
-} from '@alittlemoron/design-system/testing';
+} from '@alittlemore.dev/design-system/testing';
 
 const OPTIONS = [
   { value: 'alpha', label: 'Alpha workspace' },

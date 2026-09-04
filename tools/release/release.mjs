@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from 'node:util';
 import { basename, resolve } from 'node:path';
 
-export const EXPECTED_PACKAGE_NAME = '@alittlemoron/design-system';
+export const EXPECTED_PACKAGE_NAME = '@alittlemore.dev/design-system';
 export const EXPECTED_REPOSITORY = 'https://github.com/alittlemore-dev/design-system.git';
 export const EXPECTED_REGISTRY = 'https://registry.npmjs.org';
 

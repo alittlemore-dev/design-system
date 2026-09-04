@@ -1,6 +1,6 @@
 import { CSP_NONCE, ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FoldableTreeComponent, ThemeService } from '@alittlemoron/design-system';
+import { FoldableTreeComponent, ThemeService } from '@alittlemore.dev/design-system';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 

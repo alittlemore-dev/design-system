@@ -2,7 +2,10 @@ import { syntaxTree } from '@codemirror/language';
 import { EditorState, Range, type Extension } from '@codemirror/state';
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view';
 import type { SyntaxNode } from '@lezer/common';
-import { parseMarkdownWikiLinks, tokenizeMarkdownCode } from '@alittlemoron/design-system/markdown';
+import {
+  parseMarkdownWikiLinks,
+  tokenizeMarkdownCode,
+} from '@alittlemore.dev/design-system/markdown';
 import {
   activeWikiLinkContext,
   type WikiLinkSourceRange,

@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/ng-packagr/ng-package.schema.json",
-  "dest": "../../dist/alittlemoron/design-system",
+  "dest": "../../dist/alittlemore.dev/design-system",
   "allowedNonPeerDependencies": [
     "^@codemirror/autocomplete$",
     "^@codemirror/commands$",

@@ -4,7 +4,7 @@ import {
   FoldableTreeComponent,
   type FoldableTreeItem,
   type FoldableTreeSection,
-} from '@alittlemoron/design-system';
+} from '@alittlemore.dev/design-system';
 
 import { DemoPageComponent } from '../shared/demo-page.component';
 

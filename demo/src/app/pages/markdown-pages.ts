@@ -3,8 +3,8 @@ import { FormsModule } from '@angular/forms';
 import {
   MarkdownRendererService,
   type MarkdownWikiLinkRenderConfig,
-} from '@alittlemoron/design-system/markdown';
-import { MarkdownEditorComponent } from '@alittlemoron/design-system/markdown-editor';
+} from '@alittlemore.dev/design-system/markdown';
+import { MarkdownEditorComponent } from '@alittlemore.dev/design-system/markdown-editor';
 
 import { DemoPageComponent } from '../shared/demo-page.component';
 import {

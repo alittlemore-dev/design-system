@@ -15,7 +15,7 @@ import {
 } from './config.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const packageFolder = join(repositoryRoot, 'dist/alittlemoron/design-system');
+const packageFolder = join(repositoryRoot, 'dist/alittlemore.dev/design-system');
 const packageJsonPath = join(packageFolder, 'package.json');
 const reportFolder = join(repositoryRoot, 'etc/api');
 const reportTempFolder = join(repositoryRoot, 'dist/api-extractor-temp');

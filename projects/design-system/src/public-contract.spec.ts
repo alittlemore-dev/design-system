@@ -11,7 +11,7 @@ import {
   errorDisplayMessages,
   flattenNestedErrorMessages,
   formatErrorMessage,
-} from '@alittlemoron/design-system';
+} from '@alittlemore.dev/design-system';
 import type {
   ErrorDisplay,
   FoldableTreeItem,
@@ -21,7 +21,7 @@ import type {
   SiteSelectAppearance,
   SiteSelectControlSize,
   SiteSelectOption,
-} from '@alittlemoron/design-system';
+} from '@alittlemore.dev/design-system';
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;

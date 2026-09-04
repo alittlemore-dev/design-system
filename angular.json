@@ -10,7 +10,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "@alittlemoron/design-system": {
+    "@alittlemore.dev/design-system": {
       "projectType": "library",
       "root": "projects/design-system",
       "sourceRoot": "projects/design-system/src",

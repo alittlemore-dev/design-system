@@ -7,7 +7,7 @@ import {
   siteSelectOptionValues,
   siteSelectTrigger,
   siteSelectValue,
-} from '@alittlemoron/design-system/testing';
+} from '@alittlemore.dev/design-system/testing';
 
 test('uses the packed site-select helpers through the public testing entry point', () => {
   const alpha = createOption('alpha', 'Alpha workspace', true);

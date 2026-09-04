@@ -18,6 +18,27 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Security
 
+## [0.2.0] - 2026-09-04
+
+### Added
+
+### Changed
+
+- Move the package identity and every public import, style, and web-asset subpath from
+  `@alittlemoron/design-system` to the npm organization scope
+  `@alittlemore.dev/design-system`, while preserving the existing public contracts.
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Retry the post-publication npm registry lookup through bounded propagation delay before requiring
+  tag-only recovery.
+
+### Security
+
 ## [0.1.0] - 2026-09-04
 
 ### Added

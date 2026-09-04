@@ -8,11 +8,11 @@ import * as packedDemo from './run-packed-demo.mjs';
 
 test('parses the single archive emitted by npm pack', () => {
   const archivePath = packedDemo.parsePackResult(
-    JSON.stringify([{ filename: 'alittlemoron-design-system-0.1.0.tgz' }]),
+    JSON.stringify([{ filename: 'alittlemore.dev-design-system-0.2.0.tgz' }]),
     '/tmp/packed-demo',
   );
 
-  assert.equal(archivePath, '/tmp/packed-demo/alittlemoron-design-system-0.1.0.tgz');
+  assert.equal(archivePath, '/tmp/packed-demo/alittlemore.dev-design-system-0.2.0.tgz');
 });
 
 test('rejects ambiguous or malformed npm pack output', () => {
@@ -47,10 +47,11 @@ test('accepts a production module graph without the testing entry point', async 
     statsPath,
     JSON.stringify({
       inputs: {
-        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system.mjs': {},
-        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown.mjs':
+        'node_modules/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system.mjs':
           {},
-        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown-editor.mjs':
+        'node_modules/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system-markdown.mjs':
+          {},
+        'node_modules/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system-markdown-editor.mjs':
           {},
       },
     }),
@@ -78,15 +79,16 @@ test('rejects a production module graph without either packed Markdown entry poi
   t.after(() => rm(directory, { recursive: true, force: true }));
   const statsPath = join(directory, 'stats.json');
   const inputs = {
-    'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system.mjs': {},
-    'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown.mjs': {},
-    'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown-editor.mjs':
+    'node_modules/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system.mjs': {},
+    'node_modules/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system-markdown.mjs':
+      {},
+    'node_modules/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system-markdown-editor.mjs':
       {},
   };
 
   for (const [missing, expected] of [
-    ['alittlemoron-design-system-markdown.mjs', /packed Markdown entry point/i],
-    ['alittlemoron-design-system-markdown-editor.mjs', /packed Markdown-editor entry point/i],
+    ['alittlemore.dev-design-system-markdown.mjs', /packed Markdown entry point/i],
+    ['alittlemore.dev-design-system-markdown-editor.mjs', /packed Markdown-editor entry point/i],
   ]) {
     const filteredInputs = Object.fromEntries(
       Object.entries(inputs).filter(([path]) => !path.endsWith(missing)),
@@ -107,12 +109,13 @@ test('rejects a production module graph containing the testing entry point', asy
     statsPath,
     JSON.stringify({
       inputs: {
-        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system.mjs': {},
-        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown.mjs':
+        'node_modules/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system.mjs':
           {},
-        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-markdown-editor.mjs':
+        'node_modules/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system-markdown.mjs':
           {},
-        'node_modules/@alittlemoron/design-system/fesm2022/alittlemoron-design-system-testing.mjs':
+        'node_modules/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system-markdown-editor.mjs':
+          {},
+        'node_modules/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system-testing.mjs':
           {},
       },
     }),

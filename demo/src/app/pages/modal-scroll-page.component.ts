@@ -1,6 +1,6 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, DOCUMENT, inject, signal } from '@angular/core';
-import { ModalScrollDirective } from '@alittlemoron/design-system';
+import { ModalScrollDirective } from '@alittlemore.dev/design-system';
 
 import { DemoPageComponent } from '../shared/demo-page.component';
 

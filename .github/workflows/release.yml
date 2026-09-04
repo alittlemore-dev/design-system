@@ -112,8 +112,22 @@ jobs:
           PACKAGE_NAME: ${{ needs.gate.outputs.package_name }}
           PACKAGE_VERSION: ${{ needs.gate.outputs.package_version }}
         run: |
-          published_version="$(npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version --registry=https://registry.npmjs.org --prefer-online --cache "$RUNNER_TEMP/npm-confirm-cache")"
-          test "$published_version" = "$PACKAGE_VERSION"
+          for attempt in {1..12}; do
+            if published_version="$(npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version --registry=https://registry.npmjs.org --prefer-online --cache "$RUNNER_TEMP/npm-confirm-cache-$attempt" 2> "$RUNNER_TEMP/npm-confirm-error.log")"; then
+              if test "$published_version" = "$PACKAGE_VERSION"; then
+                exit 0
+              fi
+              echo "npm returned unexpected version $published_version; expected $PACKAGE_VERSION." >&2
+              exit 1
+            fi
+            if test "$attempt" = 12; then
+              echo "npm did not expose $PACKAGE_NAME@$PACKAGE_VERSION after 12 attempts." >&2
+              cat "$RUNNER_TEMP/npm-confirm-error.log" >&2
+              exit 1
+            fi
+            echo "npm has not exposed $PACKAGE_NAME@$PACKAGE_VERSION yet; retrying in 10 seconds."
+            sleep 10
+          done
 
   tag:
     name: Create immutable annotated release tag
