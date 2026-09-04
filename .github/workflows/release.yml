@@ -18,13 +18,14 @@ concurrency:
 
 jobs:
   gate:
-    name: Verify unique release and archive
+    name: Run checks and prepare versioned release
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
     outputs:
+      release_required: ${{ steps.version.outputs.release_required }}
       package_name: ${{ steps.release.outputs.package_name }}
       package_version: ${{ steps.release.outputs.package_version }}
       tag: ${{ steps.release.outputs.tag }}
@@ -45,6 +46,12 @@ jobs:
           node-version: 24.16.0
           package-manager-cache: false
 
+      - name: Detect package version change
+        id: version
+        env:
+          PREVIOUS_COMMIT: ${{ github.event.before }}
+        run: node tools/release/check-release.mjs classify-push "$PREVIOUS_COMMIT" >> "$GITHUB_OUTPUT"
+
       - name: Install dependencies
         run: make install
 
@@ -52,16 +59,19 @@ jobs:
         run: make pack
 
       - name: Validate unique release
+        if: steps.version.outputs.release_required == 'true'
         id: release
         run: node tools/release/check-release.mjs prepublish >> "$GITHUB_OUTPUT"
 
       - name: Record verified archive digest
+        if: steps.version.outputs.release_required == 'true'
         id: archive
         env:
           ARCHIVE_PATH: ${{ steps.release.outputs.archive_path }}
         run: echo "sha256=$(sha256sum "$ARCHIVE_PATH" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
 
       - name: Preserve verified archive
+        if: steps.version.outputs.release_required == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: npm-package-${{ github.sha }}
@@ -72,7 +82,7 @@ jobs:
 
   publish:
     name: Publish verified archive
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && needs.gate.outputs.release_required == 'true'
     needs: gate
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -130,7 +140,7 @@ jobs:
 
   tag:
     name: Create immutable annotated release tag
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && needs.gate.outputs.release_required == 'true'
     needs:
       - gate
       - publish

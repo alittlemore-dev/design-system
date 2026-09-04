@@ -4,6 +4,7 @@ updates:
   - package-ecosystem: 'npm'
     directories:
       - '/'
+      - '/projects/design-system'
       - '/demo'
     schedule:
       interval: 'weekly'

@@ -13,8 +13,8 @@ The repository first published `@alittlemoron/design-system@0.1.0`. The incompat
 organization-owned package identity begins at `@alittlemore.dev/design-system@0.2.0`; the existing
 `v0.1.0` tag remains immutable and records the former package release. Both identities use the MIT
 license. Once publication is enabled for the new identity, every push to `main`, including
-documentation-only changes, is a release event and must carry a version that has not previously
-been published.
+documentation-only changes, runs the package gate. A push becomes a release only when the version
+in the published package manifest differs from the preceding `main` commit.
 
 Local archive integration is exercised by a repository-owned demo application.
 
@@ -82,20 +82,25 @@ A private GitHub source repository can use npm trusted publishing, but npm prove
 while the repository is private. Making the repository public later may enable provenance; it is not
 a prerequisite for publication.
 
-## Main-branch release rule
+## Main-branch validation and release rule
 
-Once the publication workflow is enabled, every push to `main` is a package release event. CI must:
+Once the publication workflow is enabled, every push to `main` is a package validation event. CI
+must:
 
 1. install dependencies reproducibly;
 2. run tests, static checks, the production build, API-surface checks, and package-content
    verification;
-3. read the package name and version from the distributable manifest;
-4. fail with a clear version-conflict error if that name and version already exist in npm;
-5. publish the verified archive with public visibility when the version is new.
+3. compare the current source package version with the version in the preceding `main` commit;
+4. complete without registry credentials, package publication, or release tagging when the version
+   is unchanged;
+5. when the version changed, read the package name and version from the distributable manifest,
+   reject any existing npm version or release tag, publish the verified archive with public
+   visibility, and create the matching immutable tag.
 
-CI must not silently skip publication when the version already exists. npm packages are immutable,
-so an existing name-and-version pair is never overwritten or reused. A documentation-only push to
-`main` also requires at least a patch version increase after this workflow is enabled.
+CI must not silently skip publication after a version change. npm packages are immutable, so
+changing the manifest to an existing name-and-version pair fails instead of overwriting or reusing
+it. Documentation, CI, dependency, and other validated changes may reach `main` without publishing
+until a maintainer intentionally changes the package version.
 
 ## Local-development workflow
 
@@ -160,7 +165,7 @@ are defined in [Release workflows](release-workflows.md).
 - The public scope makes the package installable without registry credentials.
 - Every file included in the npm archive is publicly inspectable.
 - CI is the only release principal, while the npm organization owns the package.
-- Main represents a released version after publication is enabled.
+- A package-version change explicitly selects a verified `main` commit for publication.
 - The repository demo provides a repeatable package-faithful local loop.
 - One version covers UI, Markdown rendering, the editor, styles, and test utilities.
 
@@ -177,11 +182,13 @@ archive verification workflow.
 A local registry and npm prereleases add infrastructure and version-management overhead. Production
 archives installed into the repository demo provide the required fidelity with fewer moving parts.
 
-### Conditional main publication or tag-triggered releases
+### Every-push publication or tag-triggered releases
 
-Skipping publication when a version already exists would allow unreleased package changes to reach
-`main`. Publishing only from version tags would make the tag, rather than `main`, the release event.
-Both were rejected in favor of strict main-branch publication.
+Publishing every `main` push created package versions for CI, documentation, and dependency-bot
+maintenance that did not change the distributable contract. It was replaced by explicit
+version-driven publication while retaining the full package gate on every push. Publishing only
+from version tags would make the tag, rather than the versioned `main` commit, the release event and
+remains rejected.
 
 ## Implementation status
 

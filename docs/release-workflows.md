@@ -4,22 +4,25 @@ Status: accepted on 2026-09-04.
 
 ## Automation
 
-Pull requests to `main` run `.github/workflows/ci.yml`, which executes the Make-based package gate
-without write permissions. Every push to `main` runs `.github/workflows/release.yml`, repeats the
-same gate, publishes one unique stable npm version, and creates its annotated release tag. The
-release workflow also exposes a manual tag-only recovery job; it never exposes a manual publish
-path.
+Every pushed commit and every pull request to `main` runs `.github/workflows/ci.yml`, which executes
+the Make-based package gate without write permissions. Concurrent push and pull-request runs for the
+same head commit share a cancelling concurrency group so only the latest run continues. Every push
+to `main` also runs `.github/workflows/release.yml`, repeats the same gate, and compares the current
+package version with the version in the preceding `main` commit. An unchanged version completes as
+a checks-only run. A changed version publishes one unique stable npm version and creates its
+annotated release tag. The release workflow also exposes a manual tag-only recovery job; it never
+exposes a manual publish path.
 
 Release runs share one non-cancelling FIFO concurrency queue. GitHub retains at most 100 waiting
 runs for a `queue: max` group, so maintainers must stop merging or pushing while that queue is full
 and investigate the blocked release before accepting another `main` update. This operational limit
-preserves the rule that every accepted push is released instead of allowing GitHub to evict an
-older pending run.
+prevents GitHub from evicting an older pending validation or version-driven release run.
 
-Dependabot checks root and demo npm dependencies and pinned GitHub Actions weekly and opens pull
-requests without merging them. Before a dependency-update pull request reaches `main`, a maintainer
-must apply the semantic-versioning policy, add its changelog entry, and prepare a unique package
-version just like any other release-ready change.
+Dependabot checks root, published-package, and demo npm dependencies and pinned GitHub Actions
+weekly and opens pull requests without merging them. A dependency-only pull request may reach
+`main` without a package-version change and receives a checks-only run. When an update should become
+an immediate package release, a maintainer applies the semantic-versioning policy, finalizes its
+changelog entry, and prepares a unique version before merging.
 
 ## Local packed-archive workflow
 
@@ -110,9 +113,10 @@ Dependency changes follow their observable package contract:
 - if a dependency update changes public behavior or compatibility, use that higher-impact
   classification instead.
 
-Every push to `main`, including a documentation-only or maintenance-only push, requires at least a
-patch increment after publication is enabled. `1.0.0` is not an automatic consequence of a minor
-increment: it requires an explicit decision that the package's public contract is stable.
+Every intentional package release requires the appropriate increment. Documentation-only,
+maintenance-only, and dependency-update pushes may retain the current version and accumulate under
+`Unreleased`. `1.0.0` is not an automatic consequence of a minor increment: it requires an explicit
+decision that the package's public contract is stable.
 
 ## Changelog workflow
 
@@ -139,7 +143,7 @@ under `Unreleased`, choose the next unused version, and prepare the changelog se
 
 ## Stable-release workflow
 
-Once push-to-`main` publication is enabled, prepare every change that will reach `main` as follows:
+To publish accumulated changes from `main`, prepare the release-ready change as follows:
 
 1. rebase on the current `main` and resolve any version or changelog conflict;
 2. update intentional API reports with `make update-api-surface` when the public TypeScript surface
@@ -150,18 +154,21 @@ Once push-to-`main` publication is enabled, prepare every change that will reach
    `make check-demo-browser` when the changed behavior has real-browser interactions;
 6. confirm that only `projects/design-system/package.json` changed for the version bump and that
    the root and demo lock files are unchanged;
-7. merge the release-ready change to `main`.
+7. merge the release-ready version change to `main`.
 
-The push to `main`, not a version tag, starts the release. CI must:
+The package-version change on `main`, not a version tag, starts the release. Every push runs the
+gate; CI then must:
 
 1. install dependencies reproducibly and run the required repository and package checks;
-2. reject a non-stable version, an npm name-and-version pair that already exists, or an existing
-   `vX.Y.Z` tag;
-3. record the checked archive's SHA-256 digest and transfer that archive to a separate OIDC-only
+2. compare the current package version with the preceding `main` commit and stop successfully after
+   the gate when they match;
+3. for a changed version, reject a non-stable version, an npm name-and-version pair that already
+   exists, or an existing `vX.Y.Z` tag;
+4. record the checked archive's SHA-256 digest and transfer that archive to a separate OIDC-only
    publication job;
-4. verify the downloaded archive digest, publish that exact archive to the public npm registry, and
+5. verify the downloaded archive digest, publish that exact archive to the public npm registry, and
    confirm its version using bounded retries with isolated npm caches;
-5. create and push an immutable annotated `vX.Y.Z` tag on the exact `main` commit, with the message
+6. create and push an immutable annotated `vX.Y.Z` tag on the exact `main` commit, with the message
    `@alittlemore.dev/design-system vX.Y.Z`.
 
 The release guard requires the source manifest, built manifest, packed archive metadata, and

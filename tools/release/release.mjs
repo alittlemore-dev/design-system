@@ -8,6 +8,29 @@ export const EXPECTED_REGISTRY = 'https://registry.npmjs.org';
 const stableVersionPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const fullCommitPattern = /^[0-9a-f]{40}$/;
 
+export function classifyVersionChange(previousPackageJson, currentPackageJson) {
+  const previousPackageVersion = readStableManifestVersion(previousPackageJson, 'Previous package');
+  const packageVersion = readStableManifestVersion(currentPackageJson, 'Current package');
+
+  return {
+    releaseRequired: previousPackageVersion !== packageVersion,
+    previousPackageVersion,
+    packageVersion,
+  };
+}
+
+export function formatVersionChangeOutput({
+  releaseRequired,
+  previousPackageVersion,
+  packageVersion,
+}) {
+  return [
+    `release_required=${String(releaseRequired)}`,
+    `previous_package_version=${previousPackageVersion}`,
+    `package_version=${packageVersion}`,
+  ].join('\n');
+}
+
 export function findReleaseViolations({
   mode,
   sourcePackageJson,
@@ -185,6 +208,16 @@ export function validateRecoveryCommitInput(input) {
   return input;
 }
 
+export function validatePreviousCommitInput(input) {
+  if (!fullCommitPattern.test(input)) {
+    throw new Error('Previous commit must be a full 40-character lowercase commit SHA.');
+  }
+  if (/^0{40}$/.test(input)) {
+    throw new Error('Previous commit cannot be the zero SHA.');
+  }
+  return input;
+}
+
 export function releaseMetadata(sourcePackageJson, archivePath = undefined) {
   const version = sourcePackageJson.version;
   return {
@@ -263,4 +296,17 @@ function compare(violations, code, field, actual, expected) {
 function hasChangelogRelease(changelog, version) {
   const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`^## \\[${escapedVersion}\\] - \\d{4}-\\d{2}-\\d{2}$`, 'm').test(changelog);
+}
+
+function readStableManifestVersion(packageJson, label) {
+  const version = packageJson?.version;
+  if (typeof version !== 'string') {
+    throw new Error(`${label} version must be a string.`);
+  }
+  if (!stableVersionPattern.test(version)) {
+    throw new Error(
+      `${label} version must be a stable X.Y.Z version; received ${JSON.stringify(version)}.`,
+    );
+  }
+  return version;
 }

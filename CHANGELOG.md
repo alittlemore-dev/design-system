@@ -10,6 +10,12 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Changed
 
+- Make `main` pushes version-driven: every push runs the package gate, while npm publication and
+  release tagging occur only when the published package version changes.
+- Run the read-only Make gate on every pushed commit as well as pull requests to `main`, cancelling
+  duplicate CI for the same head commit.
+- Extend Dependabot npm updates to the published package manifest in `projects/design-system`.
+
 ### Deprecated
 
 ### Removed

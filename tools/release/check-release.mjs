@@ -6,18 +6,22 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 import {
+  classifyVersionChange,
   classifyRegistryLookup,
   findReleaseViolations,
   formatGithubOutput,
+  formatVersionChangeOutput,
   releaseMetadata,
   registryLookupArguments,
   resolveArchivePath,
+  validatePreviousCommitInput,
   validateRecoveryCommit,
   validateRecoveryCommitInput,
 } from './release.mjs';
 
 const executeFile = promisify(execFile);
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const sourcePackageJsonGitPath = 'projects/design-system/package.json';
 const sourcePackageJsonPath = join(repositoryRoot, 'projects/design-system/package.json');
 const builtPackageJsonPath = join(
   repositoryRoot,
@@ -34,10 +38,15 @@ async function main() {
     await validateRecoveryCommitFromGit(argument);
     return;
   }
+  if (command === 'classify-push') {
+    await classifyPushFromGit(argument);
+    return;
+  }
   if (!['prepublish', 'confirm-published', 'recover-tag'].includes(command)) {
     throw new Error(
       'Usage: node tools/release/check-release.mjs ' +
-        '<prepublish|confirm-published|recover-tag|validate-recovery-commit SHA>',
+        '<prepublish|confirm-published|recover-tag|classify-push SHA|' +
+        'validate-recovery-commit SHA>',
     );
   }
 
@@ -75,6 +84,32 @@ async function main() {
 
   if (violations.length > 0) throw new Error(formatViolations(violations));
   console.log(formatGithubOutput(metadata));
+}
+
+async function classifyPushFromGit(input) {
+  validatePreviousCommitInput(input);
+  const previousManifestResult = await runCommand('git', [
+    'show',
+    `${input}:${sourcePackageJsonGitPath}`,
+  ]);
+  if (previousManifestResult.code !== 0) {
+    throw new Error(
+      `git could not read ${sourcePackageJsonGitPath} from ${input}: ` +
+        previousManifestResult.stderr.trim(),
+    );
+  }
+
+  let previousPackageJson;
+  try {
+    previousPackageJson = JSON.parse(previousManifestResult.stdout);
+  } catch (error) {
+    throw new Error(`Previous ${sourcePackageJsonGitPath} is not valid JSON.`, { cause: error });
+  }
+
+  const currentPackageJson = await readJson(sourcePackageJsonPath);
+  console.log(
+    formatVersionChangeOutput(classifyVersionChange(previousPackageJson, currentPackageJson)),
+  );
 }
 
 async function validateRecoveryCommitFromGit(input) {

@@ -11,14 +11,14 @@
 - [x] Select and configure the Angular, Angular CDK, Bootstrap, RxJS, CodeMirror, Marked, Prism, and DOMPurify dependency contracts for each entry point.
 - [x] Configure Jest, Angular testing support, ESLint, TypeScript checks, Prettier, production builds, and package-content verification.
 - [x] Add repository scripts and thin Make targets for installation, tests, lint, type checks, format checks, builds, and package verification.
-- [x] Configure CI to run the Make-based checks and build the distributable package.
-- [x] Configure strict push-to-main npm publication for unique versions, create matching CI-owned `vX.Y.Z` tags and a tag-only recovery path, and bootstrap the former package identity at `0.1.0` through CI.
+- [x] Configure read-only CI on every push and pull request to run the Make-based checks and build the distributable package.
+- [x] Configure version-driven push-to-main npm publication for unique versions, create matching CI-owned `vX.Y.Z` tags and a tag-only recovery path, and bootstrap the former package identity at `0.1.0` through CI.
 - [x] Retry post-publication npm registry confirmation through bounded propagation delay before requiring tag-only recovery.
 - [x] Create and verify the `alittlemore.dev` npm organization, bootstrap `@alittlemore.dev/design-system@0.2.0` through CI, configure trusted publishing, delete `NPM_TOKEN`, and verify `0.2.1` as the first ordinary OIDC release.
 - [x] Document the local packed-archive, stable-release, semantic-versioning, and changelog workflows.
 - [x] Add a repository-owned Angular demo that installs the packed archive through public entry points and exercises the current UI, UI styles, theme preload, SSR, hydration, and strict CSP.
 - [x] Preserve owning-page scroll when ArrowUp or ArrowDown moves between visible Markdown-table cells immediately after input.
-- [x] Add weekly Dependabot version updates for root and demo npm dependencies and GitHub Actions.
+- [x] Add weekly Dependabot version updates for root, published-package, and demo npm dependencies and GitHub Actions.
 
 ## Design tokens and shared styles
 

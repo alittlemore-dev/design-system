@@ -22,10 +22,14 @@ test('all external Actions are pinned to immutable commit SHAs', () => {
   }
 });
 
-test('CI is read-only and runs the Make gate for pull requests and manual checks', () => {
+test('CI is read-only and runs one Make gate per pushed or pull-request commit', () => {
+  assert.match(ciWorkflow, /^ {2}push:$/m);
   assert.match(ciWorkflow, /^ {2}pull_request:\n {4}branches:\n {6}- main$/m);
   assert.match(ciWorkflow, /^ {2}workflow_dispatch:$/m);
-  assert.doesNotMatch(ciWorkflow, /^ {2}push:$/m);
+  assert.match(
+    ciWorkflow,
+    /^concurrency:\n {2}group: design-system-ci-\$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}\n {2}cancel-in-progress: true$/m,
+  );
   assert.match(ciWorkflow, /^permissions:\n {2}contents: read$/m);
   assert.match(ciWorkflow, /^ {8}run: make install$/m);
   assert.match(ciWorkflow, /^ {8}run: make pack$/m);
@@ -41,10 +45,24 @@ test('push releases are fully queued and isolate gate, OIDC, and tag permissions
   const gate = jobBlock(releaseWorkflow, 'gate');
   assert.match(gate, /permissions:\n {6}contents: read/);
   assert.doesNotMatch(gate, /id-token: write|contents: write/);
+  assert.match(gate, /release_required: \$\{\{ steps\.version.outputs\.release_required \}\}/);
+  assert.match(gate, /check-release\.mjs classify-push "\$PREVIOUS_COMMIT"/);
   assert.match(gate, /run: make install/);
   assert.match(gate, /run: make pack/);
+  assert.match(
+    gate,
+    /- name: Validate unique release\n {8}if: steps\.version\.outputs\.release_required == 'true'/,
+  );
+  assert.match(
+    gate,
+    /- name: Preserve verified archive\n {8}if: steps\.version\.outputs\.release_required == 'true'/,
+  );
 
   const publish = jobBlock(releaseWorkflow, 'publish');
+  assert.match(
+    publish,
+    /if: github\.event_name == 'push' && needs\.gate\.outputs\.release_required == 'true'/,
+  );
   assert.match(publish, /permissions:\n {6}actions: read\n {6}contents: read\n {6}id-token: write/);
   assert.doesNotMatch(publish, /actions\/checkout|contents: write/);
   assert.doesNotMatch(publish, /NODE_AUTH_TOKEN|NPM_TOKEN/);
@@ -55,6 +73,10 @@ test('push releases are fully queued and isolate gate, OIDC, and tag permissions
   assert.match(publish, /npm-confirm-error\.log/);
 
   const tag = jobBlock(releaseWorkflow, 'tag');
+  assert.match(
+    tag,
+    /if: github\.event_name == 'push' && needs\.gate\.outputs\.release_required == 'true'/,
+  );
   assert.match(tag, /permissions:\n {6}contents: write/);
   assert.doesNotMatch(tag, /id-token: write|npm publish|make install|make pack/);
   assert.match(tag, /git tag --annotate/);
@@ -80,7 +102,10 @@ test('Dependabot checks npm and GitHub Actions dependencies weekly', () => {
   assert.match(dependabotConfig, /^version: 2$/m);
 
   const npmUpdate = dependabotUpdateBlock(dependabotConfig, 'npm');
-  assert.match(npmUpdate, /^ {4}directories:\n {6}- ['"]?\/['"]?\n {6}- ['"]?\/demo['"]?$/m);
+  assert.match(
+    npmUpdate,
+    /^ {4}directories:\n {6}- ['"]?\/['"]?\n {6}- ['"]?\/projects\/design-system['"]?\n {6}- ['"]?\/demo['"]?$/m,
+  );
 
   const actionsUpdate = dependabotUpdateBlock(dependabotConfig, 'github-actions');
   assert.match(actionsUpdate, /^ {4}directory: ['"]?\/['"]?$/m);

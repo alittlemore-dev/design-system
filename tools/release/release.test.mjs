@@ -4,12 +4,15 @@ import { test } from 'node:test';
 import {
   EXPECTED_REPOSITORY,
   classifyRegistryLookup,
+  classifyVersionChange,
   findReleaseViolations,
+  formatVersionChangeOutput,
   formatGithubOutput,
   packCommandArguments,
   releaseMetadata,
   registryLookupArguments,
   resolveArchivePath,
+  validatePreviousCommitInput,
   validateRecoveryCommit,
 } from './release.mjs';
 
@@ -52,6 +55,58 @@ function validReleaseFixture(mode = 'publish') {
 
 test('accepts a unique stable package release with matching metadata', () => {
   assert.deepEqual(findReleaseViolations(validReleaseFixture()), []);
+});
+
+test('requires a release only when the package version changes', () => {
+  assert.deepEqual(classifyVersionChange({ version: '0.2.1' }, { version: '0.2.1' }), {
+    releaseRequired: false,
+    previousPackageVersion: '0.2.1',
+    packageVersion: '0.2.1',
+  });
+  assert.deepEqual(classifyVersionChange({ version: '0.2.1' }, { version: '0.2.2' }), {
+    releaseRequired: true,
+    previousPackageVersion: '0.2.1',
+    packageVersion: '0.2.2',
+  });
+});
+
+test('rejects invalid manifests when classifying a version-driven push', () => {
+  assert.throws(
+    () => classifyVersionChange({}, { version: '0.2.1' }),
+    /previous package version must be a string/i,
+  );
+  assert.throws(
+    () => classifyVersionChange({ version: '0.2.1' }, {}),
+    /current package version must be a string/i,
+  );
+  assert.throws(
+    () => classifyVersionChange({ version: '0.2.1' }, { version: 'next' }),
+    /current package version must be a stable X\.Y\.Z version/i,
+  );
+});
+
+test('formats the version-driven decision for GitHub Actions outputs', () => {
+  assert.equal(
+    formatVersionChangeOutput({
+      releaseRequired: false,
+      previousPackageVersion: '0.2.1',
+      packageVersion: '0.2.1',
+    }),
+    ['release_required=false', 'previous_package_version=0.2.1', 'package_version=0.2.1'].join(
+      '\n',
+    ),
+  );
+});
+
+test('accepts only a real full previous commit SHA for push classification', () => {
+  const commit = '0123456789abcdef0123456789abcdef01234567';
+
+  assert.equal(validatePreviousCommitInput(commit), commit);
+  assert.throws(
+    () => validatePreviousCommitInput('main'),
+    /full 40-character lowercase commit SHA/,
+  );
+  assert.throws(() => validatePreviousCommitInput('0'.repeat(40)), /cannot be the zero SHA/);
 });
 
 test('rejects prerelease, malformed, and leading-zero versions', () => {
