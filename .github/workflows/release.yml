@@ -58,6 +58,9 @@ jobs:
       - name: Run checks and build distributable archive
         run: make pack
 
+      - name: Verify packed package in the consumer demo
+        run: make check-demo
+
       - name: Validate unique release
         if: steps.version.outputs.release_required == 'true'
         id: release

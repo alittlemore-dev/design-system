@@ -101,6 +101,13 @@ export async function assertFilesUnchanged(snapshot) {
   }
 }
 
+export function isolatedNpmEnvironment(cacheDirectory, environment = process.env) {
+  return {
+    ...environment,
+    npm_config_cache: cacheDirectory,
+  };
+}
+
 export async function assertProductionBundlesExcludeTestingEntryPoint(statsPath) {
   const stats = JSON.parse(await readFile(statsPath, 'utf8'));
   const inputs =
@@ -132,12 +139,12 @@ function formatCommand(command, args) {
   return [command, ...args].join(' ');
 }
 
-async function runCommand(command, args, { cwd, captureOutput = false }) {
+async function runCommand(command, args, { cwd, captureOutput = false, env = process.env }) {
   interruption.assertWorkflowMayContinue();
   const output = [];
   const child = spawn(command, args, {
     cwd,
-    env: process.env,
+    env,
     stdio: captureOutput ? ['ignore', 'pipe', 'inherit'] : 'inherit',
   });
   interruption.setActiveChild(child);
@@ -170,30 +177,41 @@ async function assertPackedPackageRemoved() {
 }
 
 async function installBrowser() {
-  await runCommand('npm', ['ci'], { cwd: demoRoot });
-  await runCommand('npm', ['exec', '--', 'playwright', 'install', 'chromium'], { cwd: demoRoot });
+  const cacheDirectory = await mkdtemp(join(tmpdir(), 'design-system-demo-browser-cache-'));
+  const env = isolatedNpmEnvironment(cacheDirectory);
+  try {
+    await runCommand('npm', ['ci'], { cwd: demoRoot, env });
+    await runCommand('npm', ['exec', '--', 'playwright', 'install', 'chromium'], {
+      cwd: demoRoot,
+      env,
+    });
+  } finally {
+    await rm(cacheDirectory, { recursive: true, force: true });
+  }
 }
 
 async function runPackedDemo(scriptName) {
   const manifestSnapshot = await snapshotFiles(manifestPaths);
   const archiveDirectory = await mkdtemp(join(tmpdir(), 'design-system-demo-'));
+  const env = isolatedNpmEnvironment(join(archiveDirectory, 'npm-cache'));
   let installationStarted = false;
   let workflowError = null;
   const cleanupErrors = [];
   try {
-    await runCommand('npm', ['run', 'build'], { cwd: repositoryRoot });
+    await runCommand('npm', ['run', 'build'], { cwd: repositoryRoot, env });
     const packOutput = await runCommand(
       'npm',
       ['pack', packageRoot, '--pack-destination', archiveDirectory, '--json'],
-      { cwd: repositoryRoot, captureOutput: true },
+      { cwd: repositoryRoot, captureOutput: true, env },
     );
     const archivePath = parsePackResult(packOutput, archiveDirectory);
     installationStarted = true;
-    await runCommand('npm', ['ci'], { cwd: demoRoot });
+    await runCommand('npm', ['ci'], { cwd: demoRoot, env });
     await runCommand('npm', ['install', '--no-save', '--package-lock=false', archivePath], {
       cwd: demoRoot,
+      env,
     });
-    await runCommand('npm', ['run', scriptName], { cwd: demoRoot });
+    await runCommand('npm', ['run', scriptName], { cwd: demoRoot, env });
     if (scriptName !== 'start') {
       await assertProductionBundlesExcludeTestingEntryPoint(productionStatsPath);
     }
@@ -203,7 +221,7 @@ async function runPackedDemo(scriptName) {
     interruption.beginCleanup();
     if (installationStarted) {
       try {
-        await runCommand('npm', ['ci'], { cwd: demoRoot });
+        await runCommand('npm', ['ci'], { cwd: demoRoot, env });
         await assertPackedPackageRemoved();
       } catch (error) {
         cleanupErrors.push(error);

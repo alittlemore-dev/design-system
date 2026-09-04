@@ -51,3 +51,7 @@ make demo
 | `make check-demo`           | Verify the demo's production SSR, hydration, and strict CSP.      |
 | `make install-demo-browser` | Install Chromium for the browser smoke test.                      |
 | `make check-demo-browser`   | Run the demo's SSR/CSP and Chromium smoke tests.                  |
+
+Automated pull-request and release gates run `make pack` and `make check-demo` together. The root
+workspace remains pinned to published peer floors, while the demo lock file exercises current
+supported consumer dependencies.

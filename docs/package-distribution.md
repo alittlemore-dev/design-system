@@ -139,7 +139,8 @@ Build, pack, install, and check proves the distributable archive directly.
 The repository exposes this workflow through `make demo` for an interactive run, `make check-demo`
 for the production SSR smoke, and `make check-demo-browser` for the separate Chromium smoke. Run
 `make install-demo-browser` once before the browser smoke. Demo checks remain separate from the
-ordinary `make check` quality gate.
+ordinary `make check` quality gate for local use; automated pull-request and release gates run
+`make pack` followed by `make check-demo` before accepting or publishing a change.
 
 ## Initial versioning scheme
 

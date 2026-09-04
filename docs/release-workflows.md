@@ -5,14 +5,19 @@ Status: accepted on 2026-09-04.
 ## Automation
 
 Every pushed commit and every pull request to `main` runs `.github/workflows/ci.yml`, which executes
-the Make-based package gate without write permissions. Push and pull-request runs use separate
-concurrency groups so neither event can cancel the other's check and make the pull request appear
-failed. Repeated runs of the same event type for one head commit remain cancellable. Every push to
-`main` also runs `.github/workflows/release.yml`, repeats the same gate, and compares the current
+the Make-based package gate and installs its packed archive into the independent consumer demo
+without write permissions. Push and pull-request runs use separate concurrency groups so neither
+event can cancel the other's check and make the pull request appear failed. Repeated runs of the
+same event type for one head commit remain cancellable. Every push to `main` also runs
+`.github/workflows/release.yml`, repeats both package and consumer gates, and compares the current
 package version with the version in the preceding `main` commit. An unchanged version completes as
 a checks-only run. A changed version publishes one unique stable npm version and creates its
 annotated release tag. The release workflow also exposes a manual tag-only recovery job; it never
 exposes a manual publish path.
+
+The active `main` ruleset requires the `Make checks and distributable package` status from GitHub
+Actions and uses strict status checks, so a pull request must be current with `main` and green before
+its commit can enter the branch.
 
 Release runs share one non-cancelling FIFO concurrency queue. GitHub retains at most 100 waiting
 runs for a `queue: max` group, so maintainers must stop merging or pushing while that queue is full
@@ -20,9 +25,13 @@ and investigate the blocked release before accepting another `main` update. This
 prevents GitHub from evicting an older pending validation or version-driven release run.
 
 Dependabot checks root, published-package, and demo npm dependencies and pinned GitHub Actions
-weekly and opens pull requests without merging them. A dependency-only pull request may reach
-`main` without a package-version change and receives a checks-only run. When an update should become
-an immediate package release, a maintainer applies the semantic-versioning policy, finalizes its
+weekly and opens pull requests without merging them. The root workspace is the immutable peer-floor
+lane, so routine Angular, RxJS, and Bootstrap version bumps are ignored there while security updates
+remain eligible. The demo is the current consumer lane and groups its Angular ecosystem updates.
+The published manifest groups peer-contract changes, and root and published-package CodeMirror and
+Lezer updates are grouped to avoid partial upgrades. A dependency-only pull request may reach `main`
+without a package-version change and receives a checks-only run. When an update should become an
+immediate package release, a maintainer applies the semantic-versioning policy, finalizes its
 changelog entry, and prepares a unique version before merging.
 
 ## Local packed-archive workflow
@@ -68,9 +77,10 @@ make check-demo-browser
 
 Each `make demo`, `make check-demo`, and `make check-demo-browser` run builds the production library,
 creates a `.tgz` in a temporary directory, runs `npm ci` in `demo/`, and installs the archive with
-`--no-save --package-lock=false`. The runner then starts the demo or executes its checks. On exit or
-interruption it restores `demo/node_modules` from the committed lock file, verifies that
-`demo/package.json` and `demo/package-lock.json` did not change, and removes the temporary archive.
+`--no-save --package-lock=false`. The runner gives every npm subprocess an isolated cache inside the
+temporary directory. It then starts the demo or executes its checks. On exit or interruption it
+restores `demo/node_modules` from the committed lock file, verifies that `demo/package.json` and
+`demo/package-lock.json` did not change, and removes the temporary archive and cache.
 
 If cleanup is interrupted, restore the demo installation with:
 
@@ -161,15 +171,17 @@ The package-version change on `main`, not a version tag, starts the release. Eve
 gate; CI then must:
 
 1. install dependencies reproducibly and run the required repository and package checks;
-2. compare the current package version with the preceding `main` commit and stop successfully after
+2. install a newly packed archive into the current-version demo and run its production, public
+   testing-entry-point, SSR, and strict-CSP checks;
+3. compare the current package version with the preceding `main` commit and stop successfully after
    the gate when they match;
-3. for a changed version, reject a non-stable version, an npm name-and-version pair that already
+4. for a changed version, reject a non-stable version, an npm name-and-version pair that already
    exists, or an existing `vX.Y.Z` tag;
-4. record the checked archive's SHA-256 digest and transfer that archive to a separate OIDC-only
+5. record the checked archive's SHA-256 digest and transfer that archive to a separate OIDC-only
    publication job;
-5. verify the downloaded archive digest, publish that exact archive to the public npm registry, and
+6. verify the downloaded archive digest, publish that exact archive to the public npm registry, and
    confirm its version using bounded retries with isolated npm caches;
-6. create and push an immutable annotated `vX.Y.Z` tag on the exact `main` commit, with the message
+7. create and push an immutable annotated `vX.Y.Z` tag on the exact `main` commit, with the message
    `@alittlemore.dev/design-system vX.Y.Z`.
 
 The release guard requires the source manifest, built manifest, packed archive metadata, and

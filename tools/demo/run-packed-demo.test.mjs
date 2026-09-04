@@ -21,6 +21,16 @@ test('rejects ambiguous or malformed npm pack output', () => {
   }
 });
 
+test('isolates packed-demo npm commands from the user cache', () => {
+  const environment = { PATH: '/usr/bin' };
+
+  assert.deepEqual(packedDemo.isolatedNpmEnvironment('/tmp/packed-demo-cache', environment), {
+    PATH: '/usr/bin',
+    npm_config_cache: '/tmp/packed-demo-cache',
+  });
+  assert.deepEqual(environment, { PATH: '/usr/bin' });
+});
+
 test('detects a changed demo manifest after a packed run', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'packed-demo-manifest-'));
   t.after(() => rm(directory, { recursive: true, force: true }));

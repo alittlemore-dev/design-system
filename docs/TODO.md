@@ -19,6 +19,9 @@
 - [x] Add a repository-owned Angular demo that installs the packed archive through public entry points and exercises the current UI, UI styles, theme preload, SSR, hydration, and strict CSP.
 - [x] Preserve owning-page scroll when ArrowUp or ArrowDown moves between visible Markdown-table cells immediately after input.
 - [x] Add weekly Dependabot version updates for root, published-package, and demo npm dependencies and GitHub Actions.
+- [x] Enforce peer floors in the workspace, verify the packed package in a current-version consumer during CI and release, group coupled Dependabot updates, and require an up-to-date successful CI check for `main`.
+- [x] Give packed-demo npm subprocesses an isolated temporary cache so consumer validation never depends on user-cache permissions.
+- [ ] Update the demo Express dependency tree so `qs` resolves to `6.16.0` or newer, then verify that `npm --prefix demo audit` reports no vulnerabilities.
 
 ## Design tokens and shared styles
 

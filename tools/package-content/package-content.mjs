@@ -44,6 +44,7 @@ export function findPackageContentViolations({
   builtPackageJson,
   sourcePackageJson,
   packResult,
+  workspacePackageJson,
   expectedDependencies,
   expectedExports,
   expectedPeerDependencies,
@@ -102,6 +103,7 @@ export function findPackageContentViolations({
     builtPackageJson.dependencies ?? {},
     expectedDependencies,
   );
+  compareWorkspacePeerFloors(violations, workspacePackageJson, expectedPeerDependencies);
   compareManifestField(
     violations,
     'optionalDependencies',
@@ -207,6 +209,28 @@ function compareManifestField(violations, field, actual, expected) {
       actual,
       expected,
     });
+  }
+}
+
+function compareWorkspacePeerFloors(violations, workspacePackageJson, peerDependencies) {
+  const workspaceDependencies = workspacePackageJson?.dependencies ?? {};
+
+  for (const [dependency, range] of Object.entries(peerDependencies)) {
+    const match = /^>=(\d+\.\d+\.\d+)\s/.exec(range);
+    if (match === null) {
+      throw new Error(`Peer dependency ${dependency} must declare an inclusive stable floor.`);
+    }
+
+    const expected = match[1];
+    const actual = workspaceDependencies[dependency];
+    if (actual !== expected) {
+      violations.push({
+        code: 'workspace-peer-floor-mismatch',
+        dependency,
+        actual,
+        expected,
+      });
+    }
   }
 }
 

@@ -15,13 +15,21 @@ policy in [Release workflows](docs/release-workflows.md).
 - Run the read-only Make gate on every pushed commit as well as pull requests to `main`, while
   keeping push and pull-request concurrency separate so cancellation does not make PRs appear
   failed.
-- Extend Dependabot npm updates to the published package manifest in `projects/design-system`.
+- Verify the packed package in the current-version demo during pull-request and release gates, and
+  reject workspace dependency drift away from every declared peer floor.
+- Split Dependabot policy by floor workspace, published manifest, and current-version demo; keep
+  routine peer-floor bumps out of the floor workspace and group related Angular and CodeMirror
+  updates.
+- Require an up-to-date successful CI check before `main` accepts a commit.
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+
+- Isolate packed-demo npm subprocesses from the user cache so consumer validation is reproducible
+  under restricted local and CI environments.
 
 ### Security
 

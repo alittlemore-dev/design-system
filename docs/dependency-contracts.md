@@ -48,10 +48,16 @@ The runtime dependency ranges are:
 - `@lezer/common` `^1.5.2` and `@lezer/highlight` `^1.2.3`;
 - `tslib` `^2.3.0`.
 
-The workspace installs the exact peer floors: Angular and CDK 22.1.0, RxJS 7.8.2, and Bootstrap
-5.3.8. This makes the production build exercise the published peer floors.
+The root workspace installs the exact peer floors: Angular and CDK 22.1.0, RxJS 7.8.2, and Bootstrap
+5.3.8. The package-content verifier rejects any difference between these exact versions and the
+lower bounds of the published ranges. This makes the production build exercise the claimed floors.
 Runtime and tool dependencies are pinned exactly in the workspace lock file while the published
 manifest permits compatible updates within the ranges above.
+
+The independent demo is the current consumer lane. Its own lock file may advance within the
+supported peer ranges, and CI installs the packed package into that dependency graph before the
+demo's production build and SSR checks. Dependabot groups its Angular ecosystem updates and groups
+the package's interdependent CodeMirror and Lezer updates.
 
 `@angular/platform-browser` and `zone.js` support repository tests only. Jest, jsdom, ESLint,
 TypeScript, Prettier, and their adapters are workspace development dependencies and never appear in
@@ -70,7 +76,8 @@ dependency therefore requires an explicit configuration and contract change.
 The package-content verifier derives the expected manifest from the entry-point map, builds the
 aggregate peer and runtime dependency contracts, and compares them with the production package. It
 also inspects `npm pack --dry-run --json` and rejects files outside the documented package
-structure.
+structure. The pull-request and release workflows then install a packed archive into the independent
+demo and verify that the current consumer dependency graph builds and runs under SSR and strict CSP.
 
 Raising a peer floor or changing a major Angular, CDK, RxJS, Bootstrap, Marked, DOMPurify, or
 CodeMirror contract requires repository verification and the versioning process defined by the

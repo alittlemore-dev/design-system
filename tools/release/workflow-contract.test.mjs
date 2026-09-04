@@ -33,6 +33,7 @@ test('CI is read-only and runs one Make gate per pushed or pull-request commit',
   assert.match(ciWorkflow, /^permissions:\n {2}contents: read$/m);
   assert.match(ciWorkflow, /^ {8}run: make install$/m);
   assert.match(ciWorkflow, /^ {8}run: make pack$/m);
+  assert.match(ciWorkflow, /^ {8}run: make check-demo$/m);
   assert.match(ciWorkflow, /node-version: 24\.16\.0/);
 });
 
@@ -49,6 +50,7 @@ test('push releases are fully queued and isolate gate, OIDC, and tag permissions
   assert.match(gate, /check-release\.mjs classify-push "\$PREVIOUS_COMMIT"/);
   assert.match(gate, /run: make install/);
   assert.match(gate, /run: make pack/);
+  assert.match(gate, /run: make check-demo/);
   assert.match(
     gate,
     /- name: Validate unique release\n {8}if: steps\.version\.outputs\.release_required == 'true'/,
@@ -101,16 +103,29 @@ test('manual recovery validates with read access and can only create an absent t
 test('Dependabot checks npm and GitHub Actions dependencies weekly', () => {
   assert.match(dependabotConfig, /^version: 2$/m);
 
-  const npmUpdate = dependabotUpdateBlock(dependabotConfig, 'npm');
-  assert.match(
-    npmUpdate,
-    /^ {4}directories:\n {6}- ['"]?\/['"]?\n {6}- ['"]?\/projects\/design-system['"]?\n {6}- ['"]?\/demo['"]?$/m,
-  );
+  const npmUpdates = dependabotUpdateBlocks(dependabotConfig, 'npm');
+  assert.equal(npmUpdates.length, 3);
+
+  const rootUpdate = updateForDirectory(npmUpdates, '/');
+  assert.match(rootUpdate, /dependency-name: ['"]?@angular\/\*['"]?/);
+  assert.match(rootUpdate, /dependency-name: ['"]?bootstrap['"]?/);
+  assert.match(rootUpdate, /dependency-name: ['"]?rxjs['"]?/);
+  assert.match(rootUpdate, /version-update:semver-major/);
+  assert.match(rootUpdate, /version-update:semver-minor/);
+  assert.match(rootUpdate, /version-update:semver-patch/);
+  assert.match(rootUpdate, /^ {6}codemirror-runtime:$/m);
+
+  const packageUpdate = updateForDirectory(npmUpdates, '/projects/design-system');
+  assert.match(packageUpdate, /^ {6}angular-peer-contract:$/m);
+  assert.match(packageUpdate, /^ {6}codemirror-runtime:$/m);
+
+  const demoUpdate = updateForDirectory(npmUpdates, '/demo');
+  assert.match(demoUpdate, /^ {6}angular-consumer:$/m);
 
   const actionsUpdate = dependabotUpdateBlock(dependabotConfig, 'github-actions');
   assert.match(actionsUpdate, /^ {4}directory: ['"]?\/['"]?$/m);
 
-  for (const update of [npmUpdate, actionsUpdate]) {
+  for (const update of [...npmUpdates, actionsUpdate]) {
     assert.match(update, /^ {4}schedule:\n {6}interval: ['"]?weekly['"]?$/m);
   }
 });
@@ -131,17 +146,37 @@ function jobBlock(workflow, jobName) {
 }
 
 function dependabotUpdateBlock(config, ecosystem) {
+  const updates = dependabotUpdateBlocks(config, ecosystem);
+  assert.ok(updates.length > 0, `missing ${ecosystem} Dependabot update`);
+  return updates[0];
+}
+
+function dependabotUpdateBlocks(config, ecosystem) {
   const lines = config.split('\n');
   const ecosystemDeclaration = new RegExp(`^ {2}- package-ecosystem: ['"]?${ecosystem}['"]?$`);
-  const start = lines.findIndex((line) => ecosystemDeclaration.test(line));
-  assert.notEqual(start, -1, `missing ${ecosystem} Dependabot update`);
+  const updates = [];
 
-  let end = lines.length;
-  for (let index = start + 1; index < lines.length; index += 1) {
-    if (/^ {2}- package-ecosystem:/.test(lines[index])) {
-      end = index;
-      break;
+  for (let start = 0; start < lines.length; start += 1) {
+    if (!ecosystemDeclaration.test(lines[start])) continue;
+    let end = lines.length;
+    for (let index = start + 1; index < lines.length; index += 1) {
+      if (/^ {2}- package-ecosystem:/.test(lines[index])) {
+        end = index;
+        break;
+      }
     }
+    updates.push(lines.slice(start, end).join('\n'));
   }
-  return lines.slice(start, end).join('\n');
+
+  return updates;
+}
+
+function updateForDirectory(updates, directory) {
+  const declaration = new RegExp(
+    `^ {4}directory: ['"]?${directory === '/' ? '\\/' : directory}['"]?$`,
+    'm',
+  );
+  const update = updates.find((candidate) => declaration.test(candidate));
+  assert.notEqual(update, undefined, `missing Dependabot update for ${directory}`);
+  return update;
 }

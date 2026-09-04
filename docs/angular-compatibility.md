@@ -7,9 +7,10 @@ Status: accepted on 2026-08-26.
 The design system is compiled with Angular framework and compiler version 22.1.0 in partial-Ivy
 mode. Its Angular and Angular CDK peer dependency range is `>=22.1.0 <23.0.0`.
 
-The workspace pins TypeScript 6.0.3, RxJS 7.8.2, and Node.js 24.16.0 as its repository toolchain
-baseline. Angular CLI and build tooling may use newer compatible patches within Angular 22.1 as
-long as the published compiler baseline and peer range remain unchanged.
+The root workspace is the floor lane: it pins the published Angular, CDK, RxJS, and Bootstrap peer
+floors exactly while using TypeScript 6.0.3 and Node.js 24.16.0 as its repository toolchain baseline.
+The independent demo is the current lane: Dependabot keeps its consumer dependencies current within
+the supported line, and CI installs the packed library into that application before building it.
 
 ## Upgrade rule
 
@@ -24,9 +25,16 @@ Raising the Angular framework, compiler, or CDK baseline requires all of the fol
 
 ## Verification
 
-The repository verifies this baseline by installing the exact peer floors in the workspace and
-running the complete `make check` quality gate. The production package must compile in partial-Ivy
-mode and retain the documented dependency ranges in its generated manifest.
+The package-content contract derives every lower peer bound and requires the root workspace to
+install that exact version. The production package must compile in partial-Ivy mode at those floors
+and retain the documented ranges in its generated manifest. Every pull-request and release gate
+also runs the production demo build, public testing-entry-point check, SSR smoke, and strict-CSP
+checks after installing a fresh packed archive into the current lane.
+
+Routine Dependabot version updates do not move Angular, RxJS, or Bootstrap in the floor lane;
+security updates remain visible and require an intentional baseline decision. Related Angular
+consumer updates are grouped in the demo, while changes to Angular peer contracts are grouped in
+the published manifest.
 
 ## References
 

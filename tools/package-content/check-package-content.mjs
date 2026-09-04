@@ -13,21 +13,26 @@ import { findPackageContentViolations, parseNpmPackResult } from './package-cont
 
 const executeFile = promisify(execFile);
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const workspacePackageJsonPath = join(repositoryRoot, 'package.json');
 const sourcePackageJsonPath = join(repositoryRoot, 'projects/design-system/package.json');
 const packageFolder = join(repositoryRoot, 'dist/alittlemore.dev/design-system');
 const builtPackageJsonPath = join(packageFolder, 'package.json');
 
 async function main() {
-  const [sourcePackageJson, builtPackageJson, packResult] = await Promise.all([
-    readJson(sourcePackageJsonPath),
-    readJson(builtPackageJsonPath),
-    inspectPackedPackage(packageFolder),
-  ]);
+  const [workspacePackageJson, sourcePackageJson, builtPackageJson, packResult] = await Promise.all(
+    [
+      readJson(workspacePackageJsonPath),
+      readJson(sourcePackageJsonPath),
+      readJson(builtPackageJsonPath),
+      inspectPackedPackage(packageFolder),
+    ],
+  );
 
   const violations = findPackageContentViolations({
     builtPackageJson,
     sourcePackageJson,
     packResult,
+    workspacePackageJson,
     expectedDependencies,
     expectedExports: expectedPackageExports,
     expectedPeerDependencies,

@@ -68,6 +68,12 @@ function createValidFixture() {
       version: '0.1.0',
       repository: structuredClone(expectedRepository),
     },
+    workspacePackageJson: {
+      dependencies: {
+        '@angular/core': '22.1.0',
+        bootstrap: '5.3.8',
+      },
+    },
     packResult: {
       name: '@scope/package',
       version: '0.1.0',
@@ -200,6 +206,34 @@ test('rejects dependency drift and bundled dependencies', () => {
     violations.map(({ code }) => code),
     ['manifest-field-mismatch', 'manifest-field-mismatch', 'bundled-dependencies'],
   );
+});
+
+test('rejects a workspace that no longer exercises every published peer floor', () => {
+  const fixture = createValidFixture();
+  fixture.workspacePackageJson.dependencies['@angular/core'] = '22.1.4';
+  delete fixture.workspacePackageJson.dependencies.bootstrap;
+
+  const violations = findPackageContentViolations({
+    ...fixture,
+    expectedDependencies,
+    expectedExports,
+    expectedPeerDependencies,
+  });
+
+  assert.deepEqual(violations, [
+    {
+      code: 'workspace-peer-floor-mismatch',
+      dependency: '@angular/core',
+      actual: '22.1.4',
+      expected: '22.1.0',
+    },
+    {
+      code: 'workspace-peer-floor-mismatch',
+      dependency: 'bootstrap',
+      actual: undefined,
+      expected: '5.3.8',
+    },
+  ]);
 });
 
 test('rejects optional dependency and optional peer policy drift', () => {

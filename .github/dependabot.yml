@@ -2,12 +2,57 @@ version: 2
 
 updates:
   - package-ecosystem: 'npm'
-    directories:
-      - '/'
-      - '/projects/design-system'
-      - '/demo'
+    directory: '/'
     schedule:
       interval: 'weekly'
+    ignore:
+      - dependency-name: '@angular/*'
+        update-types:
+          - 'version-update:semver-major'
+          - 'version-update:semver-minor'
+          - 'version-update:semver-patch'
+      - dependency-name: 'bootstrap'
+        update-types:
+          - 'version-update:semver-major'
+          - 'version-update:semver-minor'
+          - 'version-update:semver-patch'
+      - dependency-name: 'rxjs'
+        update-types:
+          - 'version-update:semver-major'
+          - 'version-update:semver-minor'
+          - 'version-update:semver-patch'
+    groups:
+      codemirror-runtime:
+        patterns:
+          - '@codemirror/*'
+          - '@lezer/*'
+
+  - package-ecosystem: 'npm'
+    directory: '/projects/design-system'
+    schedule:
+      interval: 'weekly'
+    groups:
+      angular-peer-contract:
+        patterns:
+          - '@angular/*'
+          - 'bootstrap'
+          - 'rxjs'
+      codemirror-runtime:
+        patterns:
+          - '@codemirror/*'
+          - '@lezer/*'
+
+  - package-ecosystem: 'npm'
+    directory: '/demo'
+    schedule:
+      interval: 'weekly'
+    groups:
+      angular-consumer:
+        patterns:
+          - '@angular/*'
+          - 'bootstrap'
+          - 'rxjs'
+          - 'zone.js'
 
   - package-ecosystem: 'github-actions'
     directory: '/'
