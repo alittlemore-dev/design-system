@@ -5,9 +5,10 @@ Status: accepted on 2026-09-04.
 ## Automation
 
 Every pushed commit and every pull request to `main` runs `.github/workflows/ci.yml`, which executes
-the Make-based package gate without write permissions. Concurrent push and pull-request runs for the
-same head commit share a cancelling concurrency group so only the latest run continues. Every push
-to `main` also runs `.github/workflows/release.yml`, repeats the same gate, and compares the current
+the Make-based package gate without write permissions. Push and pull-request runs use separate
+concurrency groups so neither event can cancel the other's check and make the pull request appear
+failed. Repeated runs of the same event type for one head commit remain cancellable. Every push to
+`main` also runs `.github/workflows/release.yml`, repeats the same gate, and compares the current
 package version with the version in the preceding `main` commit. An unchanged version completes as
 a checks-only run. A changed version publishes one unique stable npm version and creates its
 annotated release tag. The release workflow also exposes a manual tag-only recovery job; it never

@@ -28,7 +28,7 @@ test('CI is read-only and runs one Make gate per pushed or pull-request commit',
   assert.match(ciWorkflow, /^ {2}workflow_dispatch:$/m);
   assert.match(
     ciWorkflow,
-    /^concurrency:\n {2}group: design-system-ci-\$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}\n {2}cancel-in-progress: true$/m,
+    /^concurrency:\n {2}group: design-system-ci-\$\{\{ github\.event_name \}\}-\$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}\n {2}cancel-in-progress: true$/m,
   );
   assert.match(ciWorkflow, /^permissions:\n {2}contents: read$/m);
   assert.match(ciWorkflow, /^ {8}run: make install$/m);
