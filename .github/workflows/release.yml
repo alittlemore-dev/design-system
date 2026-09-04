@@ -104,7 +104,6 @@ jobs:
       - name: Publish verified archive
         env:
           ARCHIVE_PATH: dist/releases/${{ needs.gate.outputs.archive_filename }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish "$ARCHIVE_PATH" --access public --registry=https://registry.npmjs.org
 
       - name: Confirm published package

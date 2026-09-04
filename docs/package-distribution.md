@@ -71,13 +71,12 @@ workflow:
 - changing organization membership or transferring the package requires an explicit ownership
   decision.
 
-The first publication is a bootstrap exception in authentication, not in publishing authority. CI
-uses a temporary granular npm token with read/write access to the `alittlemore.dev` organization
-package, bypass-2FA enabled, a short expiration, and no unrelated package or organization access.
-After publishing `0.2.0`, the organization administrator configures this repository's GitHub Actions
-workflow as the npm trusted publisher, switches publication to OIDC, and immediately revokes the
-temporary token. Traditional token publication is then disabled in the package settings, and the
-corresponding GitHub Actions secret is deleted.
+The first publication was a bootstrap exception in authentication, not in publishing authority. CI
+used a granular npm token stored temporarily in the repository secret `NPM_TOKEN` to publish
+`0.2.0`. The organization administrator then configured this repository's GitHub Actions workflow
+as the npm trusted publisher and deleted the repository secret. Starting with `0.2.1`, the
+publication job receives no npm token and authenticates only through OIDC. Personal npm credentials
+are not stored in the repository or GitHub Actions and are not a supported package-release path.
 
 A private GitHub source repository can use npm trusted publishing, but npm provenance is unavailable
 while the repository is private. Making the repository public later may enable provenance; it is not
@@ -184,10 +183,8 @@ Skipping publication when a version already exists would allow unreleased packag
 `main`. Publishing only from version tags would make the tag, rather than `main`, the release event.
 Both were rejected in favor of strict main-branch publication.
 
-## Remaining deferred implementation
+## Implementation status
 
-CI, archive construction, release guards, release-tag automation, and the former identity's
-`0.1.0` bootstrap are complete. Creating and verifying the `alittlemore.dev` npm organization,
-bootstrapping `@alittlemore.dev/design-system@0.2.0`, configuring trusted publishing, revoking the
-migration credential, and verifying the next ordinary OIDC release remain tracked in
-`docs/TODO.md`.
+CI, archive construction, release guards, release-tag automation, both package-identity bootstrap
+releases, and the migration to OIDC trusted publishing are complete. Release `0.2.1` is the first
+ordinary package release authenticated without a repository npm token.

@@ -5,9 +5,10 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const [ciWorkflow, releaseWorkflow] = await Promise.all([
+const [ciWorkflow, releaseWorkflow, dependabotConfig] = await Promise.all([
   readFile(join(repositoryRoot, '.github/workflows/ci.yml'), 'utf8'),
   readFile(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8'),
+  readFile(join(repositoryRoot, '.github/dependabot.yml'), 'utf8').catch(() => ''),
 ]);
 
 test('all external Actions are pinned to immutable commit SHAs', () => {
@@ -46,6 +47,7 @@ test('push releases are fully queued and isolate gate, OIDC, and tag permissions
   const publish = jobBlock(releaseWorkflow, 'publish');
   assert.match(publish, /permissions:\n {6}actions: read\n {6}contents: read\n {6}id-token: write/);
   assert.doesNotMatch(publish, /actions\/checkout|contents: write/);
+  assert.doesNotMatch(publish, /NODE_AUTH_TOKEN|NPM_TOKEN/);
   assert.match(publish, /npm publish "\$ARCHIVE_PATH"/);
   assert.match(publish, /sha256sum --check --strict/);
   assert.match(publish, /for attempt in \{1\.\.12\}/);
@@ -74,6 +76,20 @@ test('manual recovery validates with read access and can only create an absent t
   assert.doesNotMatch(recovery, /--force/);
 });
 
+test('Dependabot checks npm and GitHub Actions dependencies weekly', () => {
+  assert.match(dependabotConfig, /^version: 2$/m);
+
+  const npmUpdate = dependabotUpdateBlock(dependabotConfig, 'npm');
+  assert.match(npmUpdate, /^ {4}directories:\n {6}- ['"]?\/['"]?\n {6}- ['"]?\/demo['"]?$/m);
+
+  const actionsUpdate = dependabotUpdateBlock(dependabotConfig, 'github-actions');
+  assert.match(actionsUpdate, /^ {4}directory: ['"]?\/['"]?$/m);
+
+  for (const update of [npmUpdate, actionsUpdate]) {
+    assert.match(update, /^ {4}schedule:\n {6}interval: ['"]?weekly['"]?$/m);
+  }
+});
+
 function jobBlock(workflow, jobName) {
   const lines = workflow.split('\n');
   const start = lines.findIndex((line) => line === `  ${jobName}:`);
@@ -82,6 +98,22 @@ function jobBlock(workflow, jobName) {
   let end = lines.length;
   for (let index = start + 1; index < lines.length; index += 1) {
     if (/^ {2}[a-z][a-z0-9-]*:$/.test(lines[index])) {
+      end = index;
+      break;
+    }
+  }
+  return lines.slice(start, end).join('\n');
+}
+
+function dependabotUpdateBlock(config, ecosystem) {
+  const lines = config.split('\n');
+  const ecosystemDeclaration = new RegExp(`^ {2}- package-ecosystem: ['"]?${ecosystem}['"]?$`);
+  const start = lines.findIndex((line) => ecosystemDeclaration.test(line));
+  assert.notEqual(start, -1, `missing ${ecosystem} Dependabot update`);
+
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^ {2}- package-ecosystem:/.test(lines[index])) {
       end = index;
       break;
     }

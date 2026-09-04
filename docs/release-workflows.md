@@ -16,6 +16,11 @@ and investigate the blocked release before accepting another `main` update. This
 preserves the rule that every accepted push is released instead of allowing GitHub to evict an
 older pending run.
 
+Dependabot checks root and demo npm dependencies and pinned GitHub Actions weekly and opens pull
+requests without merging them. Before a dependency-update pull request reaches `main`, a maintainer
+must apply the semantic-versioning policy, add its changelog entry, and prepare a unique package
+version just like any other release-ready change.
+
 ## Local packed-archive workflow
 
 The supported local integration path always exercises the production package archive rather than
@@ -201,15 +206,13 @@ Neither recovery job receives npm OIDC or contains a publication command.
 ## Initial publication and trusted publishing
 
 The repository originally bootstrapped `@alittlemoron/design-system@0.1.0`; its immutable
-`v0.1.0` tag remains the historical record of that release. Bootstrap the replacement
-`@alittlemore.dev/design-system@0.2.0` through the push workflow with a one-day granular npm token
-named `design-system-scope-migration-2026-09-04`. Restrict it to read/write access for the
-`alittlemore.dev` organization package, enable bypass 2FA, grant no unrelated package or
-organization access, and store it only in the repository secret `NPM_TOKEN`.
+`v0.1.0` tag remains the historical record of that release. The replacement
+`@alittlemore.dev/design-system@0.2.0` was bootstrapped through the push workflow with a granular npm
+token stored temporarily in the repository secret `NPM_TOKEN`.
 
-After npm confirms `0.2.0` and CI creates `v0.2.0`, configure that package's GitHub Actions trusted
-publisher for organization `alittlemore-dev`, repository `design-system`, workflow filename
-`release.yml`, no GitHub environment, and direct `npm publish`. Then require 2FA while disallowing
-traditional tokens, delete the GitHub secret, revoke the scope-migration token, and verify both are
-gone. The next ordinary versioned push verifies OIDC end to end; until that release succeeds, the
-trusted-publishing TODO remains open.
+After npm confirmed `0.2.0` and CI created `v0.2.0`, the package administrator configured the
+GitHub Actions trusted publisher for organization `alittlemore-dev`, repository `design-system`,
+workflow filename `release.yml`, no GitHub environment, and direct `npm publish`, then deleted the
+repository secret. Release `0.2.1` removes the token environment variable from the publication job
+and verifies trusted publishing end to end. Personal npm credentials are not injected into CI and
+are not a supported package-release path.

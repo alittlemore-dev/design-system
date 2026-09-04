@@ -18,6 +18,26 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Security
 
+## [0.2.1] - 2026-09-04
+
+### Added
+
+- Configure weekly Dependabot version updates for root and demo npm packages and pinned GitHub
+  Actions.
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+- Remove the bootstrap npm-token fallback from the release job so package publication authenticates
+  only through the configured GitHub Actions trusted publisher.
+
 ## [0.2.0] - 2026-09-04
 
 ### Added
