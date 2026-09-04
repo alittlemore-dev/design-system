@@ -11,6 +11,8 @@ Markdown rendering and editing, and public test utilities.
 - [Package distribution](../docs/package-distribution.md)
 - [Angular compatibility](../docs/angular-compatibility.md)
 - [Dependency contracts](../docs/dependency-contracts.md)
+- [Release workflows](../docs/release-workflows.md)
+- [Changelog](../CHANGELOG.md)
 
 ## Demo application
 

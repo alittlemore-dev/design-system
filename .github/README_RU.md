@@ -11,6 +11,8 @@ Markdown-рендерингом и редактором, а также публ�
 - [Дистрибуция пакета](../docs/package-distribution.md)
 - [Совместимость с Angular](../docs/angular-compatibility.md)
 - [Контракты зависимостей](../docs/dependency-contracts.md)
+- [Release workflow](../docs/release-workflows.md)
+- [История изменений](../CHANGELOG.md)
 
 ## Демо-стенд
 

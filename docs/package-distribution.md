@@ -138,8 +138,8 @@ Before `1.0.0`:
 Version `1.0.0` marks the first stable public contract after the package API, documentation, quality
 gate, and publication workflow are complete.
 
-Detailed version-bump mechanics, changelog generation, release notes, and dependency-update policy
-remain part of the stable-release workflow task.
+Detailed version-bump mechanics, changelog maintenance, release notes, and dependency-update policy
+are defined in [Release workflows](release-workflows.md).
 
 ## Consequences
 
@@ -169,15 +169,9 @@ Skipping publication when a version already exists would allow unreleased packag
 `main`. Publishing only from version tags would make the tag, rather than `main`, the release event.
 Both were rejected in favor of strict main-branch publication.
 
-## Decisions deliberately deferred
+## Remaining deferred implementation
 
-This decision does not configure:
-
-- the demo application or package build;
-- dependency and peer-dependency contracts;
-- CI workflow files or npm trusted-publisher settings;
-- scripts and Make targets for the local archive workflow;
-- API-surface, bundle-isolation, package-content, SSR, or strict-CSP checks;
-- changelog and stable-release mechanics beyond the initial versioning rules.
-
-Those remain finite implementation tasks in `docs/TODO.md`.
+The local archive workflow, dependency contracts, and package checks are now implemented and
+documented, and the release mechanics are defined in repository documentation. CI workflow files,
+the bootstrap npm credential, trusted-publisher setup, and release-tag automation remain an
+implementation task in `docs/TODO.md`.

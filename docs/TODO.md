@@ -12,8 +12,8 @@
 - [x] Configure Jest, Angular testing support, ESLint, TypeScript checks, Prettier, production builds, and package-content verification.
 - [x] Add repository scripts and thin Make targets for installation, tests, lint, type checks, format checks, builds, and package verification.
 - [ ] Configure CI to run the Make-based checks and build the distributable package.
-- [ ] Configure strict push-to-main npm publication for unique versions, bootstrap 0.1.0 through CI, migrate the package to trusted publishing, and revoke the bootstrap token.
-- [ ] Document the local packed-archive, stable-release, semantic-versioning, and changelog workflows.
+- [ ] Configure strict push-to-main npm publication for unique versions, create matching CI-owned `vX.Y.Z` tags and a tag-only recovery path, bootstrap 0.1.0 through CI, migrate the package to trusted publishing, and revoke the bootstrap token.
+- [x] Document the local packed-archive, stable-release, semantic-versioning, and changelog workflows.
 - [x] Add a repository-owned Angular demo that installs the packed archive through public entry points and exercises the current UI, UI styles, theme preload, SSR, hydration, and strict CSP.
 - [x] Preserve owning-page scroll when ArrowUp or ArrowDown moves between visible Markdown-table cells immediately after input.
 - [ ] add dependabot
