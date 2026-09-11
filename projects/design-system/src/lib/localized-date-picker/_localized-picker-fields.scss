@@ -1,0 +1,15 @@
+@mixin layout($group-class, $field-class) {
+  :host {
+    display: block;
+  }
+
+  .#{$group-class} {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .#{$field-class} > label {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+}

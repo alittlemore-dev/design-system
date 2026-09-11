@@ -1101,8 +1101,8 @@ function finishPendingTableCellScrollTarget(
   cell: TableCellLayout,
 ): void {
   // Chrome may scroll the DOM selection while CodeMirror and the host component finish their
-  // current and follow-up layout frames. Hold the pre-arrow position across both frames, then
-  // reveal only a genuinely clipped rendered cell using its own geometry.
+  // current and delayed follow-up layout frames. Hold the pre-arrow position across all three,
+  // revealing only a genuinely clipped rendered cell using its own geometry after each restore.
   view.dom.ownerDocument.defaultView?.requestAnimationFrame(() => {
     if (!pendingTableCellScrollIsCurrent(view, target, cell)) {
       return;
@@ -1116,9 +1116,18 @@ function finishPendingTableCellScrollTarget(
       applyRenderedTableCellVerticalScroll(
         measureRenderedTableCellVerticalScroll(view, target.tableFrom, cell, null, undefined),
       );
-      if (pendingTableCellScrollTargets.get(view) === target) {
-        pendingTableCellScrollTargets.delete(view);
-      }
+      view.dom.ownerDocument.defaultView?.requestAnimationFrame(() => {
+        if (!pendingTableCellScrollIsCurrent(view, target, cell)) {
+          return;
+        }
+        restoreElementScrollStack(target.scrollStack, true);
+        applyRenderedTableCellVerticalScroll(
+          measureRenderedTableCellVerticalScroll(view, target.tableFrom, cell, null, undefined),
+        );
+        if (pendingTableCellScrollTargets.get(view) === target) {
+          pendingTableCellScrollTargets.delete(view);
+        }
+      });
     });
   });
 }
@@ -1142,6 +1151,7 @@ function cancelPendingTableCellVerticalScroll(view: EditorView): void {
   const target = pendingTableCellScrollTargets.get(view);
   if (target !== undefined) {
     target.cancelled = true;
+    pendingTableCellScrollTargets.delete(view);
   }
 }
 
@@ -1597,6 +1607,7 @@ class TableScrollIntentPlugin {
   }
 
   destroy(): void {
+    this.cancelPendingScroll();
     this.ownerDocument.removeEventListener('pointerdown', this.cancelPendingScroll, true);
     this.ownerDocument.removeEventListener('touchmove', this.cancelPendingScroll, true);
     this.ownerDocument.removeEventListener('wheel', this.cancelPendingScroll, true);

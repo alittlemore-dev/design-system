@@ -66,6 +66,9 @@ test('navigates the component catalogue and applies Site select inputs live', as
   await page.locator('[data-demo-site-size]').selectOption('small');
   await page.locator('[data-demo-site-invalid]').check();
   await page.locator('[data-demo-site-disabled]').check();
+  await page.waitForFunction(
+    () => document.querySelector('[data-testid="demo-site-select"]')?.disabled === true,
+  );
   assert.equal(
     await siteSelect.evaluate((element) =>
       element.classList.contains('site-select-trigger-bordered'),
@@ -168,6 +171,58 @@ test('hydrates the routed showcase, tracks the known Source-mode CSP gap, and ke
   await page.locator('[data-testid="date-picker-toggle"]').click();
   await page.locator('[data-date="2026-08-29"]').click();
   await waitForText(page, '[data-demo-date-selection]', 'Selected: 2026-08-29');
+
+  await navigateToDemoPage(
+    page,
+    'Localized date range picker',
+    '/components/localized-date-range-picker',
+  );
+  await waitForText(page, '[data-demo-date-range-selection]', 'Selected: 2026-08-28 → 2026-08-30');
+  await page.locator('[data-testid="date-range-start-toggle"]').click();
+  assert.equal(await page.locator('[data-date="2026-08-31"]').isDisabled(), true);
+  await page.locator('[data-date="2026-08-27"]').click();
+  await waitForText(page, '[data-demo-date-range-selection]', 'Selected: 2026-08-27 → (empty)');
+  await page.locator('[data-date="2026-08-29"]').click();
+  await waitForText(page, '[data-demo-date-range-selection]', 'Selected: 2026-08-27 → 2026-08-29');
+
+  await navigateToDemoPage(
+    page,
+    'Localized datetime picker',
+    '/components/localized-datetime-picker',
+  );
+  await waitForText(page, '[data-demo-datetime-selection]', 'Selected: 2026-08-28T09:30');
+  await page.locator('[data-testid="datetime-picker-toggle"]').click();
+  assert.equal(await page.locator('[data-date="2026-08-31"]').isDisabled(), true);
+  await page.locator('[data-date="2026-08-29"]').click();
+  await waitForText(page, '[data-demo-datetime-selection]', 'Selected: 2026-08-29T09:30');
+  await page.locator('#demo-datetime-time').fill('14:45');
+  await waitForText(page, '[data-demo-datetime-selection]', 'Selected: 2026-08-29T14:45');
+
+  await navigateToDemoPage(
+    page,
+    'Localized datetime range picker',
+    '/components/localized-datetime-range-picker',
+  );
+  await waitForText(
+    page,
+    '[data-demo-datetime-range-selection]',
+    'Selected: 2026-08-28T09:30 → 2026-08-30T17:00',
+  );
+  await page.locator('[data-testid="datetime-range-start-toggle"]').click();
+  assert.equal(await page.locator('[data-date="2026-08-31"]').isDisabled(), true);
+  await page.locator('[data-date="2026-08-27"]').click();
+  await waitForText(
+    page,
+    '[data-demo-datetime-range-selection]',
+    'Selected: 2026-08-27T09:30 → (empty)',
+  );
+  await page.locator('[data-date="2026-08-29"]').click();
+  await page.locator('#demo-datetime-range-end-time').fill('16:15');
+  await waitForText(
+    page,
+    '[data-demo-datetime-range-selection]',
+    'Selected: 2026-08-27T09:30 → 2026-08-29T16:15',
+  );
 
   await page.locator('[data-demo-theme="dark"]').click();
   await page.waitForFunction(

@@ -404,14 +404,18 @@ describe('Markdown table keyboard and editing interaction matrix', () => {
     },
   );
 
-  it('does not move the scroll container when the adjacent target cell is already visible', async () => {
+  it('does not move the scroll container after a late native selection scroll', async () => {
     let simulatedScroller: HTMLElement | null = null;
     let simulateNativeSelectionScroll = false;
     const view = createView(NAVIGATION_SOURCE, views, [
       EditorView.updateListener.of((update) => {
         if (simulateNativeSelectionScroll && update.selectionSet) {
           window.requestAnimationFrame(() => {
-            simulatedScroller!.scrollTop = 0;
+            window.requestAnimationFrame(() => {
+              window.requestAnimationFrame(() => {
+                simulatedScroller!.scrollTop = 0;
+              });
+            });
           });
         }
       }),
@@ -440,6 +444,32 @@ describe('Markdown table keyboard and editing interaction matrix', () => {
       expect(cell(view, target).classList).toContain('cm-markdown-table-cell-active');
       expect(scroller.scrollTop).toBe(20);
       expect(scrollTo).toHaveBeenCalledWith({ behavior: 'instant', left: 0, top: 20 });
+    } finally {
+      geometry.mockRestore();
+    }
+  });
+
+  it('does not restore a pending table scroll after the editor is destroyed', async () => {
+    const view = createView(NAVIGATION_SOURCE, views);
+    const scroller = view.scrollDOM;
+    const target = { row: 2, column: 0 };
+    configureVerticalScroller(scroller, 20);
+    const geometry = mockElementRectangles(scroller, target, {
+      scroller: rectangle(0, 100),
+      target: rectangle(30, 70),
+    });
+    setCursor(view, cellMetrics(view, { row: 1, column: 0 }).start);
+
+    try {
+      const event = key(view, 'ArrowDown');
+      await flushAnimationFrames(2);
+      views.splice(views.indexOf(view), 1);
+      view.destroy();
+      scroller.scrollTop = 70;
+      await flushAnimationFrames(1);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(scroller.scrollTop).toBe(70);
     } finally {
       geometry.mockRestore();
     }
@@ -1765,8 +1795,13 @@ function adjacentLinePosition(state: EditorState, lineNumber: number, column: nu
 }
 
 function flushEditorMeasure(): Promise<void> {
+  return flushAnimationFrames(3);
+}
+
+function flushAnimationFrames(count: number): Promise<void> {
+  if (count === 0) return Promise.resolve();
   return new Promise((resolve) => {
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
+    window.requestAnimationFrame(() => void flushAnimationFrames(count - 1).then(resolve));
   });
 }
 

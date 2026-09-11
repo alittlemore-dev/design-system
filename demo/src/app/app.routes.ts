@@ -43,6 +43,27 @@ export const routes: Routes = [
       import('./pages/form-pages').then((module) => module.LocalizedDatePickerPageComponent),
   },
   {
+    path: 'components/localized-date-range-picker',
+    loadComponent: () =>
+      import('./pages/localized-picker-pages').then(
+        (module) => module.LocalizedDateRangePickerPageComponent,
+      ),
+  },
+  {
+    path: 'components/localized-datetime-picker',
+    loadComponent: () =>
+      import('./pages/localized-picker-pages').then(
+        (module) => module.LocalizedDateTimePickerPageComponent,
+      ),
+  },
+  {
+    path: 'components/localized-datetime-range-picker',
+    loadComponent: () =>
+      import('./pages/localized-picker-pages').then(
+        (module) => module.LocalizedDateTimeRangePickerPageComponent,
+      ),
+  },
+  {
     path: 'components/foldable-tree',
     loadComponent: () =>
       import('./pages/foldable-tree-page.component').then(

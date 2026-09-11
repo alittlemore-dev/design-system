@@ -83,6 +83,21 @@ test('serves component pages directly without rendering the former all-in-one sh
       content: /data-demo-localized-date/,
     },
     {
+      path: '/components/localized-date-range-picker',
+      heading: 'Localized date range picker',
+      content: /data-demo-date-range-selection/,
+    },
+    {
+      path: '/components/localized-datetime-picker',
+      heading: 'Localized datetime picker',
+      content: /data-demo-datetime-selection/,
+    },
+    {
+      path: '/components/localized-datetime-range-picker',
+      heading: 'Localized datetime range picker',
+      content: /data-demo-datetime-range-selection/,
+    },
+    {
       path: '/components/foldable-tree',
       heading: 'Foldable tree',
       content: /data-demo-tree-selection/,

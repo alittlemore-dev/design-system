@@ -7,6 +7,9 @@ import {
   FoldableTreeComponent,
   LoadingSpinnerComponent,
   LocalizedDatePickerComponent,
+  LocalizedDateRangePickerComponent,
+  LocalizedDateTimePickerComponent,
+  LocalizedDateTimeRangePickerComponent,
   SiteSelectComponent,
   errorDisplayMessages,
   flattenNestedErrorMessages,
@@ -18,6 +21,11 @@ import type {
   FoldableTreeSection,
   LocalizedDatePickerControlSize,
   LocalizedDatePickerLabels,
+  LocalizedDateRange,
+  LocalizedDateRangePickerLabels,
+  LocalizedDateTimePickerLabels,
+  LocalizedDateTimeRange,
+  LocalizedDateTimeRangePickerLabels,
   SiteSelectAppearance,
   SiteSelectControlSize,
   SiteSelectOption,
@@ -104,6 +112,159 @@ type DateValueChangeOutputContract = Expect<
 type DateValidityChangeOutputContract = Expect<
   Equal<LocalizedDatePickerComponent['validityChange'], OutputEmitterRef<boolean>>
 >;
+type DateRangeInputIdContract = Expect<
+  Equal<LocalizedDateRangePickerComponent['inputId'], InputSignal<string>>
+>;
+type DateRangeValueContract = Expect<
+  Equal<LocalizedDateRangePickerComponent['value'], InputSignal<LocalizedDateRange | undefined>>
+>;
+type DateRangeControlSizeContract = Expect<
+  Equal<
+    LocalizedDateRangePickerComponent['controlSize'],
+    InputSignal<LocalizedDatePickerControlSize>
+  >
+>;
+type DateRangeLocaleContract = Expect<
+  Equal<LocalizedDateRangePickerComponent['dateLocale'], InputSignal<string>>
+>;
+type DateRangeLabelsContract = Expect<
+  Equal<LocalizedDateRangePickerComponent['labels'], InputSignal<LocalizedDateRangePickerLabels>>
+>;
+type DateRangeRequiredContract = Expect<
+  Equal<LocalizedDateRangePickerComponent['required'], InputSignal<boolean>>
+>;
+type DateRangeInvalidContract = Expect<
+  Equal<LocalizedDateRangePickerComponent['invalid'], InputSignal<boolean>>
+>;
+type DateRangeControlDisabledContract = Expect<
+  Equal<LocalizedDateRangePickerComponent['controlDisabled'], InputSignal<boolean>>
+>;
+type DateRangeReadonlyContract = Expect<
+  Equal<LocalizedDateRangePickerComponent['readonly'], InputSignal<boolean>>
+>;
+type DateRangeMinContract = Expect<
+  Equal<LocalizedDateRangePickerComponent['min'], InputSignal<string | undefined>>
+>;
+type DateRangeMaxContract = Expect<
+  Equal<LocalizedDateRangePickerComponent['max'], InputSignal<string | undefined>>
+>;
+type DateRangeDisabledDatesContract = Expect<
+  Equal<
+    LocalizedDateRangePickerComponent['disabledDates'],
+    InputSignal<readonly string[] | undefined>
+  >
+>;
+type DateRangeValueChangeOutputContract = Expect<
+  Equal<LocalizedDateRangePickerComponent['valueChange'], OutputEmitterRef<LocalizedDateRange>>
+>;
+type DateRangeValidityChangeOutputContract = Expect<
+  Equal<LocalizedDateRangePickerComponent['validityChange'], OutputEmitterRef<boolean>>
+>;
+type DateTimeInputIdContract = Expect<
+  Equal<LocalizedDateTimePickerComponent['inputId'], InputSignal<string>>
+>;
+type DateTimeValueContract = Expect<
+  Equal<LocalizedDateTimePickerComponent['value'], InputSignal<string | undefined>>
+>;
+type DateTimeControlSizeContract = Expect<
+  Equal<
+    LocalizedDateTimePickerComponent['controlSize'],
+    InputSignal<LocalizedDatePickerControlSize>
+  >
+>;
+type DateTimeLocaleContract = Expect<
+  Equal<LocalizedDateTimePickerComponent['dateLocale'], InputSignal<string>>
+>;
+type DateTimeLabelsContract = Expect<
+  Equal<LocalizedDateTimePickerComponent['labels'], InputSignal<LocalizedDateTimePickerLabels>>
+>;
+type DateTimeRequiredContract = Expect<
+  Equal<LocalizedDateTimePickerComponent['required'], InputSignal<boolean>>
+>;
+type DateTimeInvalidContract = Expect<
+  Equal<LocalizedDateTimePickerComponent['invalid'], InputSignal<boolean>>
+>;
+type DateTimeControlDisabledContract = Expect<
+  Equal<LocalizedDateTimePickerComponent['controlDisabled'], InputSignal<boolean>>
+>;
+type DateTimeReadonlyContract = Expect<
+  Equal<LocalizedDateTimePickerComponent['readonly'], InputSignal<boolean>>
+>;
+type DateTimeMinContract = Expect<
+  Equal<LocalizedDateTimePickerComponent['min'], InputSignal<string | undefined>>
+>;
+type DateTimeMaxContract = Expect<
+  Equal<LocalizedDateTimePickerComponent['max'], InputSignal<string | undefined>>
+>;
+type DateTimeDisabledDatesContract = Expect<
+  Equal<
+    LocalizedDateTimePickerComponent['disabledDates'],
+    InputSignal<readonly string[] | undefined>
+  >
+>;
+type DateTimeValueChangeOutputContract = Expect<
+  Equal<LocalizedDateTimePickerComponent['valueChange'], OutputEmitterRef<string>>
+>;
+type DateTimeValidityChangeOutputContract = Expect<
+  Equal<LocalizedDateTimePickerComponent['validityChange'], OutputEmitterRef<boolean>>
+>;
+type DateTimeRangeInputIdContract = Expect<
+  Equal<LocalizedDateTimeRangePickerComponent['inputId'], InputSignal<string>>
+>;
+type DateTimeRangeValueContract = Expect<
+  Equal<
+    LocalizedDateTimeRangePickerComponent['value'],
+    InputSignal<LocalizedDateTimeRange | undefined>
+  >
+>;
+type DateTimeRangeControlSizeContract = Expect<
+  Equal<
+    LocalizedDateTimeRangePickerComponent['controlSize'],
+    InputSignal<LocalizedDatePickerControlSize>
+  >
+>;
+type DateTimeRangeLocaleContract = Expect<
+  Equal<LocalizedDateTimeRangePickerComponent['dateLocale'], InputSignal<string>>
+>;
+type DateTimeRangeLabelsContract = Expect<
+  Equal<
+    LocalizedDateTimeRangePickerComponent['labels'],
+    InputSignal<LocalizedDateTimeRangePickerLabels>
+  >
+>;
+type DateTimeRangeRequiredContract = Expect<
+  Equal<LocalizedDateTimeRangePickerComponent['required'], InputSignal<boolean>>
+>;
+type DateTimeRangeInvalidContract = Expect<
+  Equal<LocalizedDateTimeRangePickerComponent['invalid'], InputSignal<boolean>>
+>;
+type DateTimeRangeControlDisabledContract = Expect<
+  Equal<LocalizedDateTimeRangePickerComponent['controlDisabled'], InputSignal<boolean>>
+>;
+type DateTimeRangeReadonlyContract = Expect<
+  Equal<LocalizedDateTimeRangePickerComponent['readonly'], InputSignal<boolean>>
+>;
+type DateTimeRangeMinContract = Expect<
+  Equal<LocalizedDateTimeRangePickerComponent['min'], InputSignal<string | undefined>>
+>;
+type DateTimeRangeMaxContract = Expect<
+  Equal<LocalizedDateTimeRangePickerComponent['max'], InputSignal<string | undefined>>
+>;
+type DateTimeRangeDisabledDatesContract = Expect<
+  Equal<
+    LocalizedDateTimeRangePickerComponent['disabledDates'],
+    InputSignal<readonly string[] | undefined>
+  >
+>;
+type DateTimeRangeValueChangeOutputContract = Expect<
+  Equal<
+    LocalizedDateTimeRangePickerComponent['valueChange'],
+    OutputEmitterRef<LocalizedDateTimeRange>
+  >
+>;
+type DateTimeRangeValidityChangeOutputContract = Expect<
+  Equal<LocalizedDateTimeRangePickerComponent['validityChange'], OutputEmitterRef<boolean>>
+>;
 type SiteInputIdContract = Expect<Equal<SiteSelectComponent['inputId'], InputSignal<string>>>;
 type SiteOptionsContract = Expect<
   Equal<SiteSelectComponent['options'], InputSignal<readonly SiteSelectOption[]>>
@@ -175,6 +336,37 @@ type LocalizedDatePickerPublicKeysContract = Expect<
     | 'setDisabledState'
   >
 >;
+type PickerFormsPublicKeys =
+  | 'inputId'
+  | 'value'
+  | 'controlSize'
+  | 'dateLocale'
+  | 'labels'
+  | 'required'
+  | 'invalid'
+  | 'controlDisabled'
+  | 'readonly'
+  | 'min'
+  | 'max'
+  | 'disabledDates'
+  | 'valueChange'
+  | 'validityChange'
+  | 'writeValue'
+  | 'ngOnChanges'
+  | 'registerOnChange'
+  | 'registerOnTouched'
+  | 'validate'
+  | 'registerOnValidatorChange'
+  | 'setDisabledState';
+type LocalizedDateRangePickerPublicKeysContract = Expect<
+  Equal<keyof LocalizedDateRangePickerComponent, PickerFormsPublicKeys>
+>;
+type LocalizedDateTimePickerPublicKeysContract = Expect<
+  Equal<keyof LocalizedDateTimePickerComponent, PickerFormsPublicKeys>
+>;
+type LocalizedDateTimeRangePickerPublicKeysContract = Expect<
+  Equal<keyof LocalizedDateTimeRangePickerComponent, PickerFormsPublicKeys>
+>;
 type SiteSelectPublicKeysContract = Expect<
   Equal<
     keyof SiteSelectComponent,
@@ -235,6 +427,48 @@ type PublicContractAssertions = readonly [
   DateDisabledDatesContract,
   DateValueChangeOutputContract,
   DateValidityChangeOutputContract,
+  DateRangeInputIdContract,
+  DateRangeValueContract,
+  DateRangeControlSizeContract,
+  DateRangeLocaleContract,
+  DateRangeLabelsContract,
+  DateRangeRequiredContract,
+  DateRangeInvalidContract,
+  DateRangeControlDisabledContract,
+  DateRangeReadonlyContract,
+  DateRangeMinContract,
+  DateRangeMaxContract,
+  DateRangeDisabledDatesContract,
+  DateRangeValueChangeOutputContract,
+  DateRangeValidityChangeOutputContract,
+  DateTimeInputIdContract,
+  DateTimeValueContract,
+  DateTimeControlSizeContract,
+  DateTimeLocaleContract,
+  DateTimeLabelsContract,
+  DateTimeRequiredContract,
+  DateTimeInvalidContract,
+  DateTimeControlDisabledContract,
+  DateTimeReadonlyContract,
+  DateTimeMinContract,
+  DateTimeMaxContract,
+  DateTimeDisabledDatesContract,
+  DateTimeValueChangeOutputContract,
+  DateTimeValidityChangeOutputContract,
+  DateTimeRangeInputIdContract,
+  DateTimeRangeValueContract,
+  DateTimeRangeControlSizeContract,
+  DateTimeRangeLocaleContract,
+  DateTimeRangeLabelsContract,
+  DateTimeRangeRequiredContract,
+  DateTimeRangeInvalidContract,
+  DateTimeRangeControlDisabledContract,
+  DateTimeRangeReadonlyContract,
+  DateTimeRangeMinContract,
+  DateTimeRangeMaxContract,
+  DateTimeRangeDisabledDatesContract,
+  DateTimeRangeValueChangeOutputContract,
+  DateTimeRangeValidityChangeOutputContract,
   SiteInputIdContract,
   SiteOptionsContract,
   SiteValueContract,
@@ -251,6 +485,9 @@ type PublicContractAssertions = readonly [
   ErrorPublicKeysContract,
   FoldableTreePublicKeysContract,
   LocalizedDatePickerPublicKeysContract,
+  LocalizedDateRangePickerPublicKeysContract,
+  LocalizedDateTimePickerPublicKeysContract,
+  LocalizedDateTimeRangePickerPublicKeysContract,
   SiteSelectPublicKeysContract,
   SiteSelectFocusContract,
   SiteSelectScrollIntoViewContract,
@@ -292,6 +529,43 @@ const DATE_LABELS = {
   keyboardHelp: 'Use arrow keys to choose a date',
 } as const satisfies LocalizedDatePickerLabels;
 
+const DATE_RANGE_LABELS = {
+  ...DATE_LABELS,
+  groupLabel: 'Date range',
+  startDate: 'Start date',
+  endDate: 'End date',
+  selectStartDate: 'Choose a start date',
+  selectEndDate: 'Choose an end date',
+  invalidRange: 'Enter a valid date range',
+  requiredRange: 'Date range is required',
+} as const satisfies LocalizedDateRangePickerLabels;
+
+const DATETIME_LABELS = {
+  ...DATE_LABELS,
+  groupLabel: 'Date and time',
+  dateInput: 'Date',
+  timeInput: 'Time',
+  timeFormatHint: 'Use HH:mm',
+  invalidTime: 'Enter a valid time',
+  requiredTime: 'Time is required',
+} as const satisfies LocalizedDateTimePickerLabels;
+
+const DATETIME_RANGE_LABELS = {
+  ...DATE_LABELS,
+  groupLabel: 'Date and time range',
+  startDate: 'Start date',
+  startTime: 'Start time',
+  endDate: 'End date',
+  endTime: 'End time',
+  selectStartDate: 'Choose a start date',
+  selectEndDate: 'Choose an end date',
+  timeFormatHint: 'Use HH:mm',
+  invalidTime: 'Enter a valid time',
+  requiredTime: 'Time is required',
+  invalidRange: 'Enter a valid date and time range',
+  requiredRange: 'Date and time range is required',
+} as const satisfies LocalizedDateTimeRangePickerLabels;
+
 const SITE_OPTIONS = [
   { value: 'alpha', label: 'Alpha site' },
 ] as const satisfies readonly SiteSelectOption[];
@@ -327,6 +601,54 @@ const PUBLIC_HOST_TEMPLATE = `
     max="2026-12-31"
     [disabledDates]="[]"
   />
+  <ds-localized-date-range-picker
+    inputId="public-date-range"
+    [value]="dateRangeValue()"
+    [controlSize]="dateControlSize"
+    dateLocale="en-GB"
+    [labels]="dateRangeLabels()"
+    [required]="false"
+    [invalid]="false"
+    [controlDisabled]="false"
+    [readonly]="false"
+    min="2026-01-01"
+    max="2026-12-31"
+    [disabledDates]="[]"
+    (valueChange)="dateRangeValue.set($event)"
+    (validityChange)="pickerValidity.set($event)"
+  />
+  <ds-localized-datetime-picker
+    inputId="public-datetime"
+    [value]="dateTimeValue()"
+    [controlSize]="dateControlSize"
+    dateLocale="en-GB"
+    [labels]="dateTimeLabels()"
+    [required]="false"
+    [invalid]="false"
+    [controlDisabled]="false"
+    [readonly]="false"
+    min="2026-01-01T08:00"
+    max="2026-12-31T18:00"
+    [disabledDates]="[]"
+    (valueChange)="dateTimeValue.set($event)"
+    (validityChange)="pickerValidity.set($event)"
+  />
+  <ds-localized-datetime-range-picker
+    inputId="public-datetime-range"
+    [value]="dateTimeRangeValue()"
+    [controlSize]="dateControlSize"
+    dateLocale="en-GB"
+    [labels]="dateTimeRangeLabels()"
+    [required]="false"
+    [invalid]="false"
+    [controlDisabled]="false"
+    [readonly]="false"
+    min="2026-01-01T08:00"
+    max="2026-12-31T18:00"
+    [disabledDates]="[]"
+    (valueChange)="dateTimeRangeValue.set($event)"
+    (validityChange)="pickerValidity.set($event)"
+  />
   <ds-site-select
     inputId="public-site"
     [options]="siteOptions()"
@@ -354,6 +676,19 @@ abstract class PublicHostInputs {
   readonly dateValue = signal('2026-02-05');
   readonly dateControlSize = DATE_CONTROL_SIZE;
   readonly dateLabels = signal<LocalizedDatePickerLabels>(DATE_LABELS);
+  readonly dateRangeValue = signal<LocalizedDateRange>({
+    start: '2026-02-05',
+    end: '2026-02-08',
+  });
+  readonly dateRangeLabels = signal<LocalizedDateRangePickerLabels>(DATE_RANGE_LABELS);
+  readonly dateTimeValue = signal('2026-02-05T09:30');
+  readonly dateTimeLabels = signal<LocalizedDateTimePickerLabels>(DATETIME_LABELS);
+  readonly dateTimeRangeValue = signal<LocalizedDateTimeRange>({
+    start: '2026-02-05T09:30',
+    end: '2026-02-08T16:00',
+  });
+  readonly dateTimeRangeLabels = signal<LocalizedDateTimeRangePickerLabels>(DATETIME_RANGE_LABELS);
+  readonly pickerValidity = signal(true);
   readonly siteOptions = signal<readonly SiteSelectOption[]>(SITE_OPTIONS);
   readonly siteControlSize = SITE_CONTROL_SIZE;
   readonly siteAppearance = SITE_APPEARANCE;
@@ -367,6 +702,9 @@ abstract class PublicHostInputs {
     ErrorMessageComponent,
     FoldableTreeComponent,
     LocalizedDatePickerComponent,
+    LocalizedDateRangePickerComponent,
+    LocalizedDateTimePickerComponent,
+    LocalizedDateTimeRangePickerComponent,
     SiteSelectComponent,
   ],
   template: PUBLIC_HOST_TEMPLATE,
@@ -381,6 +719,9 @@ class PublicImportHostComponent extends PublicHostInputs {}
     ErrorMessageComponent,
     FoldableTreeComponent,
     LocalizedDatePickerComponent,
+    LocalizedDateRangePickerComponent,
+    LocalizedDateTimePickerComponent,
+    LocalizedDateTimeRangePickerComponent,
     SiteSelectComponent,
   ],
   template: PUBLIC_HOST_TEMPLATE,
@@ -436,9 +777,57 @@ describe('primary design-system entry point', () => {
       true,
       true,
       true,
+      // Localized date-range picker inputs, outputs, and public keys.
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      // Localized datetime picker inputs, outputs, and public keys.
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      // Localized datetime-range picker inputs, outputs, and public keys.
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
     ];
 
-    expect(contracts).toHaveLength(46);
+    expect(contracts).toHaveLength(91);
   });
 
   it('exposes error-display utilities through the public package import', () => {
@@ -471,6 +860,21 @@ describe('primary design-system entry point', () => {
         .querySelector('ds-localized-date-picker input')
         .getAttribute('placeholder'),
     ).toBe('DD.MM.YYYY');
+    expect(
+      fixture.nativeElement
+        .querySelector('ds-localized-date-range-picker input')
+        .getAttribute('placeholder'),
+    ).toBe('DD.MM.YYYY');
+    expect(
+      fixture.nativeElement
+        .querySelector('ds-localized-datetime-picker input')
+        .getAttribute('placeholder'),
+    ).toBe('DD.MM.YYYY');
+    expect(
+      fixture.nativeElement
+        .querySelector('ds-localized-datetime-range-picker input')
+        .getAttribute('placeholder'),
+    ).toBe('DD.MM.YYYY');
     expect(fixture.nativeElement.querySelector('#public-site').textContent).toContain('Alpha site');
 
     fixture.componentInstance.emptyMessage.set('Nothing available');
@@ -482,6 +886,18 @@ describe('primary design-system entry point', () => {
     fixture.componentInstance.dateLabels.set({
       ...DATE_LABELS,
       placeholder: 'Date, please',
+    });
+    fixture.componentInstance.dateRangeLabels.set({
+      ...DATE_RANGE_LABELS,
+      placeholder: 'Date range, please',
+    });
+    fixture.componentInstance.dateTimeLabels.set({
+      ...DATETIME_LABELS,
+      placeholder: 'Datetime, please',
+    });
+    fixture.componentInstance.dateTimeRangeLabels.set({
+      ...DATETIME_RANGE_LABELS,
+      placeholder: 'Datetime range, please',
     });
     fixture.componentInstance.siteOptions.set([{ value: 'alpha', label: 'Updated site' }]);
     fixture.detectChanges();
@@ -505,6 +921,21 @@ describe('primary design-system entry point', () => {
         .querySelector('ds-localized-date-picker input')
         .getAttribute('placeholder'),
     ).toBe('Date, please');
+    expect(
+      fixture.nativeElement
+        .querySelector('ds-localized-date-range-picker input')
+        .getAttribute('placeholder'),
+    ).toBe('Date range, please');
+    expect(
+      fixture.nativeElement
+        .querySelector('ds-localized-datetime-picker input')
+        .getAttribute('placeholder'),
+    ).toBe('Datetime, please');
+    expect(
+      fixture.nativeElement
+        .querySelector('ds-localized-datetime-range-picker input')
+        .getAttribute('placeholder'),
+    ).toBe('Datetime range, please');
     expect(fixture.nativeElement.querySelector('#public-site').textContent).toContain(
       'Updated site',
     );
@@ -536,6 +967,15 @@ describe('primary design-system entry point', () => {
       expect(fixture.nativeElement.querySelectorAll('ds-error-message')).toHaveLength(1);
       expect(fixture.nativeElement.querySelectorAll('ds-foldable-tree')).toHaveLength(1);
       expect(fixture.nativeElement.querySelectorAll('ds-localized-date-picker')).toHaveLength(1);
+      expect(fixture.nativeElement.querySelectorAll('ds-localized-date-range-picker')).toHaveLength(
+        1,
+      );
+      expect(fixture.nativeElement.querySelectorAll('ds-localized-datetime-picker')).toHaveLength(
+        1,
+      );
+      expect(
+        fixture.nativeElement.querySelectorAll('ds-localized-datetime-range-picker'),
+      ).toHaveLength(1);
       expect(fixture.nativeElement.querySelectorAll('ds-site-select')).toHaveLength(1);
       expect(fixture.nativeElement.querySelector('[style]')).toBeNull();
       for (const method of guardedMethods) expect(method.spy).not.toHaveBeenCalled();

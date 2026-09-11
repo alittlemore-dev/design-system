@@ -21,6 +21,9 @@
 - [x] Add weekly Dependabot version updates for root, published-package, and demo npm dependencies and GitHub Actions.
 - [x] Enforce peer floors in the workspace, verify the packed package in a current-version consumer during CI and release, group coupled Dependabot updates, and require an up-to-date successful CI check for `main`.
 - [x] Give packed-demo npm subprocesses an isolated temporary cache so consumer validation never depends on user-cache permissions.
+- [x] Make `make install-demo-browser` resolve the demo's declared Playwright range before downloading Chromium so it installs the revision used by packed no-lock demo checks.
+- [x] Wait for the Site-select disabled state in the real-browser smoke before asserting its live control update.
+- [x] Preserve owning-page scroll through a late third layout frame when ArrowUp or ArrowDown moves between rendered Markdown-table cells.
 - [ ] Update the demo Express dependency tree so `qs` resolves to `6.16.0` or newer, then verify that `npm --prefix demo audit` reports no vulnerabilities.
 
 ## Design tokens and shared styles
@@ -48,12 +51,14 @@
   - [x] Migrate the duplicated `FoldableTreeComponent` from `my-site` and `personal-workspace` with neutral item and section contracts, template, styles, and tests.
 - [x] date picker component
   - [x] Migrate the duplicated `LocalizedDatePickerComponent` from `my-site` and `personal-workspace` with labels and control contracts, template, styles, and tests.
-- [ ] date range picker component
-  - [ ] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for range selection.
-- [ ] datetime picker component
-  - [ ] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for datetime selection.
-- [ ] datetime range picker component
-  - [ ] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for datetime range selection.
+- [x] date range picker component
+  - [x] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for range selection.
+- [x] datetime picker component
+  - [x] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for datetime selection.
+- [x] datetime range picker component
+  - [x] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for datetime range selection.
+- [x] Replace emoji calendar glyphs in the new range and datetime picker toggles with the existing inline SVG icon.
+- [ ] Support pasting a complete date, time, or datetime range separated by an en dash into either range endpoint and distribute the parsed values between both endpoints.
 
 ## Notifications
 

@@ -8,6 +8,10 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Added
 
+- Add localized date-range, datetime, and datetime-range form controls with canonical values,
+  consumer-owned labels, inclusive availability bounds, disabled-date support, and packed-demo
+  examples.
+
 ### Changed
 
 - Make `main` pushes version-driven: every push runs the package gate, while npm publication and
@@ -28,6 +32,10 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Fixed
 
+- Use the same SVG calendar icon across localized date, date-range, datetime, and datetime-range
+  picker controls instead of platform-dependent emoji glyphs.
+- Preserve the owning page scroll position through delayed browser layout frames when vertical
+  arrow navigation moves between rendered Markdown-table cells.
 - Isolate packed-demo npm subprocesses from the user cache so consumer validation is reproducible
   under restricted local and CI environments.
 
