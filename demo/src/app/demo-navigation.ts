@@ -19,7 +19,7 @@ export const DEMO_SECTIONS: readonly FoldableTreeSection[] = [
   {
     key: 'forms',
     label: 'Forms',
-    trailingText: '6',
+    trailingText: '8',
     items: [
       { key: '/components/form-validation', label: 'Form validation', badgeText: null },
       { key: '/components/site-select', label: 'Site select', badgeText: null },
@@ -27,6 +27,16 @@ export const DEMO_SECTIONS: readonly FoldableTreeSection[] = [
       {
         key: '/components/localized-date-range-picker',
         label: 'Localized date range picker',
+        badgeText: 'New',
+      },
+      {
+        key: '/components/localized-time-picker',
+        label: 'Localized time picker',
+        badgeText: 'New',
+      },
+      {
+        key: '/components/localized-time-range-picker',
+        label: 'Localized time range picker',
         badgeText: 'New',
       },
       {

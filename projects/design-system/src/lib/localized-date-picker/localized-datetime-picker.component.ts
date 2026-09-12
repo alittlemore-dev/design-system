@@ -6,6 +6,7 @@ import {
   ElementRef,
   OnChanges,
   PLATFORM_ID,
+  afterRenderEffect,
   computed,
   effect,
   forwardRef,
@@ -24,39 +25,62 @@ import {
   ValidationErrors,
   Validator,
 } from '@angular/forms';
-import { CalendarDialogComponent } from './calendar-dialog.component';
+import {
+  CalendarDialogComponent,
+  type CalendarDialogLabels,
+  type TemporalRangeDraft,
+} from './calendar-dialog.component';
 import {
   composeDateTime,
-  formatDateForLocale,
-  formatLongDate,
+  formatDateTimeForLocale,
   isDateDisabled,
-  parseDateForLocale,
   parseDateTime,
-  parseIsoDate,
-  parseTime,
+  parseDateTimeForLocale,
 } from './localized-date-picker.utils';
 import {
-  LocalizedDatePickerControlSize,
-  LocalizedDatePickerLabels,
-} from './localized-date-picker.component';
+  type LocalizedDatePickerControlSize,
+  type LocalizedTimePickerMode,
+} from './localized-temporal-picker.types';
+import {
+  TemporalPickerFieldComponent,
+  type TemporalFieldEndpointEvent,
+} from './temporal-picker-field.component';
 
-export interface LocalizedDateTimePickerLabels extends LocalizedDatePickerLabels {
-  readonly groupLabel: string;
-  readonly dateInput: string;
-  readonly timeInput: string;
+export interface LocalizedDateTimePickerLabels {
+  readonly placeholder: string;
+  readonly openPicker: string;
+  readonly changeValue: string;
+  readonly dialog: string;
+  readonly dateTimeInput: string;
+  readonly previousMonth: string;
+  readonly nextMonth: string;
+  readonly openMonthYearPicker: string;
+  readonly previousYear: string;
+  readonly nextYear: string;
+  readonly hour: string;
+  readonly minute: string;
+  readonly dateFormatHint: string;
   readonly timeFormatHint: string;
-  readonly invalidTime: string;
-  readonly requiredTime: string;
+  readonly selectDate: string;
+  readonly clear: string;
+  readonly cancel: string;
+  readonly done: string;
+  readonly today: string;
+  readonly now: string;
+  readonly keyboardHelp: string;
+  readonly invalidDateTime: string;
+  readonly unavailableDateTime: string;
+  readonly requiredDateTime: string;
 }
 
-type DateTimeInvalidity = 'required' | 'invalid' | 'unavailable' | null;
+type DateTimeInvalidity = 'invalid' | 'unavailable' | null;
 
-let nextCalendarId = 0;
+let nextDateTimePickerId = 0;
 
 @Component({
   selector: 'ds-localized-datetime-picker',
   standalone: true,
-  imports: [CalendarDialogComponent],
+  imports: [CalendarDialogComponent, TemporalPickerFieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './localized-datetime-picker.component.html',
   styleUrl: './localized-datetime-picker.component.scss',
@@ -77,58 +101,65 @@ export class LocalizedDateTimePickerComponent
   implements ControlValueAccessor, OnChanges, Validator
 {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly hostElement = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  private readonly dateInputElement = viewChild<ElementRef<HTMLInputElement>>('dateInput');
-  private readonly timeInputElement = viewChild<ElementRef<HTMLInputElement>>('timeInput');
-  private readonly calendarToggleElement =
-    viewChild.required<ElementRef<HTMLButtonElement>>('calendarToggle');
   private readonly calendarDialog = viewChild.required<CalendarDialogComponent>('calendarDialog');
 
   readonly inputId = input.required<string>();
-  readonly value = input<string>();
+  readonly value = input<string | null>();
   readonly controlSize = input.required<LocalizedDatePickerControlSize>();
   readonly dateLocale = input.required<string>();
   readonly labels = input.required<LocalizedDateTimePickerLabels>();
-  readonly required = input.required<boolean>();
+  readonly required = input(false);
   readonly invalid = input.required<boolean>();
   readonly controlDisabled = input.required<boolean>();
   readonly readonly = input.required<boolean>();
   readonly min = input<string>();
   readonly max = input<string>();
   readonly disabledDates = input<readonly string[]>();
+  readonly timePickerMode = input<LocalizedTimePickerMode>('auto');
 
-  readonly valueChange = output<string>();
+  readonly valueChange = output<string | null>();
   readonly validityChange = output<boolean>();
-
-  /** @internal */
-  protected readonly displayDate = signal('');
-
-  /** @internal */
-  protected readonly displayTime = signal('');
-
-  /** @internal */
-  protected readonly formValue = signal('');
-
-  /** @internal */
-  protected readonly formDisabled = signal(false);
-
-  /** @internal */
-  protected readonly manualDraftActive = signal(false);
 
   /** @internal */
   protected readonly calendarOpen = signal(false);
 
   /** @internal */
-  protected readonly calendarId = `localizedDateTimePicker${nextCalendarId++}`;
+  protected readonly manualText = signal('');
 
   /** @internal */
-  protected readonly dateHintId = `${this.calendarId}DateHint`;
+  protected readonly manualInvalidity = signal<DateTimeInvalidity>(null);
 
   /** @internal */
-  protected readonly timeHintId = `${this.calendarId}TimeHint`;
+  protected readonly formValue = signal<unknown>(null);
 
   /** @internal */
-  protected readonly currentValue = computed(() => this.value() ?? this.formValue());
+  protected readonly dialogDraft = signal<TemporalRangeDraft>(emptyDateTimeDraft());
+
+  /** @internal */
+  protected readonly formDisabled = signal(false);
+
+  /** @internal */
+  protected readonly calendarId = `localizedDateTimePicker${nextDateTimePickerId++}`;
+
+  /** @internal */
+  protected readonly formatHintId = `${this.calendarId}FormatHint`;
+
+  /** @internal */
+  protected readonly errorId = `${this.calendarId}Error`;
+
+  /** @internal */
+  protected readonly rawCurrentValue = computed<unknown>(() => {
+    const boundValue: unknown = this.value();
+    return boundValue === undefined ? this.formValue() : boundValue;
+  });
+
+  /** @internal */
+  protected readonly currentValue = computed<string | null>(() => {
+    const value = this.rawCurrentValue();
+    return typeof value === 'string' && parseDateTime(value) !== null ? value : null;
+  });
 
   /** @internal */
   protected readonly effectiveDisabled = computed(
@@ -136,46 +167,60 @@ export class LocalizedDateTimePickerComponent
   );
 
   /** @internal */
-  protected readonly currentInvalidity = computed(() =>
-    this.dateTimeInvalidity(this.currentValue()),
+  protected readonly committedInvalidity = computed(() =>
+    this.valueInvalidity(this.rawCurrentValue()),
   );
 
   /** @internal */
-  protected readonly draftInvalidity = computed(() => this.displayInvalidity());
+  protected readonly manualRequiredMissing = computed(
+    () => this.manualDirty() && this.required() && this.manualText().trim() === '',
+  );
 
   /** @internal */
-  protected readonly internalInvalidity = computed(() =>
-    this.manualDraftActive() ? this.draftInvalidity() : this.currentInvalidity(),
+  protected readonly committedRequiredMissing = computed(
+    () =>
+      this.required() &&
+      !this.manualDirty() &&
+      (this.rawCurrentValue() === null || this.rawCurrentValue() === undefined),
+  );
+
+  /** @internal */
+  protected readonly internalValueInvalid = computed(
+    () =>
+      this.manualRequiredMissing() ||
+      this.manualInvalidity() !== null ||
+      this.committedRequiredMissing() ||
+      this.committedInvalidity() !== null,
   );
 
   /** @internal */
   protected readonly effectiveInvalid = computed(
-    () => this.invalid() || this.internalInvalidity() !== null,
+    () => this.invalid() || this.internalValueInvalid(),
   );
 
   /** @internal */
-  protected readonly errorId = `${this.calendarId}Error`;
-
-  /** @internal */
-  protected readonly dateDescribedBy = computed(() =>
-    this.effectiveInvalid() ? `${this.dateHintId} ${this.errorId}` : this.dateHintId,
-  );
-
-  /** @internal */
-  protected readonly timeDescribedBy = computed(() =>
-    this.effectiveInvalid() ? `${this.timeHintId} ${this.errorId}` : this.timeHintId,
+  protected readonly inputDescribedBy = computed(() =>
+    this.effectiveInvalid() ? `${this.formatHintId} ${this.errorId}` : this.formatHintId,
   );
 
   /** @internal */
   protected readonly validationMessage = computed(() => {
-    const invalidity = this.internalInvalidity();
     if (!this.effectiveInvalid()) return '';
-    if (invalidity === 'required') return this.labels().requiredDate;
-    const missingField = this.missingDraftField();
-    if (missingField === 'date') return this.labels().requiredDate;
-    if (missingField === 'time') return this.labels().requiredTime;
-    if (this.dateDraftIsInvalid()) return this.labels().invalidDate;
-    return this.labels().invalidTime;
+    if (this.manualRequiredMissing() || this.committedRequiredMissing()) {
+      return this.labels().requiredDateTime;
+    }
+    const invalidity = this.manualInvalidity() ?? this.committedInvalidity();
+    return invalidity === 'unavailable'
+      ? this.labels().unavailableDateTime
+      : this.labels().invalidDateTime;
+  });
+
+  /** @internal */
+  protected readonly triggerLabel = computed(() => {
+    const value = this.currentValue();
+    return value === null
+      ? this.labels().openPicker
+      : `${this.labels().changeValue}, ${formatDateTimeForLocale(value, this.dateLocale())}`;
   });
 
   /** @internal */
@@ -184,90 +229,63 @@ export class LocalizedDateTimePickerComponent
       !this.required() &&
       !this.effectiveDisabled() &&
       !this.readonly() &&
-      (this.displayDate().trim() !== '' || this.displayTime().trim() !== ''),
+      (this.dialogDraft().start.date !== null ||
+        this.dialogDraft().start.time !== null ||
+        this.dialogDraft().start.sourceInvalid === true),
   );
 
   /** @internal */
-  protected readonly selectedDate = computed(() => {
-    const draft = parseDateForLocale(this.displayDate(), this.dateLocale());
-    if (draft !== null && draft !== '') return draft;
-    return parseDateTime(this.currentValue())?.date ?? '';
+  protected readonly canConfirmDialog = computed(() => {
+    const { date, time } = this.dialogDraft().start;
+    if (this.dialogDraft().start.sourceInvalid === true) return false;
+    if (date === null && time === null) return !this.required();
+    if (date === null || time === null) return false;
+    const value = composeDateTime(date, time);
+    return value !== null && !this.isDateTimeUnavailable(value);
   });
 
   /** @internal */
-  protected readonly minimumDate = computed(() => parseDateTime(this.min() ?? '')?.date);
+  protected readonly dialogLabels = computed<CalendarDialogLabels>(() => ({
+    dialog: this.labels().dialog,
+    previousMonth: this.labels().previousMonth,
+    nextMonth: this.labels().nextMonth,
+    openMonthYearPicker: this.labels().openMonthYearPicker,
+    previousYear: this.labels().previousYear,
+    nextYear: this.labels().nextYear,
+    clear: this.labels().clear,
+    cancel: this.labels().cancel,
+    done: this.labels().done,
+    today: this.labels().today,
+    now: this.labels().now,
+    timeInput: this.labels().dateTimeInput,
+    hour: this.labels().hour,
+    minute: this.labels().minute,
+    keyboardHelp: this.labels().keyboardHelp,
+    announceRangePreview: () => '',
+  }));
 
-  /** @internal */
-  protected readonly maximumDate = computed(() => parseDateTime(this.max() ?? '')?.date);
-
-  /** @internal */
-  protected readonly minimumTime = computed(() => {
-    const minimum = parseDateTime(this.min() ?? '');
-    return minimum?.date === this.selectedDate() ? minimum.time : undefined;
-  });
-
-  /** @internal */
-  protected readonly maximumTime = computed(() => {
-    const maximum = parseDateTime(this.max() ?? '');
-    return maximum?.date === this.selectedDate() ? maximum.time : undefined;
-  });
-
-  /** @internal */
-  protected readonly toggleAriaLabel = computed(() => {
-    const parsed = parseIsoDate(this.selectedDate());
-    return parsed === null
-      ? this.labels().openCalendar
-      : `${this.labels().changeCalendar}, ${formatLongDate(parsed, this.dateLocale())}`;
-  });
-
-  private onFormChange: ((value: string) => void) | null = null;
+  private onFormChange: ((value: string | null) => void) | null = null;
   private onFormTouched: (() => void) | null = null;
   private onValidatorChange: (() => void) | null = null;
-  private lastCommittedValue = '';
+  private readonly manualDirty = signal(false);
   private lastEmittedValidity: boolean | undefined;
 
   private readonly valueSyncEffect = effect(() => {
     const value = this.currentValue();
-    const parsed = parseDateTime(value);
-    this.displayDate.set(
-      parsed === null ? value : formatDateForLocale(parsed.date, this.dateLocale()),
-    );
-    this.displayTime.set(parsed?.time ?? '');
-    this.lastCommittedValue = value;
-    this.manualDraftActive.set(false);
-    untracked(() => this.onValidatorChange?.());
+    const renderedValue = formatDateTimeForLocale(value, this.dateLocale());
+    untracked(() => {
+      this.manualText.set(renderedValue);
+      this.manualInvalidity.set(null);
+      this.manualDirty.set(false);
+    });
   });
 
-  private readonly nativeValiditySyncEffect = effect(() => {
+  private readonly nativeValiditySyncEffect = afterRenderEffect(() => {
     if (!this.isBrowser) return;
-    const invalidity = this.internalInvalidity();
-    const missingField = this.missingDraftField();
-    const dateMessage =
-      invalidity === null
-        ? ''
-        : invalidity === 'required'
-          ? this.labels().requiredDate
-          : missingField === 'date'
-            ? this.labels().requiredDate
-            : missingField === 'time'
-              ? ''
-              : this.dateDraftIsInvalid()
-                ? this.labels().invalidDate
-                : '';
-    const timeMessage =
-      invalidity === null
-        ? ''
-        : invalidity === 'required'
-          ? this.labels().requiredTime
-          : missingField === 'time'
-            ? this.labels().requiredTime
-            : missingField === 'date'
-              ? ''
-              : this.dateDraftIsInvalid()
-                ? ''
-                : this.labels().invalidTime;
-    this.dateInputElement()?.nativeElement.setCustomValidity(dateMessage);
-    this.timeInputElement()?.nativeElement.setCustomValidity(timeMessage);
+    const inputElement = this.hostElement.nativeElement.querySelector<HTMLInputElement>(
+      'ds-temporal-picker-field input',
+    );
+    inputElement?.setCustomValidity(this.internalValueInvalid() ? this.validationMessage() : '');
   });
 
   private readonly validatorInputsEffect = effect(() => {
@@ -275,31 +293,34 @@ export class LocalizedDateTimePickerComponent
     this.min();
     this.max();
     this.disabledDates();
-    this.currentValue();
-    this.internalInvalidity();
+    this.rawCurrentValue();
+    this.manualDirty();
+    this.manualInvalidity();
     this.onValidatorChange?.();
   });
 
   private readonly interactiveStateEffect = effect(() => {
-    if ((this.effectiveDisabled() || this.readonly()) && this.calendarOpen()) this.closeCalendar();
+    if ((this.effectiveDisabled() || this.readonly()) && this.calendarOpen()) {
+      this.rollbackAndCloseCalendar();
+    }
   });
 
   private readonly internalValidityEffect = effect(() => {
-    const valid = this.internalInvalidity() === null;
+    const valid = !this.internalValueInvalid();
     if (valid === this.lastEmittedValidity) return;
     this.lastEmittedValidity = valid;
     this.validityChange.emit(valid);
   });
 
   writeValue(value: unknown): void {
-    this.formValue.set(typeof value === 'string' ? value : '');
+    this.formValue.set(value);
   }
 
   ngOnChanges(): void {
     this.onValidatorChange?.();
   }
 
-  registerOnChange(fn: (value: string) => void): void {
+  registerOnChange(fn: (value: string | null) => void): void {
     this.onFormChange = fn;
   }
 
@@ -308,12 +329,17 @@ export class LocalizedDateTimePickerComponent
   }
 
   validate(control: AbstractControl<unknown>): ValidationErrors | null {
-    const invalidity =
-      (this.manualDraftActive() ? this.draftInvalidity() : null) ??
-      this.dateTimeInvalidity(typeof control.value === 'string' ? control.value : '');
-    if (invalidity === null) return null;
-    if (invalidity === 'required') return { required: true };
-    return invalidity === 'unavailable' ? { dateTimeUnavailable: true } : { dateTimeInvalid: true };
+    if (this.manualDirty()) {
+      if (this.manualText().trim() === '') return this.required() ? { required: true } : null;
+      if (this.manualInvalidity() === 'invalid') return { dateTimeInvalid: true };
+      if (this.manualInvalidity() === 'unavailable') return { dateTimeUnavailable: true };
+    }
+    const value = control.value;
+    if (value === null || value === undefined) return this.required() ? { required: true } : null;
+    if (typeof value !== 'string' || value === '' || parseDateTime(value) === null) {
+      return { dateTimeInvalid: true };
+    }
+    return this.isDateTimeUnavailable(value) ? { dateTimeUnavailable: true } : null;
   }
 
   registerOnValidatorChange(fn: () => void): void {
@@ -322,219 +348,171 @@ export class LocalizedDateTimePickerComponent
 
   setDisabledState(disabled: boolean): void {
     this.formDisabled.set(disabled);
-    if (disabled && this.calendarOpen()) this.closeCalendar();
   }
 
   /** @internal */
   protected toggleCalendar(): void {
-    if (this.calendarOpen()) this.closeCalendar();
+    if (this.calendarOpen()) this.rollbackAndCloseCalendar();
     else this.openCalendar();
   }
 
   /** @internal */
-  protected closeCalendar(): void {
-    this.calendarDialog().close();
+  protected onDialogDraftChange(draft: TemporalRangeDraft): void {
+    if (!this.calendarOpen() || this.effectiveDisabled() || this.readonly()) return;
+    this.dialogDraft.set(draft);
   }
 
   /** @internal */
-  protected onCalendarClosed(): void {
-    this.calendarOpen.set(false);
-    this.markTouched();
-    this.changeDetectorRef.detectChanges();
-  }
-
-  /** @internal */
-  protected selectDate(iso: string): void {
-    if (
-      this.effectiveDisabled() ||
-      this.readonly() ||
-      isDateDisabled(iso, this.disabledDates()) ||
-      (this.minimumDate() !== undefined && iso < this.minimumDate()!) ||
-      (this.maximumDate() !== undefined && iso > this.maximumDate()!)
-    ) {
+  protected clearDialogDraft(): void {
+    if (!this.calendarOpen() || this.effectiveDisabled() || this.readonly() || !this.canClear()) {
       return;
     }
-    this.displayDate.set(formatDateForLocale(iso, this.dateLocale()));
-    this.setManualDraftActive(true);
-    this.commitDraft();
-    const shouldFocusTime = parseTime(this.displayTime()) === null;
-    this.closeCalendar();
-    if (shouldFocusTime && this.isBrowser) this.timeInputElement()?.nativeElement.focus();
+    this.dialogDraft.set(emptyDateTimeDraft());
   }
 
   /** @internal */
-  protected clearDateTime(): void {
-    if (this.effectiveDisabled() || this.readonly() || !this.canClear()) return;
-    this.displayDate.set('');
-    this.displayTime.set('');
-    this.setManualDraftActive(false);
-    this.commitValue('');
-    this.restoreControlledDisplay();
-    this.closeCalendar();
+  protected cancelDialog(): void {
+    if (!this.calendarOpen()) return;
+    this.dialogDraft.set(
+      dateTimeDraft(this.currentValue(), this.committedInvalidity() === 'invalid'),
+    );
+    this.calendarOpen.set(false);
+    this.markTouched();
   }
 
   /** @internal */
-  protected onDateInput(event: Event): void {
+  protected confirmDialog(): void {
+    if (!this.calendarOpen() || !this.canConfirmDialog()) return;
+    const { date, time } = this.dialogDraft().start;
+    const value = date === null || time === null ? null : composeDateTime(date, time);
+    this.commitValue(value);
+    this.syncManualTextToCommitted();
+    this.calendarOpen.set(false);
+    this.markTouched();
+  }
+
+  /** @internal */
+  protected onTextInput(event: TemporalFieldEndpointEvent): void {
     if (this.effectiveDisabled() || this.readonly()) return;
-    this.displayDate.set(readInputValue(event));
-    this.setManualDraftActive(true);
-    this.commitDraft();
+    this.manualText.set(event.text);
+    this.manualDirty.set(true);
+    this.setManualInvalidity(this.textInvalidity(event.text));
   }
 
   /** @internal */
-  protected onTimeInput(event: Event): void {
+  protected onTextComplete(event: TemporalFieldEndpointEvent): void {
     if (this.effectiveDisabled() || this.readonly()) return;
-    this.displayTime.set(readInputValue(event));
-    this.setManualDraftActive(true);
-    this.commitDraft();
+    this.manualText.set(event.text);
+    this.completeManualInteraction();
   }
 
   /** @internal */
-  protected onInputBlur(): void {
+  protected restoreManualText(): void {
     if (this.effectiveDisabled() || this.readonly()) return;
-    const date = parseDateForLocale(this.displayDate(), this.dateLocale());
-    if (date !== null && this.value() === undefined) {
-      this.displayDate.set(formatDateForLocale(date, this.dateLocale()));
-    }
+    this.syncManualTextToCommitted();
     this.markTouched();
   }
 
   private openCalendar(): void {
     if (this.effectiveDisabled() || this.readonly()) return;
-    const opened = this.calendarDialog().open(
-      this.calendarToggleElement().nativeElement,
-      this.selectedDate(),
+    const trigger = this.hostElement.nativeElement.querySelector<HTMLElement>(
+      'button[aria-haspopup="dialog"]',
     );
+    if (trigger === null) return;
+    const value = this.currentValue();
+    const draft = dateTimeDraft(value, this.committedInvalidity() === 'invalid');
+    this.dialogDraft.set(draft);
+    const opened = this.calendarDialog().open(trigger, draft.start.date ?? '');
     if (!opened) return;
     this.calendarOpen.set(true);
     this.changeDetectorRef.detectChanges();
   }
 
-  private commitDraft(): void {
-    if (this.displayDate().trim() === '' && this.displayTime().trim() === '') {
-      this.commitValue('');
-      this.setManualDraftActive(false);
-      this.restoreControlledDisplay();
-      return;
+  private completeManualInteraction(): void {
+    const text = this.manualText();
+    const invalidity = this.textInvalidity(text);
+    this.setManualInvalidity(invalidity);
+    if (invalidity === null) {
+      const value = text.trim() === '' ? null : parseDateTimeForLocale(text, this.dateLocale());
+      if (this.manualDirty()) this.commitValue(value);
+      this.syncManualTextToCommitted();
     }
-    const date = parseDateForLocale(this.displayDate(), this.dateLocale());
-    const value = date === null ? null : composeDateTime(date, this.displayTime());
-    if (value === null) return;
-    if (this.dateTimeInvalidity(value) !== null) return;
-    if (value !== this.lastCommittedValue) this.commitValue(value);
-    this.setManualDraftActive(false);
-    this.restoreControlledDisplay();
+    this.markTouched();
   }
 
-  private displayInvalidity(): DateTimeInvalidity {
-    const rawDate = this.displayDate().trim();
-    const rawTime = this.displayTime().trim();
-    if (rawDate === '' && rawTime === '') return this.required() ? 'required' : null;
-    const date = parseDateForLocale(rawDate, this.dateLocale());
-    if (date === null || date === '' || parseTime(rawTime) === null) return 'invalid';
-    return this.dateTimeInvalidity(`${date}T${rawTime}`);
-  }
-
-  private dateTimeInvalidity(value: string): DateTimeInvalidity {
-    if (value.trim() === '') return this.required() ? 'required' : null;
-    const parsed = parseDateTime(value);
-    if (parsed === null) return 'invalid';
-    if (isDateDisabled(parsed.date, this.disabledDates())) return 'unavailable';
-    const min = parseDateTime(this.min() ?? '');
-    const max = parseDateTime(this.max() ?? '');
-    if (
-      (min !== null && value < `${min.date}T${min.time}`) ||
-      (max !== null && value > `${max.date}T${max.time}`)
-    ) {
-      return 'unavailable';
-    }
-    return null;
-  }
-
-  private dateDraftIsInvalid(): boolean {
-    if (this.manualDraftActive()) {
-      const date = parseDateForLocale(this.displayDate(), this.dateLocale());
-      return (
-        date === null ||
-        (date === '' && this.displayTime().trim() !== '') ||
-        (date !== '' &&
-          (isDateDisabled(date, this.disabledDates()) || this.dateIsOutsideBounds(date)))
-      );
-    }
-    const value = this.currentValue();
-    if (value === '') return false;
-    const [date] = value.split('T');
-    return (
-      parseIsoDate(date) === null ||
-      isDateDisabled(date, this.disabledDates()) ||
-      this.dateIsOutsideBounds(date)
-    );
-  }
-
-  private missingDraftField(): 'date' | 'time' | null {
-    if (!this.manualDraftActive()) return null;
-    const rawDate = this.displayDate().trim();
-    const rawTime = this.displayTime().trim();
-    if (rawDate === '' && rawTime !== '') return 'date';
-    const date = parseDateForLocale(rawDate, this.dateLocale());
-    if (
-      rawTime === '' &&
-      date !== null &&
-      date !== '' &&
-      !isDateDisabled(date, this.disabledDates()) &&
-      !this.dateIsOutsideBounds(date)
-    ) {
-      return 'time';
-    }
-    return null;
-  }
-
-  private dateIsOutsideBounds(date: string): boolean {
-    const minimumDate = parseDateTime(this.min() ?? '')?.date;
-    const maximumDate = parseDateTime(this.max() ?? '')?.date;
-    return (
-      (minimumDate !== undefined && date < minimumDate) ||
-      (maximumDate !== undefined && date > maximumDate)
-    );
-  }
-
-  private commitValue(value: string): void {
-    if (this.value() === undefined) {
-      this.formValue.set(value);
-      this.lastCommittedValue = value;
-    }
+  private commitValue(value: string | null): void {
+    if (this.value() === undefined) this.formValue.set(value);
+    this.manualDirty.set(false);
     this.valueChange.emit(value);
     this.onFormChange?.(value);
   }
 
-  private restoreControlledDisplay(): void {
-    const value = this.value();
-    if (value === undefined) return;
-    const parsed = parseDateTime(value);
-    const date = parsed === null ? value : formatDateForLocale(parsed.date, this.dateLocale());
-    const time = parsed?.time ?? '';
-    this.displayDate.set(date);
-    this.displayTime.set(time);
-    this.manualDraftActive.set(false);
-    this.lastCommittedValue = value;
-    if (!this.isBrowser) return;
-    const dateInput = this.dateInputElement()?.nativeElement;
-    const timeInput = this.timeInputElement()?.nativeElement;
-    if (dateInput !== undefined) dateInput.value = date;
-    if (timeInput !== undefined) timeInput.value = time;
+  private syncManualTextToCommitted(): void {
+    this.manualText.set(formatDateTimeForLocale(this.currentValue(), this.dateLocale()));
+    this.setManualInvalidity(null);
+    this.manualDirty.set(false);
+  }
+
+  private rollbackAndCloseCalendar(): void {
+    this.dialogDraft.set(
+      dateTimeDraft(this.currentValue(), this.committedInvalidity() === 'invalid'),
+    );
+    this.calendarOpen.set(false);
+    this.calendarDialog().close();
+    this.markTouched();
   }
 
   private markTouched(): void {
     this.onFormTouched?.();
   }
 
-  private setManualDraftActive(active: boolean): void {
-    if (active === this.manualDraftActive()) return;
-    this.manualDraftActive.set(active);
+  private textInvalidity(text: string): DateTimeInvalidity {
+    if (text.trim() === '') return null;
+    const value = parseDateTimeForLocale(text, this.dateLocale());
+    if (value === null) return 'invalid';
+    return this.isDateTimeUnavailable(value) ? 'unavailable' : null;
+  }
+
+  private valueInvalidity(value: unknown): DateTimeInvalidity {
+    if (value === null || value === undefined) return null;
+    if (typeof value !== 'string' || parseDateTime(value) === null) return 'invalid';
+    return this.isDateTimeUnavailable(value) ? 'unavailable' : null;
+  }
+
+  private isDateTimeUnavailable(value: string): boolean {
+    const parsed = parseDateTime(value);
+    if (parsed === null || isDateDisabled(parsed.date, this.disabledDates())) return true;
+    const min = this.validDateTime(this.min());
+    const max = this.validDateTime(this.max());
+    return (min !== null && value < min) || (max !== null && value > max);
+  }
+
+  private validDateTime(value: string | undefined): string | null {
+    return value !== undefined && parseDateTime(value) !== null ? value : null;
+  }
+
+  private setManualInvalidity(invalidity: DateTimeInvalidity): void {
+    if (invalidity === this.manualInvalidity()) return;
+    this.manualInvalidity.set(invalidity);
     this.onValidatorChange?.();
   }
 }
 
-function readInputValue(event: Event): string {
-  return (event.target as HTMLInputElement).value;
+function emptyDateTimeDraft(): TemporalRangeDraft {
+  return {
+    start: { date: null, time: null },
+    end: { date: null, time: null },
+  };
+}
+
+function dateTimeDraft(value: string | null, sourceInvalid = false): TemporalRangeDraft {
+  const parsed = value === null ? null : parseDateTime(value);
+  return {
+    start: {
+      date: parsed?.date ?? null,
+      time: parsed?.time ?? null,
+      ...(sourceInvalid ? { sourceInvalid: true } : {}),
+    },
+    end: { date: null, time: null },
+  };
 }

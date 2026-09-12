@@ -1,65 +1,82 @@
-import { Component, PLATFORM_ID, signal } from '@angular/core';
+import { PLATFORM_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl } from '@angular/forms';
 import {
-  LocalizedDateRange,
   LocalizedDateRangePickerComponent,
   LocalizedDateRangePickerLabels,
 } from './localized-date-range-picker.component';
+import {
+  DEFAULT_RANGE_REQUIREMENTS,
+  EMPTY_DATE_RANGE,
+  LocalizedDateRange,
+  LocalizedRangeRequirements,
+} from './localized-temporal-picker.types';
 
-const LABELS: LocalizedDateRangePickerLabels = {
+type Equal<Left, Right> =
+  (<Value>() => Value extends Left ? 1 : 2) extends <Value>() => Value extends Right ? 1 : 2
+    ? true
+    : false;
+type Expect<Value extends true> = Value;
+type RangeLabelKeys = Expect<
+  Equal<
+    keyof LocalizedDateRangePickerLabels,
+    | 'placeholder'
+    | 'openPicker'
+    | 'changeValue'
+    | 'dialog'
+    | 'groupLabel'
+    | 'startDate'
+    | 'endDate'
+    | 'selectStartDate'
+    | 'selectEndDate'
+    | 'accessibleRangeSeparator'
+    | 'announceRangePreview'
+    | 'previousMonth'
+    | 'nextMonth'
+    | 'openMonthYearPicker'
+    | 'previousYear'
+    | 'nextYear'
+    | 'clear'
+    | 'cancel'
+    | 'done'
+    | 'today'
+    | 'dateFormatHint'
+    | 'keyboardHelp'
+    | 'invalidRange'
+    | 'unavailableRange'
+    | 'requiredRange'
+  >
+>;
+
+void (0 as unknown as RangeLabelKeys);
+
+const LABELS = {
   placeholder: 'dd/mm/yyyy',
-  openCalendar: 'Open calendar',
-  changeCalendar: 'Change date',
-  dialog: 'Choose a date',
+  openPicker: 'Open date range picker',
+  changeValue: 'Change date range',
+  dialog: 'Choose a date range',
+  groupLabel: 'Booking dates',
+  startDate: 'Start date',
+  endDate: 'End date',
+  selectStartDate: 'Select a start date',
+  selectEndDate: 'Select an end date',
+  accessibleRangeSeparator: 'to',
+  announceRangePreview: (start: string, end: string) => `Preview from ${start} to ${end}`,
   previousMonth: 'Previous month',
   nextMonth: 'Next month',
   openMonthYearPicker: 'Choose month and year',
   previousYear: 'Previous year',
   nextYear: 'Next year',
   clear: 'Clear',
-  close: 'Close',
-  formatHint: 'Date format: DD/MM/YYYY',
-  invalidDate: 'Enter a valid date.',
-  requiredDate: 'Enter a date.',
+  cancel: 'Cancel',
+  done: 'Done',
+  today: 'Today',
+  dateFormatHint: 'Date format: DD/MM/YYYY',
   keyboardHelp: 'Use the arrow keys to choose a date.',
-  groupLabel: 'Booking dates',
-  startDate: 'Start date',
-  endDate: 'End date',
-  selectStartDate: 'Select a start date',
-  selectEndDate: 'Select an end date',
   invalidRange: 'Enter a valid date range.',
-  requiredRange: 'Enter both dates.',
-};
-
-@Component({
-  imports: [ReactiveFormsModule, LocalizedDateRangePickerComponent],
-  template: `<ds-localized-date-range-picker
-    inputId="range"
-    [labels]="labels"
-    controlSize="default"
-    dateLocale="en-GB"
-    [required]="required()"
-    [invalid]="false"
-    [controlDisabled]="false"
-    [readonly]="false"
-    [min]="min()"
-    [max]="max()"
-    [disabledDates]="disabledDates()"
-    [formControl]="control"
-  />`,
-})
-class RangePickerFormHostComponent {
-  readonly labels = LABELS;
-  readonly control = new FormControl<LocalizedDateRange>(
-    { start: '', end: '' },
-    { nonNullable: true },
-  );
-  readonly required = signal(false);
-  readonly min = signal<string | undefined>(undefined);
-  readonly max = signal<string | undefined>(undefined);
-  readonly disabledDates = signal<readonly string[] | undefined>(undefined);
-}
+  unavailableRange: 'This date range is unavailable.',
+  requiredRange: 'Enter the required dates.',
+} satisfies LocalizedDateRangePickerLabels;
 
 describe('LocalizedDateRangePickerComponent', () => {
   let fixture: ComponentFixture<LocalizedDateRangePickerComponent>;
@@ -71,337 +88,463 @@ describe('LocalizedDateRangePickerComponent', () => {
 
     fixture = TestBed.createComponent(LocalizedDateRangePickerComponent);
     setInputs({ start: '2026-02-05', end: '2026-02-09' });
+    installDialogMethods(calendarDialog());
   });
 
   afterEach(() => fixture.destroy());
 
-  it('renders two locale-formatted fields in a named group with persistent guidance', () => {
-    expect(group().getAttribute('role')).toBe('group');
-    expect(group().getAttribute('aria-label')).toBe('Booking dates');
-    expect(startInput().id).toBe('range');
-    expect(endInput().id).toBe('range-end-date');
-    expect(startInput().value).toBe('05/02/2026');
-    expect(endInput().value).toBe('09/02/2026');
-    expect(document.querySelector(`label[for="${startInput().id}"]`)?.textContent).toContain(
-      'Start date',
-    );
-    expect(document.querySelector(`label[for="${endInput().id}"]`)?.textContent).toContain(
-      'End date',
-    );
-    expect(startInput().getAttribute('aria-describedby')).toContain('FormatHint');
-    expect(endInput().getAttribute('aria-describedby')).toContain('FormatHint');
+  it('renders one composite shell with two visible text inputs, one fixed en dash, and one SVG trigger', () => {
+    const field = temporalField();
+    const inputs = field.querySelectorAll('input[type="text"]');
+    const triggers = field.querySelectorAll('[data-testid="temporal-picker-field-trigger"]');
+
+    expect(fixture.nativeElement.querySelectorAll('.temporal-picker-field-shell')).toHaveLength(1);
+    expect(inputs).toHaveLength(2);
+    expect(triggers).toHaveLength(1);
+    expect(triggers[0].querySelectorAll('svg[aria-hidden="true"]')).toHaveLength(1);
+    expect(
+      field.querySelector('[data-testid="temporal-picker-field-separator"]')?.textContent,
+    ).toBe('–');
+    expect(field.textContent).not.toContain('📅');
+    expect(field.getAttribute('role')).toBe('group');
+    expect(field.getAttribute('aria-label')).toBe(LABELS.groupLabel);
+    expect(startInput().getAttribute('aria-label')).toBe(LABELS.startDate);
+    expect(endInput().getAttribute('aria-label')).toBe(LABELS.endDate);
+    expect(calendarToggle().getAttribute('aria-label')).toBe(LABELS.changeValue);
   });
 
-  it('renders both calendar toggles with SVG icons instead of font emoji', () => {
-    for (const toggle of [startToggle(), endToggle()]) {
-      expect(toggle.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
-      expect(toggle.textContent).not.toContain('📅');
-    }
+  it('renders the canonical empty range as two blank inputs and accepts it by default', () => {
+    setInputs(EMPTY_DATE_RANGE);
+
+    expect(startInput().value).toBe('');
+    expect(endInput().value).toBe('');
+    expect(calendarToggle().getAttribute('aria-label')).toBe(LABELS.openPicker);
+    expect(fixture.componentInstance.requirements()).toEqual(DEFAULT_RANGE_REQUIREMENTS);
+    expect(fixture.componentInstance.validate(new FormControl(EMPTY_DATE_RANGE))).toBeNull();
   });
 
-  it('selects start then end in the dialog and closes after the complete range', () => {
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
+  it('round-trips a valid partial range without emitting empty strings', () => {
+    setInputs({ start: '2026-09-11', end: null });
+    expect(startInput().value).toBe('11/09/2026');
+    expect(endInput().value).toBe('');
 
-    startToggle().click();
-    dayButton('2026-02-06').click();
+    fixture.componentRef.setInput('value', undefined);
+    fixture.componentInstance.writeValue({ start: '2026-09-11', end: null });
+    const valueChange = jest.fn();
+    const onChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    fixture.componentInstance.registerOnChange(onChange);
     fixture.detectChanges();
 
-    expect(changed).toHaveBeenLastCalledWith({ start: '2026-02-06', end: '' });
-    expect(calendar().open).toBe(true);
-    expect(activeBoundary()).toBe('Select an end date');
+    setText(endInput(), '12/09/2026');
+    endInput().dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+    fixture.detectChanges();
 
-    dayButton('2026-02-10').click();
-    expect(changed).toHaveBeenLastCalledWith({ start: '2026-02-06', end: '2026-02-10' });
-    expect(calendar().open).toBe(false);
-    expect(document.activeElement).toBe(startToggle());
+    expect(valueChange.mock.calls).toEqual([[{ start: '2026-09-11', end: '2026-09-12' }]]);
+    expect(onChange.mock.calls).toEqual([[{ start: '2026-09-11', end: '2026-09-12' }]]);
+
+    setText(endInput(), '');
+    endInput().dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+    fixture.detectChanges();
+    expect(valueChange).toHaveBeenLastCalledWith({ start: '2026-09-11', end: null });
+    expect(onChange).toHaveBeenLastCalledWith({ start: '2026-09-11', end: null });
   });
 
-  it('falls back from an empty end toggle to start selection and swaps reversed clicks', () => {
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
-    setInputs({ start: '', end: '' });
+  it.each([
+    [{ start: false, end: false, paired: false }, EMPTY_DATE_RANGE, null],
+    [
+      { start: true, end: false, paired: false },
+      EMPTY_DATE_RANGE,
+      { required: { start: true, end: false } },
+    ],
+    [
+      { start: false, end: true, paired: false },
+      EMPTY_DATE_RANGE,
+      { required: { start: false, end: true } },
+    ],
+    [
+      { start: true, end: true, paired: false },
+      EMPTY_DATE_RANGE,
+      { required: { start: true, end: true } },
+    ],
+    [{ start: false, end: false, paired: true }, EMPTY_DATE_RANGE, null],
+    [
+      { start: true, end: false, paired: true },
+      EMPTY_DATE_RANGE,
+      { required: { start: true, end: false } },
+    ],
+    [
+      { start: false, end: true, paired: true },
+      EMPTY_DATE_RANGE,
+      { required: { start: false, end: true } },
+    ],
+    [
+      { start: true, end: true, paired: true },
+      EMPTY_DATE_RANGE,
+      { required: { start: true, end: true } },
+    ],
+  ] as const)(
+    'produces exact required errors for requirements %p',
+    (requirements, value, expected) => {
+      fixture.componentRef.setInput('requirements', requirements);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.validate(new FormControl(value))).toEqual(expected);
+    },
+  );
 
-    endToggle().click();
-    expect(activeBoundary()).toBe('Select a start date');
-    calendar().querySelector<HTMLButtonElement>('[data-testid="date-picker-close"]')!.click();
+  it('applies paired requiredness only when the opposite endpoint is present', () => {
+    fixture.componentRef.setInput('requirements', { start: false, end: false, paired: true });
+    fixture.detectChanges();
 
-    setInputs({ start: '2026-02-05', end: '2026-02-09' });
-    startToggle().click();
-    dayButton('2026-02-10').click();
+    expect(
+      fixture.componentInstance.validate(
+        new FormControl<LocalizedDateRange>({ start: '2026-02-05', end: null }),
+      ),
+    ).toEqual({ required: { start: false, end: true } });
+    expect(
+      fixture.componentInstance.validate(
+        new FormControl<LocalizedDateRange>({ start: null, end: '2026-02-09' }),
+      ),
+    ).toEqual({ required: { start: true, end: false } });
+  });
+
+  it('marks only the malformed manual endpoint and reports the exact structured error', () => {
+    setText(startInput(), '31/02/2026');
+
+    expect(startInput().getAttribute('aria-invalid')).toBe('true');
+    expect(endInput().getAttribute('aria-invalid')).toBeNull();
+    expect(validationMessage()).toBe(LABELS.invalidRange);
+    expect(
+      fixture.componentInstance.validate(
+        new FormControl<LocalizedDateRange>({ start: '2026-02-05', end: '2026-02-09' }),
+      ),
+    ).toEqual({ dateRangeInvalid: { start: true } });
+
+    dispatchKey(startInput(), 'Escape');
+    setText(endInput(), '31/02/2026');
+    expect(startInput().getAttribute('aria-invalid')).toBeNull();
+    expect(endInput().getAttribute('aria-invalid')).toBe('true');
+    expect(
+      fixture.componentInstance.validate(
+        new FormControl<LocalizedDateRange>({ start: '2026-02-05', end: '2026-02-09' }),
+      ),
+    ).toEqual({ dateRangeInvalid: { end: true } });
+  });
+
+  it('suppresses required overlap for malformed endpoints and prioritizes invalid range errors', () => {
+    fixture.componentRef.setInput('requirements', { start: true, end: false, paired: false });
+    fixture.componentRef.setInput('value', { start: 'bad', end: '2026-02-04' });
+    fixture.componentRef.setInput('min', '2026-02-05');
+    fixture.detectChanges();
+
+    expect(
+      fixture.componentInstance.validate(new FormControl({ start: 'bad', end: '2026-02-04' })),
+    ).toEqual({
+      dateRangeInvalid: { start: true },
+      dateRangeUnavailable: { end: true },
+    });
+    expect(validationMessage()).toBe(LABELS.invalidRange);
+  });
+
+  it('preserves a malformed dialog endpoint until it is canonically replaced', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 1, 5));
+    fixture.componentRef.setInput('value', { start: 'bad', end: '2026-02-08' });
+    fixture.detectChanges();
+    openCalendarFrom('start');
+
+    expect(dialogAction('done').disabled).toBe(true);
     dayButton('2026-02-06').click();
-
-    expect(changed).toHaveBeenLastCalledWith({ start: '2026-02-06', end: '2026-02-10' });
+    fixture.detectChanges();
+    expect(dialogAction('done').disabled).toBe(false);
   });
 
-  it('supports equality and resets a completed range when opening start', () => {
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
-    startToggle().click();
-    dayButton('2026-02-08').click();
-    expect(changed).toHaveBeenLastCalledWith({ start: '2026-02-08', end: '' });
-    dayButton('2026-02-08').click();
-    expect(changed).toHaveBeenLastCalledWith({ start: '2026-02-08', end: '2026-02-08' });
-  });
-
-  it('keeps reversed and partial manual text as drafts without emitting a corrupt range', () => {
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
-
+  it('rejects reversed manual input while accepting equal boundaries', () => {
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
     setText(startInput(), '10/02/2026');
     setText(endInput(), '06/02/2026');
+    endInput().dispatchEvent(new FocusEvent('blur', { bubbles: true }));
     fixture.detectChanges();
-    expect(changed).not.toHaveBeenCalled();
-    expect(message()).toBe('Enter a valid date range.');
+
+    expect(valueChange).not.toHaveBeenCalled();
     expect(
       fixture.componentInstance.validate(
-        new FormControl({ start: '2026-02-10', end: '2026-02-06' }),
+        new FormControl<LocalizedDateRange>({ start: '2026-02-10', end: '2026-02-06' }),
       ),
-    ).toEqual({
-      dateRangeInvalid: true,
-    });
+    ).toEqual({ dateRangeInvalid: { order: true } });
 
-    setText(endInput(), '');
+    setText(startInput(), '08/02/2026');
+    setText(endInput(), '08/02/2026');
+    endInput().dispatchEvent(new FocusEvent('blur', { bubbles: true }));
     fixture.detectChanges();
-    expect(
-      fixture.componentInstance.validate(new FormControl({ start: '2026-02-10', end: '' })),
-    ).toEqual({
-      dateRangeInvalid: true,
-    });
+    expect(valueChange).toHaveBeenLastCalledWith({ start: '2026-02-08', end: '2026-02-08' });
   });
 
-  it('keeps a required empty range as a draft with its required-range message', () => {
-    fixture.componentRef.setInput('required', true);
-    fixture.detectChanges();
-    setText(startInput(), '');
-    setText(endInput(), '');
+  it('keeps calendar selection and range preview in the dialog draft until Done', () => {
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    openCalendarFrom('start');
 
-    expect(message()).toBe('Enter both dates.');
-    expect(fixture.componentInstance.validate(new FormControl({ start: '', end: '' }))).toEqual({
-      required: true,
-    });
-  });
-
-  it('commits manual valid locale values and retains controlled values until accepted', () => {
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
-    setInputs({ start: '', end: '' });
-    setText(startInput(), '05/02/2026');
-    setText(endInput(), '09/02/2026');
-    expect(changed).toHaveBeenLastCalledWith({ start: '2026-02-05', end: '2026-02-09' });
-
-    setInputs({ start: '2026-02-05', end: '2026-02-09' });
-    startToggle().click();
     dayButton('2026-02-06').click();
     fixture.detectChanges();
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(activeBoundary()).toBe(LABELS.selectEndDate);
+    expect(endInput().parentElement?.classList).toContain('temporal-picker-field-endpoint-active');
     expect(startInput().value).toBe('05/02/2026');
     expect(endInput().value).toBe('09/02/2026');
 
-    fixture.componentRef.setInput('value', { start: '2026-02-06', end: '' });
+    dayButton('2026-02-10').dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    dayButton('2026-02-10').focus();
     fixture.detectChanges();
-    expect(startInput().value).toBe('06/02/2026');
-    expect(endInput().value).toBe('');
-  });
-
-  it('presents external invalid state with the invalid-range message', () => {
-    fixture.componentRef.setInput('invalid', true);
-    fixture.detectChanges();
-
-    expect(message()).toBe('Enter a valid date range.');
-    expect(startInput().getAttribute('aria-invalid')).toBe('true');
-    expect(endInput().classList).toContain('is-invalid');
-  });
-
-  it('sets required-range custom validity for a required empty range', () => {
-    setInputs({ start: '', end: '' });
-    fixture.componentRef.setInput('required', true);
-    fixture.detectChanges();
-
-    expect(startInput().validationMessage).toBe('Enter both dates.');
-    expect(endInput().validationMessage).toBe('Enter both dates.');
-  });
-
-  it('marks interval-crossing disabled dates and unavailable bounds invalid in the dialog and validator', () => {
-    setInputs({ start: '2026-02-05', end: '2026-02-09' }, { disabledDates: ['2026-02-07'] });
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(dayButton('2026-02-10').classList).toContain('localized-date-picker-preview-end');
     expect(
-      fixture.componentInstance.validate(
-        new FormControl({ start: '2026-02-05', end: '2026-02-09' }),
-      ),
-    ).toEqual({
-      dateRangeUnavailable: true,
+      calendarDialog().querySelector('[data-testid="date-picker-status"]')?.textContent,
+    ).toContain('Preview from');
+  });
+
+  it('alternates completed-range edits and orders each replacement', () => {
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    openCalendarFrom('start');
+    dayButton('2026-02-10').click();
+    fixture.detectChanges();
+
+    expect(dayButton('2026-02-09').getAttribute('aria-selected')).toBe('true');
+    dayButton('2026-02-06').click();
+    fixture.detectChanges();
+    expect(dayButton('2026-02-06').classList).toContain('localized-date-picker-range-start');
+    expect(dayButton('2026-02-09').classList).toContain('localized-date-picker-range-end');
+    expect(valueChange).not.toHaveBeenCalled();
+
+    dialogAction('done').click();
+    fixture.detectChanges();
+    expect(valueChange.mock.calls).toEqual([[{ start: '2026-02-06', end: '2026-02-09' }]]);
+  });
+
+  it('keeps the rendered endpoints synchronized through four alternating selections', () => {
+    setInputs(EMPTY_DATE_RANGE, {
+      min: '2026-02-01',
+      max: '2026-02-28',
+      disabledDates: ['2026-02-27'],
     });
+    openCalendarFrom('start');
 
-    setInputs({ start: '2026-02-05', end: '2026-02-09' }, { min: '2026-02-05', max: '2026-02-09' });
-    expect(
-      fixture.componentInstance.validate(
-        new FormControl({ start: '2026-02-05', end: '2026-02-09' }),
-      ),
-    ).toBeNull();
+    for (const iso of ['2026-02-12', '2026-02-13', '2026-02-10', '2026-02-08']) {
+      dayButton(iso).click();
+      fixture.detectChanges();
+    }
 
-    setInputs({ start: '2026-02-05', end: '2026-02-09' }, { disabledDates: ['2026-02-07'] });
-    endToggle().click();
+    expect(dayButton('2026-02-08').classList).toContain('localized-date-picker-range-start');
+    expect(dayButton('2026-02-10').classList).toContain('localized-date-picker-range-end');
+  });
+
+  it('prevents disabled interval candidates from changing the draft', () => {
+    setInputs(EMPTY_DATE_RANGE, {
+      min: '2026-02-01',
+      max: '2026-02-28',
+      disabledDates: ['2026-02-07'],
+    });
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    openCalendarFrom('start');
+    dayButton('2026-02-05').click();
+    fixture.detectChanges();
+
     expect(dayButton('2026-02-09').disabled).toBe(true);
-    expect(dayButton('2026-02-07').disabled).toBe(true);
+    expect(dayButton('2026-02-09').getAttribute('aria-disabled')).toBe('true');
+    dayButton('2026-02-09').click();
+    fixture.detectChanges();
+    expect(dialogAction('done').disabled).toBe(false);
+    dialogAction('done').click();
+    fixture.detectChanges();
+    expect(valueChange.mock.calls).toEqual([[{ start: '2026-02-05', end: null }]]);
+  });
 
-    setInputs({ start: '2026-02-05', end: '2026-02-09' }, { min: '2026-02-06' });
-    expect(
-      fixture.componentInstance.validate(
-        new FormControl({ start: '2026-02-05', end: '2026-02-09' }),
-      ),
-    ).toEqual({
-      dateRangeUnavailable: true,
+  it('commits one canonical object only on Done and rolls draft changes back on Cancel, Escape, and backdrop', () => {
+    const valueChange = jest.fn();
+    const onChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    fixture.componentInstance.registerOnChange(onChange);
+
+    for (const close of ['cancel', 'escape', 'backdrop'] as const) {
+      openCalendarFrom('start');
+      dayButton('2026-02-06').click();
+      fixture.detectChanges();
+      if (close === 'cancel') dialogAction('cancel').click();
+      else if (close === 'escape') dispatchKey(calendarDialog(), 'Escape');
+      else calendarDialog().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      fixture.detectChanges();
+      expect(valueChange).not.toHaveBeenCalled();
+      expect(startInput().value).toBe('05/02/2026');
+      expect(endInput().value).toBe('09/02/2026');
+    }
+
+    openCalendarFrom('end');
+    dayButton('2026-02-10').click();
+    fixture.detectChanges();
+    dialogAction('done').click();
+    fixture.detectChanges();
+    const expected = { start: '2026-02-09', end: '2026-02-10' };
+    expect(valueChange.mock.calls).toEqual([[expected]]);
+    expect(onChange.mock.calls).toEqual([[expected]]);
+  });
+
+  it('keeps Clear transactional and emits the canonical empty object only after Done', () => {
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    openCalendarFrom('start');
+
+    dialogAction('clear').click();
+    fixture.detectChanges();
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(startInput().value).toBe('05/02/2026');
+    expect(endInput().value).toBe('09/02/2026');
+
+    dialogAction('done').click();
+    fixture.detectChanges();
+    expect(valueChange.mock.calls).toEqual([[{ start: null, end: null }]]);
+  });
+
+  it('allows a permitted partial range to be confirmed', () => {
+    setInputs(EMPTY_DATE_RANGE, { min: '2026-02-01', max: '2026-02-28' });
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    openCalendarFrom('end');
+    dayButton('2026-02-09').click();
+    fixture.detectChanges();
+
+    expect(dialogAction('done').disabled).toBe(false);
+    dialogAction('done').click();
+    fixture.detectChanges();
+    expect(valueChange.mock.calls).toEqual([[{ start: '2026-02-09', end: null }]]);
+  });
+
+  it('fills both required boundaries with Enter and confirms the completed draft with Done', () => {
+    setInputs(EMPTY_DATE_RANGE, {
+      requirements: { start: true, end: true, paired: false },
+      min: '2026-02-01',
+      max: '2026-02-28',
     });
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    openCalendarFrom('start');
 
+    dispatchKey(dayButton('2026-02-06'), 'Enter');
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(calendarDialog().open).toBe(true);
+    expect(activeBoundary()).toBe(LABELS.selectEndDate);
+
+    dispatchKey(dayButton('2026-02-06'), 'Enter');
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(calendarDialog().open).toBe(true);
+
+    dialogAction('done').click();
+    expect(valueChange.mock.calls).toEqual([[{ start: '2026-02-06', end: '2026-02-06' }]]);
+    expect(calendarDialog().open).toBe(false);
+  });
+
+  it('reports exact endpoint and interval availability errors and a common unavailable message', () => {
     setInputs(
       { start: '2026-02-05', end: '2026-02-09' },
-      { min: 'not-a-date', max: 'also-not-a-date' },
+      { min: '2026-02-06', disabledDates: ['2026-02-07'] },
     );
+
     expect(
       fixture.componentInstance.validate(
-        new FormControl({ start: '2026-02-05', end: '2026-02-09' }),
+        new FormControl<LocalizedDateRange>({ start: '2026-02-05', end: '2026-02-09' }),
       ),
-    ).toBeNull();
-  });
+    ).toEqual({ dateRangeUnavailable: { start: true, interval: true } });
+    expect(startInput().getAttribute('aria-invalid')).toBe('true');
+    expect(endInput().getAttribute('aria-invalid')).toBe('true');
+    expect(validationMessage()).toBe(LABELS.unavailableRange);
 
-  it('keeps manual unavailable endpoints and disabled-crossing ranges as non-emitting drafts', () => {
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
-    setInputs({ start: '2026-02-06', end: '2026-02-09' }, { min: '2026-02-06' });
-    setText(startInput(), '05/02/2026');
-
-    expect(changed).not.toHaveBeenCalled();
-    expect(startInput().value).toBe('05/02/2026');
-    expect(
-      fixture.componentInstance.validate(
-        new FormControl({ start: '2026-02-05', end: '2026-02-09' }),
-      ),
-    ).toEqual({ dateRangeUnavailable: true });
-
-    setInputs({ start: '2026-02-05', end: '2026-02-06' }, { disabledDates: ['2026-02-07'] });
-    setText(endInput(), '09/02/2026');
-
-    expect(changed).not.toHaveBeenCalled();
-    expect(endInput().value).toBe('09/02/2026');
-    expect(
-      fixture.componentInstance.validate(
-        new FormControl({ start: '2026-02-05', end: '2026-02-09' }),
-      ),
-    ).toEqual({ dateRangeUnavailable: true });
-  });
-
-  it('exposes ARIA range selection and preserves dialog keyboard focus behavior', () => {
-    endToggle().click();
-    expect(dayButton('2026-02-05').getAttribute('aria-selected')).toBe('true');
-    expect(dayButton('2026-02-09').getAttribute('aria-selected')).toBe('true');
-    expect(dayButton('2026-02-07').getAttribute('aria-selected')).toBe('true');
-
-    calendar().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    expect(calendar().open).toBe(false);
-    expect(document.activeElement).toBe(endToggle());
-  });
-
-  it('selects a range with the keyboard without moving focus out of the dialog between endpoints', () => {
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
-    startToggle().click();
-    dayButton('2026-02-06').dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
-    );
+    fixture.componentRef.setInput('min', undefined);
+    fixture.componentRef.setInput('max', '2026-02-08');
+    fixture.componentRef.setInput('disabledDates', undefined);
     fixture.detectChanges();
-
-    expect(activeBoundary()).toBe('Select an end date');
-    expect(calendar().open).toBe(true);
-    expect(calendar().contains(document.activeElement)).toBe(true);
-    expect(changed).toHaveBeenLastCalledWith({ start: '2026-02-06', end: '' });
+    expect(
+      fixture.componentInstance.validate(
+        new FormControl<LocalizedDateRange>({ start: '2026-02-05', end: '2026-02-09' }),
+      ),
+    ).toEqual({ dateRangeUnavailable: { end: true } });
   });
 
-  it('uses required and external invalid state, supports clear, and notifies forms of dynamic constraints', async () => {
-    const hostFixture = TestBed.createComponent(RangePickerFormHostComponent);
-    hostFixture.detectChanges();
-    const picker = hostFixture.debugElement.children[0]
-      .componentInstance as LocalizedDateRangePickerComponent;
-    const validatorChange = jest.fn();
-    picker.registerOnValidatorChange(validatorChange);
-    hostFixture.componentInstance.required.set(true);
-    hostFixture.detectChanges();
-    expect(picker.validate(new FormControl({ start: '', end: '' }))).toEqual({ required: true });
-    expect(hostFixture.nativeElement.querySelector('[data-testid="date-picker-clear"]')).toBeNull();
-    hostFixture.componentInstance.required.set(false);
-    hostFixture.componentInstance.disabledDates.set(['2026-02-05']);
-    hostFixture.detectChanges();
-    expect(validatorChange).toHaveBeenCalled();
-    hostFixture.destroy();
+  it('emits validity transitions for requiredness, manual drafts, ordering, and availability', () => {
+    const validityChange = jest.fn();
+    fixture.componentInstance.validityChange.subscribe(validityChange);
 
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
-    startToggle().click();
-    calendar().querySelector<HTMLButtonElement>('[data-testid="date-picker-clear"]')!.click();
-    expect(changed).toHaveBeenLastCalledWith({ start: '', end: '' });
-    expect(calendar().open).toBe(false);
+    fixture.componentRef.setInput('requirements', { start: true, end: false, paired: false });
+    fixture.componentRef.setInput('value', EMPTY_DATE_RANGE);
+    fixture.detectChanges();
+    expect(validityChange).toHaveBeenLastCalledWith(false);
+
+    fixture.componentRef.setInput('value', { start: '2026-02-05', end: null });
+    fixture.detectChanges();
+    expect(validityChange).toHaveBeenLastCalledWith(true);
+
+    setText(startInput(), '31/02/2026');
+    expect(validityChange).toHaveBeenLastCalledWith(false);
+    dispatchKey(startInput(), 'Escape');
+    expect(validityChange).toHaveBeenLastCalledWith(true);
+
+    setText(endInput(), '04/02/2026');
+    expect(validityChange).toHaveBeenLastCalledWith(false);
+    dispatchKey(endInput(), 'Escape');
+    expect(validityChange).toHaveBeenLastCalledWith(true);
+
+    fixture.componentRef.setInput('min', '2026-02-06');
+    fixture.detectChanges();
+    expect(validityChange).toHaveBeenLastCalledWith(false);
   });
 
-  it('integrates range changes and touched state with an Angular form control', () => {
-    const hostFixture = TestBed.createComponent(RangePickerFormHostComponent);
-    const host = hostFixture.componentInstance;
-    host.control.setValue({ start: '2026-02-05', end: '2026-02-09' });
-    hostFixture.detectChanges();
+  it('treats public null or malformed shapes as invalid but writeValue(null) as an empty-range reset', () => {
+    fixture.componentRef.setInput('value', undefined);
+    fixture.componentInstance.writeValue({ start: '2027-12-15', end: null });
+    fixture.detectChanges();
+    expect(startInput().value).toBe('15/12/2027');
 
-    const hostStart = hostFixture.nativeElement.querySelector('#range') as HTMLInputElement;
-    hostStart.value = '06/02/2026';
-    hostStart.dispatchEvent(new Event('input'));
-    hostFixture.detectChanges();
-    expect(host.control.value).toEqual({ start: '2026-02-06', end: '2026-02-09' });
+    expect(fixture.componentInstance.validate(new FormControl(null))).toEqual({
+      dateRangeInvalid: { start: true, end: true },
+    });
+    expect(fixture.componentInstance.validate(new FormControl({ start: '2026-02-05' }))).toEqual({
+      dateRangeInvalid: { end: true },
+    });
 
-    const hostToggle = hostFixture.nativeElement.querySelector(
-      '[data-testid="date-range-start-toggle"]',
-    ) as HTMLButtonElement;
-    hostToggle.click();
-    hostFixture.detectChanges();
-    (
-      hostFixture.nativeElement.querySelector(
-        '[data-testid="date-picker-close"]',
-      ) as HTMLButtonElement
-    ).click();
-    expect(host.control.touched).toBe(true);
-    hostFixture.destroy();
+    fixture.componentInstance.writeValue(null);
+    fixture.detectChanges();
+    expect(startInput().value).toBe('');
+    expect(endInput().value).toBe('');
+
+    fixture.componentRef.setInput('value', null as unknown as LocalizedDateRange);
+    fixture.detectChanges();
+    expect(validationMessage()).toBe(LABELS.invalidRange);
+    fixture.componentRef.setInput('value', { start: '2026-02-05', end: null });
+    fixture.detectChanges();
+    expect(startInput().value).toBe('05/02/2026');
   });
 
-  it('honors readonly and disabled state and closes on form disable', () => {
-    setInputs({ start: '2026-02-05', end: '2026-02-09' }, { readonly: true });
-    expect(startToggle().disabled).toBe(true);
-    startToggle().click();
-    expect(calendar().open).toBe(false);
+  it('keeps readonly focusable, disables all controls when disabled, and closes an open draft', () => {
+    fixture.componentRef.setInput('readonly', true);
+    fixture.detectChanges();
+    expect(startInput().readOnly).toBe(true);
+    expect(startInput().disabled).toBe(false);
+    expect(calendarToggle().disabled).toBe(true);
 
     fixture.componentRef.setInput('readonly', false);
     fixture.detectChanges();
-    startToggle().click();
+    openCalendarFrom('start');
     fixture.componentInstance.setDisabledState(true);
-    expect(calendar().open).toBe(false);
-  });
-
-  it('does not touch browser-only APIs while rendered on the server platform', async () => {
-    fixture.destroy();
-    TestBed.resetTestingModule();
-    await TestBed.configureTestingModule({
-      imports: [LocalizedDateRangePickerComponent],
-      providers: [{ provide: PLATFORM_ID, useValue: 'server' }],
-    }).compileComponents();
-    const serverFixture = TestBed.createComponent(LocalizedDateRangePickerComponent);
-    serverFixture.componentRef.setInput('inputId', 'server-range');
-    serverFixture.componentRef.setInput('controlSize', 'default');
-    serverFixture.componentRef.setInput('dateLocale', 'en-GB');
-    serverFixture.componentRef.setInput('labels', LABELS);
-    serverFixture.componentRef.setInput('required', false);
-    serverFixture.componentRef.setInput('invalid', false);
-    serverFixture.componentRef.setInput('controlDisabled', false);
-    serverFixture.componentRef.setInput('readonly', false);
-    expect(() => serverFixture.detectChanges()).not.toThrow();
-    serverFixture.destroy();
+    fixture.detectChanges();
+    expect(calendarDialog().open).toBe(false);
+    expect(startInput().disabled).toBe(true);
+    expect(endInput().disabled).toBe(true);
   });
 
   function setInputs(
     value: LocalizedDateRange,
     overrides: Partial<{
+      requirements: LocalizedRangeRequirements;
       min: string;
       max: string;
       disabledDates: readonly string[];
@@ -413,7 +556,10 @@ describe('LocalizedDateRangePickerComponent', () => {
     fixture.componentRef.setInput('controlSize', 'default');
     fixture.componentRef.setInput('dateLocale', 'en-GB');
     fixture.componentRef.setInput('labels', LABELS);
-    fixture.componentRef.setInput('required', false);
+    fixture.componentRef.setInput(
+      'requirements',
+      overrides.requirements ?? DEFAULT_RANGE_REQUIREMENTS,
+    );
     fixture.componentRef.setInput('invalid', false);
     fixture.componentRef.setInput('controlDisabled', false);
     fixture.componentRef.setInput('readonly', overrides.readonly ?? false);
@@ -423,50 +569,118 @@ describe('LocalizedDateRangePickerComponent', () => {
     fixture.detectChanges();
   }
 
-  function group(): HTMLElement {
-    return fixture.nativeElement.querySelector('[data-testid="date-range-group"]')!;
+  function temporalField(): HTMLElement {
+    return fixture.nativeElement.querySelector('[data-testid="temporal-picker-field"]')!;
   }
+
   function startInput(): HTMLInputElement {
     return fixture.nativeElement.querySelector('#range') as HTMLInputElement;
   }
+
   function endInput(): HTMLInputElement {
-    return fixture.nativeElement.querySelector('#range-end-date') as HTMLInputElement;
+    return fixture.nativeElement.querySelector('#range-end') as HTMLInputElement;
   }
-  function startToggle(): HTMLButtonElement {
+
+  function calendarToggle(): HTMLButtonElement {
     return fixture.nativeElement.querySelector(
-      '[data-testid="date-range-start-toggle"]',
+      '[data-testid="temporal-picker-field-trigger"]',
     ) as HTMLButtonElement;
   }
-  function endToggle(): HTMLButtonElement {
-    return fixture.nativeElement.querySelector(
-      '[data-testid="date-range-end-toggle"]',
-    ) as HTMLButtonElement;
-  }
-  function calendar(): HTMLDialogElement {
+
+  function calendarDialog(): HTMLDialogElement {
     return fixture.nativeElement.querySelector(
       '[data-testid="date-picker-calendar"]',
     ) as HTMLDialogElement;
   }
+
   function dayButton(iso: string): HTMLButtonElement {
-    return calendar().querySelector<HTMLButtonElement>(`[data-date="${iso}"]`)!;
+    const button = calendarDialog().querySelector(`[data-date="${iso}"]`) as HTMLButtonElement;
+    expect(button).not.toBeNull();
+    return button;
   }
+
+  function dialogAction(action: 'clear' | 'cancel' | 'done'): HTMLButtonElement {
+    return calendarDialog().querySelector(
+      `[data-testid="date-picker-${action}"]`,
+    ) as HTMLButtonElement;
+  }
+
   function activeBoundary(): string {
     return (
-      calendar()
-        .querySelector('[data-testid="date-picker-active-boundary"]')
-        ?.textContent?.trim() ?? ''
+      calendarDialog().querySelector('[data-testid="date-picker-status"]')?.textContent?.trim() ??
+      ''
     );
   }
-  function message(): string {
+
+  function validationMessage(): string {
     return (
       fixture.nativeElement
         .querySelector('[data-testid="date-range-validation-message"]')
         ?.textContent.trim() ?? ''
     );
   }
-  function setText(input: HTMLInputElement, value: string): void {
-    input.value = value;
-    input.dispatchEvent(new Event('input'));
+
+  function openCalendarFrom(boundary: 'start' | 'end'): void {
+    (boundary === 'start' ? startInput() : endInput()).focus();
+    fixture.detectChanges();
+    calendarToggle().click();
     fixture.detectChanges();
   }
+
+  function setText(input: HTMLInputElement, value: string): void {
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+  }
+
+  function dispatchKey(element: HTMLElement, key: string): void {
+    element.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+    fixture.detectChanges();
+  }
+
+  function installDialogMethods(dialog: HTMLDialogElement): void {
+    Object.defineProperty(dialog, 'showModal', {
+      configurable: true,
+      value: (): void => dialog.setAttribute('open', ''),
+    });
+    Object.defineProperty(dialog, 'close', {
+      configurable: true,
+      value: (): void => {
+        dialog.removeAttribute('open');
+        dialog.dispatchEvent(new Event('close'));
+      },
+    });
+  }
+});
+
+describe('LocalizedDateRangePickerComponent server-platform browser guard fixture', () => {
+  it('avoids browser-only constraint-validation calls and inline styles', async () => {
+    await TestBed.configureTestingModule({
+      imports: [LocalizedDateRangePickerComponent],
+      providers: [{ provide: PLATFORM_ID, useValue: 'server' }],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(LocalizedDateRangePickerComponent);
+    fixture.componentRef.setInput('inputId', 'server-range');
+    fixture.componentRef.setInput('value', EMPTY_DATE_RANGE);
+    fixture.componentRef.setInput('controlSize', 'default');
+    fixture.componentRef.setInput('dateLocale', 'en-GB');
+    fixture.componentRef.setInput('labels', LABELS);
+    fixture.componentRef.setInput('requirements', DEFAULT_RANGE_REQUIREMENTS);
+    fixture.componentRef.setInput('invalid', false);
+    fixture.componentRef.setInput('controlDisabled', false);
+    fixture.componentRef.setInput('readonly', false);
+    const setCustomValidity = jest.spyOn(HTMLInputElement.prototype, 'setCustomValidity');
+
+    fixture.detectChanges();
+
+    expect(setCustomValidity).not.toHaveBeenCalled();
+    expect(
+      fixture.nativeElement
+        .querySelector('[data-testid="temporal-picker-field-trigger"]')
+        ?.getAttribute('aria-label'),
+    ).toBe(LABELS.openPicker);
+    expect(fixture.nativeElement.querySelector('[style]')).toBeNull();
+    setCustomValidity.mockRestore();
+    fixture.destroy();
+  });
 });

@@ -1,34 +1,74 @@
-import { Component, PLATFORM_ID, signal } from '@angular/core';
+import { Component, PLATFORM_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import {
   LocalizedDateTimePickerComponent,
-  LocalizedDateTimePickerLabels,
+  type LocalizedDateTimePickerLabels,
 } from './localized-datetime-picker.component';
 
-const LABELS: LocalizedDateTimePickerLabels = {
-  placeholder: 'dd/mm/yyyy',
-  openCalendar: 'Open calendar',
-  changeCalendar: 'Change date',
-  dialog: 'Choose a date',
+type Equal<Left, Right> =
+  (<Value>() => Value extends Left ? 1 : 2) extends <Value>() => Value extends Right ? 1 : 2
+    ? true
+    : false;
+type Expect<Value extends true> = Value;
+type LabelKeys = Expect<
+  Equal<
+    keyof LocalizedDateTimePickerLabels,
+    | 'placeholder'
+    | 'openPicker'
+    | 'changeValue'
+    | 'dialog'
+    | 'dateTimeInput'
+    | 'previousMonth'
+    | 'nextMonth'
+    | 'openMonthYearPicker'
+    | 'previousYear'
+    | 'nextYear'
+    | 'hour'
+    | 'minute'
+    | 'dateFormatHint'
+    | 'timeFormatHint'
+    | 'selectDate'
+    | 'clear'
+    | 'cancel'
+    | 'done'
+    | 'today'
+    | 'now'
+    | 'keyboardHelp'
+    | 'invalidDateTime'
+    | 'unavailableDateTime'
+    | 'requiredDateTime'
+  >
+>;
+
+void (0 as unknown as LabelKeys);
+
+const LABELS = {
+  placeholder: 'dd/mm/yyyy HH:mm',
+  openPicker: 'Open date and time picker',
+  changeValue: 'Change date and time',
+  dialog: 'Choose a date and time',
+  dateTimeInput: 'Date and time',
   previousMonth: 'Previous month',
   nextMonth: 'Next month',
   openMonthYearPicker: 'Choose month and year',
   previousYear: 'Previous year',
   nextYear: 'Next year',
+  hour: 'Hour',
+  minute: 'Minute',
+  dateFormatHint: 'Date format: DD/MM/YYYY',
+  timeFormatHint: 'Time format: HH:mm',
+  selectDate: 'Select date',
   clear: 'Clear',
-  close: 'Close',
-  formatHint: 'Date format: DD/MM/YYYY',
-  invalidDate: 'Enter a valid date.',
-  requiredDate: 'Enter a date.',
-  keyboardHelp: 'Use the arrow keys to choose a date.',
-  groupLabel: 'Appointment date and time',
-  dateInput: 'Date',
-  timeInput: 'Time',
-  timeFormatHint: 'Time format: HH:MM',
-  invalidTime: 'Enter a valid time.',
-  requiredTime: 'Enter a time.',
-};
+  cancel: 'Cancel',
+  done: 'Done',
+  today: 'Today',
+  now: 'Now',
+  keyboardHelp: 'Use the calendar and time controls to choose a date and time.',
+  invalidDateTime: 'Enter a valid date and time.',
+  unavailableDateTime: 'This date and time is unavailable.',
+  requiredDateTime: 'Enter the required date and time.',
+} satisfies LocalizedDateTimePickerLabels;
 
 @Component({
   imports: [ReactiveFormsModule, LocalizedDateTimePickerComponent],
@@ -37,23 +77,15 @@ const LABELS: LocalizedDateTimePickerLabels = {
     [labels]="labels"
     controlSize="default"
     dateLocale="en-GB"
-    [required]="required()"
     [invalid]="false"
     [controlDisabled]="false"
     [readonly]="false"
-    [min]="min()"
-    [max]="max()"
-    [disabledDates]="disabledDates()"
     [formControl]="control"
   />`,
 })
 class DateTimePickerFormHostComponent {
   readonly labels = LABELS;
-  readonly control = new FormControl('', { nonNullable: true });
-  readonly required = signal(false);
-  readonly min = signal<string | undefined>(undefined);
-  readonly max = signal<string | undefined>(undefined);
-  readonly disabledDates = signal<readonly string[] | undefined>(undefined);
+  readonly control = new FormControl<string | null>(null);
 }
 
 describe('LocalizedDateTimePickerComponent', () => {
@@ -63,163 +95,292 @@ describe('LocalizedDateTimePickerComponent', () => {
     await TestBed.configureTestingModule({
       imports: [LocalizedDateTimePickerComponent],
     }).compileComponents();
-
     fixture = TestBed.createComponent(LocalizedDateTimePickerComponent);
     setInputs('2026-02-05T09:30');
+    installDialogMethods();
   });
 
-  afterEach(() => fixture.destroy());
-
-  it('renders a strict local datetime as localized date text and native minute time', () => {
-    expect(dateInput().value).toBe('05/02/2026');
-    expect(timeInput().value).toBe('09:30');
-    expect(timeInput().type).toBe('time');
-    expect(timeInput().step).toBe('60');
+  afterEach(() => {
+    jest.useRealTimers();
+    fixture.destroy();
   });
 
-  it('renders the calendar toggle with an SVG icon instead of font emoji', () => {
-    expect(calendarToggle().querySelector('svg[aria-hidden="true"]')).not.toBeNull();
-    expect(calendarToggle().textContent).not.toContain('📅');
+  it('is standalone and OnPush with one localized editable datetime field and one SVG trigger', () => {
+    const metadata = (
+      LocalizedDateTimePickerComponent as unknown as {
+        ɵcmp: { standalone: boolean; onPush: boolean; selectors: string[][] };
+      }
+    ).ɵcmp;
+    expect(metadata.standalone).toBe(true);
+    expect(metadata.onPush).toBe(true);
+    expect(metadata.selectors).toContainEqual(['ds-localized-datetime-picker']);
+    expect(field().querySelectorAll('input')).toHaveLength(1);
+    expect(input().type).toBe('text');
+    expect(input().value).toBe('05/02/2026 09:30');
+    expect(input().getAttribute('aria-label')).toBe(LABELS.dateTimeInput);
+    expect(trigger().querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('input[type="time"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[style]')).toBeNull();
   });
 
-  it('renders linked visible labels and persistent guidance in a named group', () => {
-    expect(group().getAttribute('role')).toBe('group');
-    expect(group().getAttribute('aria-label')).toBe(LABELS.groupLabel);
-    expect(dateInput().id).toBe('appointment');
-    expect(timeInput().id).toBe('appointment-time');
-    expect(document.querySelector('label[for="appointment"]')?.textContent).toContain('Date');
-    expect(document.querySelector('label[for="appointment-time"]')?.textContent).toContain('Time');
-    expect(dateInput().getAttribute('aria-describedby')).toContain('DateHint');
-    expect(timeInput().getAttribute('aria-describedby')).toContain('TimeHint');
-    expect(fixture.nativeElement.textContent).toContain(LABELS.formatHint);
-    expect(fixture.nativeElement.textContent).toContain(LABELS.timeFormatHint);
-  });
-
-  it('keeps incomplete drafts visible and emits as soon as both parts are valid', () => {
-    setInputs(undefined);
-    fixture.componentInstance.writeValue('');
-    fixture.detectChanges();
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
-
-    setText(dateInput(), '05/02/2026');
-    expect(changed).not.toHaveBeenCalled();
-    expect(dateInput().value).toBe('05/02/2026');
-
-    setText(timeInput(), '09:30');
-    expect(changed).toHaveBeenLastCalledWith('2026-02-05T09:30');
-
-    setText(timeInput(), '10:45');
-    expect(changed).toHaveBeenLastCalledWith('2026-02-05T10:45');
-  });
-
-  it('keeps a time-only draft visible without emitting a noncanonical model', () => {
-    setInputs(undefined);
-    fixture.componentInstance.writeValue('');
-    fixture.detectChanges();
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
-
-    setText(timeInput(), '09:30');
-
-    expect(changed).not.toHaveBeenCalled();
-    expect(dateInput().value).toBe('');
-    expect(timeInput().value).toBe('09:30');
-  });
-
-  it('selects a date, closes the calendar, and focuses an empty time input before completion', () => {
-    setInputs(undefined);
+  it('commits localized manual input on blur or Enter and rolls back on Escape', () => {
+    const valueChange = jest.fn();
+    const touched = jest.fn();
+    fixture.componentRef.setInput('value', undefined);
     fixture.componentInstance.writeValue('2026-02-05T09:30');
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    fixture.componentInstance.registerOnTouched(touched);
     fixture.detectChanges();
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
-    setText(timeInput(), '');
 
-    calendarToggle().click();
+    setText('06/02/2026 10:45');
+    input().dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+    fixture.detectChanges();
+    expect(valueChange).toHaveBeenLastCalledWith('2026-02-06T10:45');
+    expect(touched).toHaveBeenCalled();
+
+    setText('07/02/2026 11:00');
+    input().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    expect(input().value).toBe('06/02/2026 10:45');
+
+    setText('08/02/2026 12:15');
+    input().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+    expect(valueChange).toHaveBeenLastCalledWith('2026-02-08T12:15');
+  });
+
+  it('keeps malformed manual text visible without emitting a model value', () => {
+    const valueChange = jest.fn();
+    fixture.componentRef.setInput('value', undefined);
+    fixture.componentInstance.writeValue('2026-02-05T09:30');
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    fixture.detectChanges();
+
+    setText('31/02/2026 09:30');
+    input().dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(input().value).toBe('31/02/2026 09:30');
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(message()).toBe(LABELS.invalidDateTime);
+  });
+
+  it('shows calendar and custom time controls together and keeps both changes draft-only until Done', () => {
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    trigger().click();
+    fixture.detectChanges();
+
+    expect(dialog().querySelector('[role="grid"]')).not.toBeNull();
+    expect(dialog().querySelector('[data-testid="segmented-time-input"]')).not.toBeNull();
     dayButton('2026-02-06').click();
     fixture.detectChanges();
+    expect(valueChange).not.toHaveBeenCalled();
+    segmentedButton('hour').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+    fixture.detectChanges();
+    expect(valueChange).not.toHaveBeenCalled();
 
-    expect(calendar().open).toBe(false);
-    expect(document.activeElement).toBe(timeInput());
-    expect(dateInput().value).toBe('06/02/2026');
-    expect(changed).not.toHaveBeenCalled();
-
-    setText(timeInput(), '10:15');
-    expect(changed).toHaveBeenLastCalledWith('2026-02-06T10:15');
+    dialogAction('done').click();
+    fixture.detectChanges();
+    expect(valueChange).toHaveBeenCalledWith('2026-02-06T10:30');
   });
 
-  it('emits immediately when either complete valid part changes', () => {
-    setInputs(undefined);
-    fixture.componentInstance.writeValue('2026-02-05T09:30');
+  it('requires either a clear optional draft or a complete available datetime before Done', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 1, 5, 12, 0));
+    setInputs(null, { required: true });
+    trigger().click();
     fixture.detectChanges();
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
+    expect(dialogAction('done').disabled).toBe(true);
 
-    setText(dateInput(), '06/02/2026');
-    setText(timeInput(), '11:00');
+    dayButton('2026-02-05').click();
+    fixture.detectChanges();
+    expect(dialogAction('done').disabled).toBe(true);
 
-    expect(changed.mock.calls).toEqual([['2026-02-06T09:30'], ['2026-02-06T11:00']]);
+    segmentedButton('hour').dispatchEvent(new KeyboardEvent('keydown', { key: '0' }));
+    segmentedButton('hour').dispatchEvent(new KeyboardEvent('keydown', { key: '9' }));
+    segmentedButton('minute').dispatchEvent(new KeyboardEvent('keydown', { key: '3' }));
+    segmentedButton('minute').dispatchEvent(new KeyboardEvent('keydown', { key: '0' }));
+    fixture.detectChanges();
+    expect(dialogAction('done').disabled).toBe(false);
+
+    dialogAction('cancel').click();
+    setInputs('2026-02-05T09:30', { min: '2026-02-05T10:00' });
+    trigger().click();
+    fixture.detectChanges();
+    expect(dialogAction('done').disabled).toBe(true);
   });
 
-  it('validates optional empty, required empty, malformed, and incomplete datetime values', () => {
-    setInputs('');
-    expect(fixture.componentInstance.validate(new FormControl(''))).toBeNull();
-
-    fixture.componentRef.setInput('required', true);
+  it('keeps Clear transactional and commits null through Done when optional', () => {
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    trigger().click();
     fixture.detectChanges();
-    expect(fixture.componentInstance.validate(new FormControl(''))).toEqual({ required: true });
 
-    fixture.componentRef.setInput('required', false);
-    fixture.componentRef.setInput('value', '2026-02-05');
+    dialogAction('clear').click();
     fixture.detectChanges();
-    expect(fixture.componentInstance.validate(new FormControl('2026-02-05'))).toEqual({
-      dateTimeInvalid: true,
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(dialogAction('done').disabled).toBe(false);
+
+    dialogAction('done').click();
+    fixture.detectChanges();
+    expect(valueChange).toHaveBeenCalledWith(null);
+  });
+
+  it('sets both local parts with Now as a draft and does not commit before Done', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 8, 11, 14, 7));
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    trigger().click();
+    fixture.detectChanges();
+
+    dialog().querySelector<HTMLButtonElement>('[data-testid="date-picker-now"]')!.click();
+    fixture.detectChanges();
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(dayButton('2026-09-11').getAttribute('aria-selected')).toBe('true');
+    expect(dialog().querySelector('[data-testid="segmented-time-input"]')?.textContent).toContain(
+      '14',
+    );
+    expect(dialog().querySelector('[data-testid="segmented-time-input"]')?.textContent).toContain(
+      '07',
+    );
+
+    dialogAction('done').click();
+    fixture.detectChanges();
+    expect(valueChange).toHaveBeenCalledWith('2026-09-11T14:07');
+  });
+
+  it.each([
+    [null, false, null],
+    [null, true, { required: true }],
+  ])('validates absent runtime value %p with required=%p', (value, required, expected) => {
+    setInputs(value, { required });
+    expect(fixture.componentInstance.validate(new FormControl(value))).toEqual(expected);
+    expect(input().value).toBe('');
+  });
+
+  it.each(['', '2026-02-05', '2026-02-05T9:30', '2026-02-30T09:30', 42, {}])(
+    'keeps malformed runtime value %p out of the field while reporting dateTimeInvalid',
+    (value) => {
+      fixture.componentRef.setInput('value', value);
+      fixture.detectChanges();
+
+      expect(input().value).toBe('');
+      expect(fixture.componentInstance.validate(new FormControl(value))).toEqual({
+        dateTimeInvalid: true,
+      });
+      expect(input().getAttribute('aria-invalid')).toBe('true');
+      expect(message()).toBe(LABELS.invalidDateTime);
+    },
+  );
+
+  it('keeps a malformed optional source value unconfirmable until explicit Clear', () => {
+    fixture.componentRef.setInput('value', undefined);
+    fixture.componentInstance.writeValue('bad');
+    fixture.detectChanges();
+
+    trigger().click();
+    fixture.detectChanges();
+
+    expect(dialogAction('done').disabled).toBe(true);
+    dialogAction('clear').click();
+    fixture.detectChanges();
+    expect(dialogAction('done').disabled).toBe(false);
+  });
+
+  it('rolls back changed date and time on Cancel and reopens from the committed value', () => {
+    const valueChange = jest.fn();
+    const cvaChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    fixture.componentInstance.registerOnChange(cvaChange);
+    trigger().click();
+    fixture.detectChanges();
+
+    dayButton('2026-02-06').click();
+    fixture.detectChanges();
+    segmentedButton('hour').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+    fixture.detectChanges();
+    dialogAction('cancel').click();
+    fixture.detectChanges();
+
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(cvaChange).not.toHaveBeenCalled();
+    expect(input().value).toBe('05/02/2026 09:30');
+    expect(dialogElement().open).toBe(false);
+
+    trigger().click();
+    fixture.detectChanges();
+    expect(dayButton('2026-02-05').getAttribute('aria-selected')).toBe('true');
+    expect(dayButton('2026-02-06').getAttribute('aria-selected')).toBe('false');
+    expect(dialog().querySelector('[data-testid="segmented-time-input"]')?.textContent).toContain(
+      '09',
+    );
+    expect(dialog().querySelector('[data-testid="segmented-time-input"]')?.textContent).toContain(
+      '30',
+    );
+  });
+
+  it('rolls back Clear on Cancel and reopens from the committed value', () => {
+    const valueChange = jest.fn();
+    const cvaChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    fixture.componentInstance.registerOnChange(cvaChange);
+    trigger().click();
+    fixture.detectChanges();
+
+    dialogAction('clear').click();
+    fixture.detectChanges();
+    dialogAction('cancel').click();
+    fixture.detectChanges();
+
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(cvaChange).not.toHaveBeenCalled();
+    expect(input().value).toBe('05/02/2026 09:30');
+    expect(dialogElement().open).toBe(false);
+
+    trigger().click();
+    fixture.detectChanges();
+    expect(dayButton('2026-02-05').getAttribute('aria-selected')).toBe('true');
+    expect(dialog().querySelector('[data-testid="segmented-time-input"]')?.textContent).toContain(
+      '09',
+    );
+    expect(dialog().querySelector('[data-testid="segmented-time-input"]')?.textContent).toContain(
+      '30',
+    );
+  });
+
+  it('uses exact invalid, unavailable, and required messages with native validity', () => {
+    setInputs(null, { required: true });
+    expect(input().required).toBe(true);
+    expect(message()).toBe(LABELS.requiredDateTime);
+    expect(input().validationMessage).toBe(LABELS.requiredDateTime);
+
+    setInputs('2026-02-05T09:30', { disabledDates: ['2026-02-05'] });
+    expect(message()).toBe(LABELS.unavailableDateTime);
+    expect(input().validationMessage).toBe(LABELS.unavailableDateTime);
+
+    setInputs('not a datetime');
+    expect(message()).toBe(LABELS.invalidDateTime);
+    expect(input().validationMessage).toBe(LABELS.invalidDateTime);
+  });
+
+  it('notifies Angular validation and validityChange when a required manual draft is blanked', () => {
+    const validatorChange = jest.fn();
+    const validityChange = jest.fn();
+    setInputs('2026-02-05T09:30', { required: true });
+    fixture.componentInstance.registerOnValidatorChange(validatorChange);
+    fixture.componentInstance.validityChange.subscribe(validityChange);
+    validatorChange.mockClear();
+
+    setText('');
+
+    expect(validatorChange).toHaveBeenCalled();
+    expect(validityChange).toHaveBeenLastCalledWith(false);
+    expect(fixture.componentInstance.validate(new FormControl('2026-02-05T09:30'))).toEqual({
+      required: true,
     });
-
-    fixture.componentRef.setInput('value', '2026-02-05T9:30');
-    fixture.detectChanges();
-    expect(fixture.componentInstance.validate(new FormControl('2026-02-05T9:30'))).toEqual({
-      dateTimeInvalid: true,
-    });
-
-    setInputs(undefined);
-    fixture.componentInstance.writeValue('');
-    fixture.detectChanges();
-    setText(dateInput(), '05/02/2026');
-    expect(fixture.componentInstance.validate(new FormControl(''))).toEqual({
-      dateTimeInvalid: true,
-    });
-    expect(message()).toBe(LABELS.requiredTime);
   });
 
-  it('distinguishes missing draft fields from malformed date and datetime values', () => {
-    setInputs(undefined);
-    fixture.componentInstance.writeValue('');
-    fixture.detectChanges();
-
-    setText(timeInput(), '09:30');
-    expect(message()).toBe(LABELS.requiredDate);
-    expect(dateInput().validationMessage).toBe(LABELS.requiredDate);
-    expect(timeInput().validationMessage).toBe('');
-
-    setText(timeInput(), '');
-    setText(dateInput(), '31/02/2026');
-    expect(message()).toBe(LABELS.invalidDate);
-    expect(dateInput().validationMessage).toBe(LABELS.invalidDate);
-    expect(timeInput().validationMessage).toBe('');
-
-    setText(dateInput(), '05/02/2026');
-    expect(message()).toBe(LABELS.requiredTime);
-    expect(dateInput().validationMessage).toBe('');
-    expect(timeInput().validationMessage).toBe(LABELS.requiredTime);
-
-    setInputs('2026-02-05T9:30');
-    expect(message()).toBe(LABELS.invalidTime);
-    expect(dateInput().validationMessage).toBe('');
-    expect(timeInput().validationMessage).toBe(LABELS.invalidTime);
-  });
-
-  it('applies inclusive datetime bounds to time while keeping boundary dates selectable', () => {
+  it('treats datetime min and max as inclusive including same-date time edges', () => {
     setInputs('2026-02-05T09:00', {
       min: '2026-02-05T09:00',
       max: '2026-02-06T17:00',
@@ -232,194 +393,113 @@ describe('LocalizedDateTimePickerComponent', () => {
     expect(fixture.componentInstance.validate(new FormControl('2026-02-06T17:01'))).toEqual({
       dateTimeUnavailable: true,
     });
-    expect(timeInput().min).toBe('09:00');
-    expect(timeInput().max).toBe('');
-
-    calendarToggle().click();
-    expect(dayButton('2026-02-05').disabled).toBe(false);
-    expect(dayButton('2026-02-06').disabled).toBe(false);
-    calendar().querySelector<HTMLButtonElement>('[data-testid="date-picker-close"]')!.click();
-
-    fixture.componentRef.setInput('value', '2026-02-06T17:00');
-    fixture.detectChanges();
-    expect(timeInput().min).toBe('');
-    expect(timeInput().max).toBe('17:00');
+    expect(fixture.componentInstance.validate(new FormControl('2026-02-07T00:00'))).toEqual({
+      dateTimeUnavailable: true,
+    });
   });
 
-  it('attributes whole-date bound failures to date and boundary-time failures to time', () => {
-    setInputs('2026-02-04T12:00', {
-      min: '2026-02-05T09:00',
-      max: '2026-02-06T17:00',
-    });
-
-    expect(message()).toBe(LABELS.invalidDate);
-    expect(dateInput().validationMessage).toBe(LABELS.invalidDate);
-    expect(timeInput().validationMessage).toBe('');
-
-    fixture.componentRef.setInput('value', '2026-02-05T08:59');
-    fixture.detectChanges();
-
-    expect(message()).toBe(LABELS.invalidTime);
-    expect(dateInput().validationMessage).toBe('');
-    expect(timeInput().validationMessage).toBe(LABELS.invalidTime);
-  });
-
-  it('attributes dates after maximum to date and late maximum-date times to time', () => {
-    setInputs('2026-02-07T12:00', {
-      min: '2026-02-05T09:00',
-      max: '2026-02-06T17:00',
-    });
-
-    expect(message()).toBe('Enter a valid date.');
-    expect(dateInput().validationMessage).toBe('Enter a valid date.');
-    expect(timeInput().validationMessage).toBe('');
-
-    fixture.componentRef.setInput('value', '2026-02-06T17:01');
-    fixture.detectChanges();
-
-    expect(message()).toBe('Enter a valid time.');
-    expect(dateInput().validationMessage).toBe('');
-    expect(timeInput().validationMessage).toBe('Enter a valid time.');
-  });
-
-  it('ignores malformed bounds and rejects disabled whole dates', () => {
-    setInputs('2026-02-05T09:30', {
-      min: 'not-a-minimum',
-      max: '2026-02-30T10:00',
-      disabledDates: ['2026-02-06'],
-    });
-    expect(fixture.componentInstance.validate(new FormControl('2026-02-05T09:30'))).toBeNull();
+  it('disables a disabled local date for every time while leaving adjacent dates available', () => {
+    setInputs('2026-02-05T09:30', { disabledDates: ['2026-02-06'] });
     expect(fixture.componentInstance.validate(new FormControl('2026-02-06T00:00'))).toEqual({
       dateTimeUnavailable: true,
     });
-
-    calendarToggle().click();
+    expect(fixture.componentInstance.validate(new FormControl('2026-02-06T23:59'))).toEqual({
+      dateTimeUnavailable: true,
+    });
+    trigger().click();
+    fixture.detectChanges();
+    expect(dayButton('2026-02-05').disabled).toBe(false);
     expect(dayButton('2026-02-06').disabled).toBe(true);
   });
 
-  it('keeps controlled edits and calendar selections external until accepted', () => {
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
-
-    setText(dateInput(), '06/02/2026');
-    expect(changed).toHaveBeenLastCalledWith('2026-02-06T09:30');
-    expect(dateInput().value).toBe('05/02/2026');
-
-    fixture.componentRef.setInput('value', '2026-02-06T09:30');
+  it('keeps controlled commits external while uncontrolled CVA commits locally and marks touched', () => {
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    setText('06/02/2026 10:45');
+    input().dispatchEvent(new FocusEvent('blur', { bubbles: true }));
     fixture.detectChanges();
-    expect(dateInput().value).toBe('06/02/2026');
+    expect(valueChange).toHaveBeenCalledWith('2026-02-06T10:45');
+    expect(input().value).toBe('05/02/2026 09:30');
 
-    calendarToggle().click();
-    dayButton('2026-02-07').click();
-    fixture.detectChanges();
-    expect(changed).toHaveBeenLastCalledWith('2026-02-07T09:30');
-    expect(dateInput().value).toBe('06/02/2026');
-  });
-
-  it('clears an optional controlled value, closes, and waits for acceptance', () => {
-    const changed = jest.fn();
-    fixture.componentInstance.valueChange.subscribe(changed);
-    calendarToggle().click();
-    calendar().querySelector<HTMLButtonElement>('[data-testid="date-picker-clear"]')!.click();
-    fixture.detectChanges();
-
-    expect(changed).toHaveBeenLastCalledWith('');
-    expect(calendar().open).toBe(false);
-    expect(dateInput().value).toBe('05/02/2026');
-    expect(timeInput().value).toBe('09:30');
-
-    fixture.componentRef.setInput('value', '');
-    fixture.detectChanges();
-    expect(dateInput().value).toBe('');
-    expect(timeInput().value).toBe('');
-  });
-
-  it('sets field-specific native validity and presents external invalid state', () => {
-    setInputs('');
-    fixture.componentRef.setInput('required', true);
-    fixture.detectChanges();
-    expect(dateInput().validationMessage).toBe(LABELS.requiredDate);
-    expect(timeInput().validationMessage).toBe(LABELS.requiredTime);
-
-    setInputs(undefined);
-    fixture.componentInstance.writeValue('');
-    fixture.detectChanges();
-    setText(dateInput(), '05/02/2026');
-    expect(timeInput().validationMessage).toBe(LABELS.requiredTime);
-
-    setInputs('2026-02-05T09:30');
-    fixture.componentRef.setInput('invalid', true);
-    fixture.detectChanges();
-    expect(dateInput().getAttribute('aria-invalid')).toBe('true');
-    expect(timeInput().classList).toContain('is-invalid');
-  });
-
-  it('notifies validity changes and registered validators when constraints change', () => {
-    const validatorChange = jest.fn();
-    const validityChange = jest.fn();
-    fixture.componentInstance.registerOnValidatorChange(validatorChange);
-    fixture.componentInstance.validityChange.subscribe(validityChange);
-
-    fixture.componentRef.setInput('min', '2026-02-05T10:00');
-    fixture.detectChanges();
-    expect(validatorChange).toHaveBeenCalled();
-    expect(validityChange).toHaveBeenCalledWith(false);
-
-    fixture.componentRef.setInput('min', '2026-02-05T09:30');
-    fixture.detectChanges();
-    expect(validityChange).toHaveBeenCalledWith(true);
-  });
-
-  it('integrates value, touched, and disabled state with Angular forms', () => {
     const hostFixture = TestBed.createComponent(DateTimePickerFormHostComponent);
     const host = hostFixture.componentInstance;
     host.control.setValue('2027-12-15T14:20');
     hostFixture.detectChanges();
-    const hostDate = hostFixture.nativeElement.querySelector(
-      '#form-appointment',
-    ) as HTMLInputElement;
-    const hostTime = hostFixture.nativeElement.querySelector(
-      '#form-appointment-time',
-    ) as HTMLInputElement;
-    expect(hostDate.value).toBe('15/12/2027');
-    expect(hostTime.value).toBe('14:20');
-
-    hostTime.value = '15:45';
-    hostTime.dispatchEvent(new Event('input'));
-    hostTime.dispatchEvent(new Event('blur'));
+    const hostInput = hostFixture.nativeElement.querySelector('input') as HTMLInputElement;
+    expect(hostInput.value).toBe('15/12/2027 14:20');
+    hostInput.value = '16/12/2027 15:45';
+    hostInput.dispatchEvent(new Event('input', { bubbles: true }));
+    hostInput.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
     hostFixture.detectChanges();
-    expect(host.control.value).toBe('2027-12-15T15:45');
+    expect(host.control.value).toBe('2027-12-16T15:45');
     expect(host.control.touched).toBe(true);
-
     host.control.disable();
     hostFixture.detectChanges();
-    expect(hostDate.disabled).toBe(true);
-    expect(hostTime.disabled).toBe(true);
+    expect(hostInput.disabled).toBe(true);
     hostFixture.destroy();
   });
 
-  it('preserves dialog keyboard focus behavior and closes when readonly or disabled', () => {
-    expect(calendarToggle().getAttribute('aria-haspopup')).toBe('dialog');
-    calendarToggle().click();
-    expect(calendarToggle().getAttribute('aria-expanded')).toBe('true');
-    calendar().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    expect(calendar().open).toBe(false);
-    expect(document.activeElement).toBe(calendarToggle());
+  it('treats bound null as controlled and undefined as CVA-backed state', () => {
+    setInputs(null);
+    fixture.componentInstance.writeValue('2027-12-15T14:20');
+    fixture.detectChanges();
+    expect(input().value).toBe('');
 
-    calendarToggle().click();
+    fixture.componentRef.setInput('value', undefined);
+    fixture.detectChanges();
+    expect(input().value).toBe('15/12/2027 14:20');
+  });
+
+  it('uses native time only when selected and re-evaluates auto mode at every dialog open', () => {
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    fixture.componentRef.setInput('timePickerMode', 'native');
+    fixture.detectChanges();
+    trigger().click();
+    fixture.detectChanges();
+    const nativeTime = dialog().querySelector<HTMLInputElement>(
+      '[data-testid="date-picker-native-time"]',
+    )!;
+    expect(nativeTime.step).toBe('60');
+    nativeTime.value = '10:45';
+    nativeTime.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+    expect(valueChange).not.toHaveBeenCalled();
+    dialogAction('done').click();
+    fixture.detectChanges();
+    expect(valueChange).toHaveBeenCalledWith('2026-02-05T10:45');
+
+    const matchMedia = jest.fn().mockReturnValue({ matches: true });
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: matchMedia });
+    fixture.componentRef.setInput('timePickerMode', 'auto');
+    fixture.detectChanges();
+    trigger().click();
+    fixture.detectChanges();
+    expect(dialog().querySelector('[data-testid="date-picker-native-time"]')).not.toBeNull();
+    dialogAction('cancel').click();
+    matchMedia.mockReturnValue({ matches: false });
+    trigger().click();
+    fixture.detectChanges();
+    expect(dialog().querySelector('[data-testid="segmented-time-input"]')).not.toBeNull();
+  });
+
+  it('blocks interaction when readonly or disabled and closes an open dialog', () => {
+    const valueChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    trigger().click();
+    fixture.detectChanges();
     fixture.componentRef.setInput('readonly', true);
     fixture.detectChanges();
-    expect(calendar().open).toBe(false);
-    expect(dateInput().readOnly).toBe(true);
-    expect(timeInput().readOnly).toBe(true);
+    expect(dialogElement().open).toBe(false);
+    expect(input().readOnly).toBe(true);
+    expect(trigger().disabled).toBe(true);
 
     fixture.componentRef.setInput('readonly', false);
-    fixture.detectChanges();
-    calendarToggle().click();
     fixture.componentInstance.setDisabledState(true);
     fixture.detectChanges();
-    expect(calendar().open).toBe(false);
-    expect(calendarToggle().disabled).toBe(true);
+    expect(input().disabled).toBe(true);
+    expect(trigger().disabled).toBe(true);
+    expect(valueChange).not.toHaveBeenCalled();
   });
 
   it('does not touch browser-only APIs on the server platform', async () => {
@@ -430,20 +510,12 @@ describe('LocalizedDateTimePickerComponent', () => {
       providers: [{ provide: PLATFORM_ID, useValue: 'server' }],
     }).compileComponents();
     const serverFixture = TestBed.createComponent(LocalizedDateTimePickerComponent);
-    serverFixture.componentRef.setInput('inputId', 'server-datetime');
-    serverFixture.componentRef.setInput('value', '2026-02-05T09:30');
-    serverFixture.componentRef.setInput('controlSize', 'default');
-    serverFixture.componentRef.setInput('dateLocale', 'en-GB');
-    serverFixture.componentRef.setInput('labels', LABELS);
-    serverFixture.componentRef.setInput('required', false);
-    serverFixture.componentRef.setInput('invalid', false);
-    serverFixture.componentRef.setInput('controlDisabled', false);
-    serverFixture.componentRef.setInput('readonly', false);
+    setServerInputs(serverFixture);
     expect(() => serverFixture.detectChanges()).not.toThrow();
     expect(() =>
       (
         serverFixture.nativeElement.querySelector(
-          '[data-testid="datetime-picker-toggle"]',
+          '[data-testid="temporal-picker-field-trigger"]',
         ) as HTMLButtonElement
       ).click(),
     ).not.toThrow();
@@ -451,8 +523,9 @@ describe('LocalizedDateTimePickerComponent', () => {
   });
 
   function setInputs(
-    value: string | undefined,
-    constraints: {
+    value: string | null | undefined,
+    extra: {
+      required?: boolean;
       min?: string;
       max?: string;
       disabledDates?: readonly string[];
@@ -463,49 +536,52 @@ describe('LocalizedDateTimePickerComponent', () => {
     fixture.componentRef.setInput('controlSize', 'default');
     fixture.componentRef.setInput('dateLocale', 'en-GB');
     fixture.componentRef.setInput('labels', LABELS);
-    fixture.componentRef.setInput('required', false);
+    fixture.componentRef.setInput('required', extra.required ?? false);
     fixture.componentRef.setInput('invalid', false);
     fixture.componentRef.setInput('controlDisabled', false);
     fixture.componentRef.setInput('readonly', false);
-    fixture.componentRef.setInput('min', constraints.min);
-    fixture.componentRef.setInput('max', constraints.max);
-    fixture.componentRef.setInput('disabledDates', constraints.disabledDates);
+    fixture.componentRef.setInput('min', extra.min);
+    fixture.componentRef.setInput('max', extra.max);
+    fixture.componentRef.setInput('disabledDates', extra.disabledDates);
+    fixture.componentRef.setInput('timePickerMode', 'custom');
     fixture.detectChanges();
   }
 
-  function group(): HTMLElement {
-    return fixture.nativeElement.querySelector(
-      '[data-testid="datetime-picker-group"]',
-    ) as HTMLElement;
+  function field(): HTMLElement {
+    return fixture.nativeElement.querySelector('[data-testid="temporal-picker-field"]');
   }
 
-  function dateInput(): HTMLInputElement {
-    return fixture.nativeElement.querySelector('#appointment') as HTMLInputElement;
+  function input(): HTMLInputElement {
+    return field().querySelector('input')!;
   }
 
-  function timeInput(): HTMLInputElement {
-    return fixture.nativeElement.querySelector('#appointment-time') as HTMLInputElement;
+  function trigger(): HTMLButtonElement {
+    return field().querySelector('[data-testid="temporal-picker-field-trigger"]')!;
   }
 
-  function calendarToggle(): HTMLButtonElement {
-    return fixture.nativeElement.querySelector(
-      '[data-testid="datetime-picker-toggle"]',
-    ) as HTMLButtonElement;
+  function dialog(): HTMLElement {
+    return fixture.nativeElement.querySelector('ds-calendar-dialog');
   }
 
-  function calendar(): HTMLDialogElement {
-    return fixture.nativeElement.querySelector(
-      '[data-testid="date-picker-calendar"]',
-    ) as HTMLDialogElement;
+  function dialogElement(): HTMLDialogElement {
+    return dialog().querySelector('dialog')!;
+  }
+
+  function dialogAction(name: 'clear' | 'done' | 'cancel'): HTMLButtonElement {
+    return dialog().querySelector(`[data-testid="date-picker-${name}"]`)!;
   }
 
   function dayButton(iso: string): HTMLButtonElement {
-    return calendar().querySelector<HTMLButtonElement>(`[data-date="${iso}"]`)!;
+    return dialog().querySelector(`[data-date="${iso}"]`)!;
   }
 
-  function setText(input: HTMLInputElement, value: string): void {
-    input.value = value;
-    input.dispatchEvent(new Event('input'));
+  function segmentedButton(segment: 'hour' | 'minute'): HTMLButtonElement {
+    return dialog().querySelector(`[data-segment="${segment}"]`)!;
+  }
+
+  function setText(value: string): void {
+    input().value = value;
+    input().dispatchEvent(new Event('input', { bubbles: true }));
     fixture.detectChanges();
   }
 
@@ -516,4 +592,27 @@ describe('LocalizedDateTimePickerComponent', () => {
         ?.textContent.trim() ?? ''
     );
   }
+
+  function installDialogMethods(): void {
+    const element = dialogElement();
+    Object.defineProperty(element, 'showModal', {
+      configurable: true,
+      value: jest.fn(() => element.setAttribute('open', '')),
+    });
+    Object.defineProperty(element, 'close', {
+      configurable: true,
+      value: jest.fn(() => element.removeAttribute('open')),
+    });
+  }
 });
+
+function setServerInputs(fixture: ComponentFixture<LocalizedDateTimePickerComponent>): void {
+  fixture.componentRef.setInput('inputId', 'server-datetime');
+  fixture.componentRef.setInput('value', '2026-02-05T09:30');
+  fixture.componentRef.setInput('controlSize', 'default');
+  fixture.componentRef.setInput('dateLocale', 'en-GB');
+  fixture.componentRef.setInput('labels', LABELS);
+  fixture.componentRef.setInput('invalid', false);
+  fixture.componentRef.setInput('controlDisabled', false);
+  fixture.componentRef.setInput('readonly', false);
+}

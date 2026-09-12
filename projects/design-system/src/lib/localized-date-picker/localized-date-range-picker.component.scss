@@ -1,6 +1,3 @@
-@use 'localized-picker-fields' as picker-fields;
-
-@include picker-fields.layout(
-  'localized-date-range-picker-group',
-  'localized-date-range-picker-field'
-);
+:host {
+  display: block;
+}

@@ -233,7 +233,9 @@ export class SiteSelectPageComponent {
           (valueChange)="selectedDate.set($event)"
           (validityChange)="valid.set($event)"
         />
-        <p class="demo-output" data-demo-date-selection>Selected: {{ selectedDate() }}</p>
+        <p class="demo-output" data-demo-date-selection aria-live="polite">
+          Committed: {{ selectedDate() ?? '(null)' }}
+        </p>
         <p class="demo-output">Emitted validity: {{ valid() }}</p>
       </div>
       <div demo-controls class="demo-form-stack">
@@ -278,7 +280,7 @@ export class SiteSelectPageComponent {
   `,
 })
 export class LocalizedDatePickerPageComponent {
-  protected readonly selectedDate = signal('2026-08-28');
+  protected readonly selectedDate = signal<string | null>('2026-08-28');
   protected readonly locale = signal<'en-US' | 'de-DE'>('en-US');
   protected readonly controlSize = signal<LocalizedDatePickerControlSize>('default');
   protected readonly required = signal(false);
@@ -304,7 +306,7 @@ export class LocalizedDatePickerPageComponent {
     this.disableAugust29() ? ['2026-08-29'] : [],
   );
   protected readonly formattedDate = computed(() =>
-    this.selectedDate() === ''
+    this.selectedDate() === null
       ? 'No date selected'
       : formatLocalizedDate(`${this.selectedDate()}T12:00:00+00:00`, this.locale(), 'date'),
   );
@@ -319,10 +321,14 @@ export class LocalizedDatePickerPageComponent {
     previousYear: 'Previous year',
     nextYear: 'Next year',
     clear: 'Clear',
-    close: 'Close',
+    cancel: 'Cancel',
+    done: 'Done',
+    today: 'Today',
     formatHint:
       this.locale() === 'de-DE' ? 'Enter a date as TT.MM.JJJJ' : 'Enter a date as MM/DD/YYYY',
+    selectDate: 'Choose a date.',
     invalidDate: 'Enter an available date.',
+    unavailableDate: 'That date is unavailable.',
     requiredDate: 'Choose a date.',
     keyboardHelp: 'Use arrow keys to move through dates.',
   }));

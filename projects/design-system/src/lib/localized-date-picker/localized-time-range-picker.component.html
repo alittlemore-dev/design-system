@@ -1,4 +1,4 @@
-<div class="localized-datetime-range-picker">
+<div class="localized-time-range-picker">
   <ds-temporal-picker-field
     [range]="true"
     [inputId]="inputId()"
@@ -6,8 +6,8 @@
     [endText]="endText()"
     [groupLabel]="labels().groupLabel"
     [triggerLabel]="triggerLabel()"
-    [startLabel]="labels().startDateTime"
-    [endLabel]="labels().endDateTime"
+    [startLabel]="labels().startTime"
+    [endLabel]="labels().endTime"
     [accessibleSeparator]="labels().accessibleRangeSeparator"
     [activeBoundary]="activeBoundary()"
     [startInvalid]="startInvalid()"
@@ -24,7 +24,7 @@
     [placeholder]="labels().placeholder"
     [expanded]="calendarOpen()"
     [dialogId]="calendarId"
-    iconKind="calendar"
+    iconKind="clock"
     (endpointInput)="onTextInput($event)"
     (endpointBlur)="onTextComplete($event)"
     (endpointEnter)="onTextComplete($event)"
@@ -32,14 +32,12 @@
     (endpointActivated)="setActiveBoundary($event)"
     (triggerActivated)="toggleCalendar()"
   />
-  <div [id]="formatHintId" class="visually-hidden">
-    {{ labels().dateFormatHint }} {{ labels().timeFormatHint }}
-  </div>
+  <div [id]="formatHintId" class="visually-hidden">{{ labels().formatHint }}</div>
   @if (effectiveInvalid()) {
     <div
       [id]="errorId"
       class="invalid-feedback d-block"
-      data-testid="datetime-range-validation-message"
+      data-testid="time-range-validation-message"
       role="alert"
     >
       {{ validationMessage() }}
@@ -48,9 +46,8 @@
   <ds-calendar-dialog
     #calendarDialog
     [dialogId]="calendarId"
-    [dateLocale]="dateLocale()"
     [labels]="dialogLabels()"
-    kind="datetime"
+    kind="time"
     [range]="true"
     [draft]="dialogDraft()"
     [canConfirm]="canConfirmDialog()"
@@ -60,13 +57,12 @@
     [readonly]="readonly()"
     [activeBoundary]="activeBoundary()"
     [activeBoundaryLabel]="activeBoundaryLabel()"
-    [startTimeLabel]="labels().startDateTime"
-    [endTimeLabel]="labels().endDateTime"
+    [startTimeLabel]="labels().startTime"
+    [endTimeLabel]="labels().endTime"
     [min]="min()"
     [max]="max()"
-    [disabledDates]="disabledDates()"
     (draftChange)="onDialogDraftChange($event)"
-    (activeBoundaryChange)="onDialogActiveBoundaryChange($event)"
+    (activeBoundaryChange)="setActiveBoundary($event)"
     (cleared)="clearDialogDraft()"
     (cancelled)="cancelDialog()"
     (done)="confirmDialog()"

@@ -1,59 +1,28 @@
 <div class="localized-date-picker">
-  <div class="input-group">
-    <input
-      #textInput
-      [id]="inputId()"
-      type="text"
-      class="form-control"
-      [class.form-control-sm]="controlSize() === 'small'"
-      inputmode="numeric"
-      autocomplete="off"
-      [attr.placeholder]="labels().placeholder"
-      [attr.title]="labels().formatHint"
-      [attr.aria-describedby]="inputDescribedBy()"
-      [attr.aria-errormessage]="effectiveInvalid() ? errorId : null"
-      [attr.aria-required]="required() ? 'true' : null"
-      [attr.aria-invalid]="effectiveInvalid() ? 'true' : null"
-      [required]="required()"
-      [readOnly]="readonly()"
-      [disabled]="effectiveDisabled()"
-      [class.is-invalid]="effectiveInvalid()"
-      [value]="displayValue()"
-      (input)="onTextInput($event)"
-      (blur)="onTextBlur()"
-    />
-    <button
-      #calendarToggle
-      type="button"
-      class="btn btn-outline-secondary localized-date-picker-toggle"
-      [class.btn-sm]="controlSize() === 'small'"
-      data-testid="date-picker-toggle"
-      aria-haspopup="dialog"
-      [attr.aria-label]="toggleAriaLabel()"
-      [attr.aria-controls]="calendarId"
-      [attr.aria-expanded]="calendarOpen()"
-      [disabled]="effectiveDisabled() || readonly()"
-      (click)="toggleCalendar()"
-    >
-      <svg
-        aria-hidden="true"
-        xmlns="http://www.w3.org/2000/svg"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M8 2v4"></path>
-        <path d="M16 2v4"></path>
-        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-        <path d="M3 10h18"></path>
-      </svg>
-    </button>
-  </div>
+  <ds-temporal-picker-field
+    #temporalField
+    [inputId]="inputId()"
+    [startText]="manualText()"
+    [groupLabel]="toggleAriaLabel()"
+    [startLabel]="labels().selectDate"
+    [activeBoundary]="'single'"
+    [startInvalid]="effectiveInvalid()"
+    [startRequired]="required()"
+    [controlSize]="controlSize()"
+    [disabled]="effectiveDisabled()"
+    [readonly]="readonly()"
+    [startDescribedBy]="inputDescribedBy()"
+    [startErrorId]="errorId"
+    [placeholder]="labels().placeholder"
+    [expanded]="calendarOpen()"
+    [dialogId]="calendarId"
+    iconKind="calendar"
+    (endpointInput)="onTextInput($event)"
+    (endpointBlur)="onTextBlur($event)"
+    (endpointEnter)="onTextEnter($event)"
+    (endpointEscape)="restoreManualText()"
+    (triggerActivated)="toggleCalendar()"
+  />
   <div [id]="formatHintId" class="visually-hidden">{{ labels().formatHint }}</div>
   @if (effectiveInvalid()) {
     <div
@@ -69,17 +38,23 @@
     #calendarDialog
     [dialogId]="calendarId"
     [dateLocale]="dateLocale()"
-    [labels]="labels()"
+    [labels]="dialogLabels()"
+    kind="date"
+    [range]="false"
+    [draft]="dialogDraft()"
+    [canConfirm]="canConfirmDialog()"
     [required]="required()"
     [canClear]="canClear()"
     [disabled]="effectiveDisabled()"
     [readonly]="readonly()"
-    [selectedDate]="currentValue()"
+    [activeBoundary]="'single'"
+    [activeBoundaryLabel]="labels().selectDate"
     [min]="min()"
     [max]="max()"
     [disabledDates]="disabledDates()"
-    (dateSelected)="selectDate($event)"
-    (cleared)="clearDate()"
-    (closed)="onCalendarClosed()"
+    (draftChange)="onDialogDraftChange($event)"
+    (cleared)="clearDialogDraft()"
+    (cancelled)="cancelDialog()"
+    (done)="confirmDialog()"
   />
 </div>

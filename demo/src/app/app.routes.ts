@@ -50,6 +50,20 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'components/localized-time-picker',
+    loadComponent: () =>
+      import('./pages/localized-picker-pages').then(
+        (module) => module.LocalizedTimePickerPageComponent,
+      ),
+  },
+  {
+    path: 'components/localized-time-range-picker',
+    loadComponent: () =>
+      import('./pages/localized-picker-pages').then(
+        (module) => module.LocalizedTimeRangePickerPageComponent,
+      ),
+  },
+  {
     path: 'components/localized-datetime-picker',
     loadComponent: () =>
       import('./pages/localized-picker-pages').then(

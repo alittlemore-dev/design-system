@@ -81,21 +81,37 @@ test('serves component pages directly without rendering the former all-in-one sh
       path: '/components/localized-date-picker',
       heading: 'Localized date picker',
       content: /data-demo-localized-date/,
+      picker: 'ds-localized-date-picker',
     },
     {
       path: '/components/localized-date-range-picker',
       heading: 'Localized date range picker',
       content: /data-demo-date-range-selection/,
+      picker: 'ds-localized-date-range-picker',
+    },
+    {
+      path: '/components/localized-time-picker',
+      heading: 'Localized time picker',
+      content: /data-demo-time-selection/,
+      picker: 'ds-localized-time-picker',
+    },
+    {
+      path: '/components/localized-time-range-picker',
+      heading: 'Localized time range picker',
+      content: /data-demo-time-range-selection/,
+      picker: 'ds-localized-time-range-picker',
     },
     {
       path: '/components/localized-datetime-picker',
       heading: 'Localized datetime picker',
       content: /data-demo-datetime-selection/,
+      picker: 'ds-localized-datetime-picker',
     },
     {
       path: '/components/localized-datetime-range-picker',
       heading: 'Localized datetime range picker',
       content: /data-demo-datetime-range-selection/,
+      picker: 'ds-localized-datetime-range-picker',
     },
     {
       path: '/components/foldable-tree',
@@ -125,6 +141,32 @@ test('serves component pages directly without rendering the former all-in-one sh
     assert.match(html, /data-demo-sidebar/, page.path);
     assert.match(html, new RegExp(`<h1[^>]*>${page.heading}<\\/h1>`), page.path);
     assert.match(html, page.content, page.path);
+    if (page.picker !== undefined) {
+      const pickerHtml = html.match(
+        new RegExp(`<${page.picker}\\b[\\s\\S]*?<\\/${page.picker}>`, 'i'),
+      )?.[0];
+      assert.ok(pickerHtml, `${page.path} must server-render ${page.picker}.`);
+      assert.doesNotMatch(pickerHtml, /\sstyle=/i, page.path);
+      const closedDialogHtml = pickerHtml.match(
+        /<dialog\b[^>]*data-testid="date-picker-calendar"[^>]*>[\s\S]*?<\/dialog>/i,
+      )?.[0];
+      assert.ok(closedDialogHtml, `${page.path} must server-render the closed dialog shell.`);
+      assert.doesNotMatch(
+        closedDialogHtml,
+        /data-date=|date-picker-month-heading|ds-segmented-time-input|type="time"/i,
+        `${page.path} closed SSR dialog must not contain clock-dependent UI.`,
+      );
+
+      const pageNonce = response.headers
+        .get('content-security-policy')
+        ?.match(/style-src 'self' 'nonce-([^']+)'/)?.[1];
+      assert.ok(pageNonce, `${page.path} must include a style nonce.`);
+      const pickerPageStyles = [...html.matchAll(/<style([^>]*)>/g)];
+      assert.ok(pickerPageStyles.length > 0, `${page.path} must include Angular style tags.`);
+      for (const style of pickerPageStyles) {
+        assert.ok(style[1].includes(`nonce="${pageNonce}"`), page.path);
+      }
+    }
   }
 
   const siteSelectHtml = await (await fetch(`${server.url}/components/site-select`)).text();

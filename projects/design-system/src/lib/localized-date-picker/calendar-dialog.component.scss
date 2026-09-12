@@ -33,12 +33,40 @@
   border-radius: var(--bs-border-radius);
 }
 
+.localized-date-picker-calendar-has-time {
+  width: min(38rem, calc(100vw - 1rem));
+}
+
 .localized-date-picker-calendar::backdrop {
   background: rgba(0, 0, 0, 0.5);
 }
 
 .localized-date-picker-calendar-content {
   padding: 0.75rem;
+}
+
+.localized-date-picker-temporal-layout.has-time-panel {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) minmax(10rem, auto);
+  gap: 1rem;
+  align-items: center;
+}
+
+.localized-date-picker-time-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.localized-date-picker-time-boundary {
+  display: grid;
+  gap: 0.375rem;
+  justify-items: center;
+}
+
+.localized-date-picker-time-separator {
+  color: var(--bs-secondary-color);
 }
 
 .localized-date-picker-grid-row,
@@ -91,6 +119,15 @@
   border-radius: 0;
 }
 
+.localized-date-picker-preview {
+  border-radius: 0;
+  background-color: rgba(var(--bs-success-rgb), 0.12);
+}
+
+.localized-date-picker-preview-end {
+  box-shadow: inset 0 0 0 1px var(--bs-success);
+}
+
 .localized-date-picker-range-start.localized-date-picker-range-end {
   border-radius: var(--bs-btn-border-radius);
 }
@@ -115,6 +152,14 @@ abbr[title] {
   .localized-date-picker-calendar-content {
     padding: 0.5rem;
   }
+
+  .localized-date-picker-temporal-layout.has-time-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .localized-date-picker-time-panel {
+    flex-wrap: wrap;
+  }
 }
 
 @media (forced-colors: active) {
@@ -124,7 +169,9 @@ abbr[title] {
 
   .localized-date-picker-range-start,
   .localized-date-picker-range-end,
-  .localized-date-picker-in-range {
+  .localized-date-picker-in-range,
+  .localized-date-picker-preview,
+  .localized-date-picker-preview-end {
     outline: 1px solid Highlight;
     outline-offset: -2px;
   }

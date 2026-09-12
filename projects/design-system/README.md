@@ -23,14 +23,22 @@ import {
   LocalizedDateRangePickerComponent,
   LocalizedDateTimePickerComponent,
   LocalizedDateTimeRangePickerComponent,
+  LocalizedTimePickerComponent,
+  LocalizedTimeRangePickerComponent,
   NotificationAreaComponent,
   NotificationService,
   SiteSelectComponent,
   type LocalizedDateRange,
+  type LocalizedDatePickerLabels,
   type LocalizedDateRangePickerLabels,
-  type LocalizedDateTimePickerLabels,
   type LocalizedDateTimeRange,
+  type LocalizedDateTimePickerLabels,
   type LocalizedDateTimeRangePickerLabels,
+  type LocalizedRangeRequirements,
+  type LocalizedTimePickerLabels,
+  type LocalizedTimePickerMode,
+  type LocalizedTimeRange,
+  type LocalizedTimeRangePickerLabels,
   type SiteSelectOption,
 } from '@alittlemore.dev/design-system';
 ```
@@ -45,6 +53,8 @@ import {
 | `LocalizedDateRangePickerComponent`     | `ds-localized-date-range-picker`     | Provides an inclusive localized calendar-date range control.    |
 | `LocalizedDateTimePickerComponent`      | `ds-localized-datetime-picker`       | Provides a localized local-wall-clock datetime control.         |
 | `LocalizedDateTimeRangePickerComponent` | `ds-localized-datetime-range-picker` | Provides an inclusive local-wall-clock datetime range control.  |
+| `LocalizedTimePickerComponent`          | `ds-localized-time-picker`           | Provides a localized local-wall-clock time control.             |
+| `LocalizedTimeRangePickerComponent`     | `ds-localized-time-range-picker`     | Provides a same-day local-wall-clock time range control.        |
 | `NotificationAreaComponent`             | `ds-notification-area`               | Renders and dismisses notifications from `NotificationService`. |
 | `SiteSelectComponent`                   | `ds-site-select`                     | Provides a select-only combobox form control.                   |
 
@@ -123,157 +133,156 @@ Both form controls also support controlled use. Bind `value` and update the owni
 />
 ```
 
-`LocalizedDatePickerComponent` supports the same controlled `value`/`valueChange` mode and is
-also a `ControlValueAccessor` and `Validator` for Reactive Forms.
+### Localized date, time, and datetime pickers
 
-### Localized date and datetime pickers
+The six localized temporal controls keep canonical model values separate from localized display.
+Use `LocalizedDatePickerComponent`, `LocalizedTimePickerComponent`, or
+`LocalizedDateTimePickerComponent` for a single value, and use the corresponding range component
+for a composite start/end field. Their selectors and imports are listed in the table above.
 
-All four localized pickers keep machine-readable model values separate from localized display:
-
-- calendar dates use exactly `YYYY-MM-DD`;
-- datetimes use exactly `YYYY-MM-DDTHH:mm` and native minute-precision time fields;
-- datetime values are local wall-clock values. They have no offset or zone and are never converted
-  to UTC. The consumer decides which timezone, if any, gives a wall-clock value meaning;
-- `dateLocale` affects only date parsing, formatting, calendar labels, and week layout. It never
-  changes a canonical model value.
-
-`LocalizedDateRange` and `LocalizedDateTimeRange` are readonly `{ start: string; end: string }`
-values. Empty endpoints are part of the contract. An optional all-empty range is valid, while a
-required all-empty range is invalid. A picker can emit a start-only range such as
-`{ start: '2026-08-28', end: '' }` while calendar selection is in progress; a partial range remains
-invalid until both endpoints are complete and ordered. A non-empty datetime endpoint is always a
-complete canonical datetime; an unfinished date or time stays in the fields as a draft rather than
-being emitted as a malformed model value. Equal start and end values are allowed.
-
-Valid `min` and `max` bounds are inclusive and use the model format of their picker. Invalid bound
-strings are ignored. `disabledDates` always contains canonical `YYYY-MM-DD` values and disables the
-whole calendar date, including every time on that date. For either range picker, the complete
-inclusive interval must not contain a disabled date: disabled endpoints are rejected, and an end
-date is unavailable when the interval from the selected start would cross a disabled date.
-
-Every label input is required and exhaustive so the package never chooses consumer-facing language.
-The datetime and range label contracts extend the base date labels:
+The canonical TypeScript values are exactly:
 
 ```ts
-import type {
-  LocalizedDatePickerLabels,
-  LocalizedDateRangePickerLabels,
-  LocalizedDateTimePickerLabels,
-  LocalizedDateTimeRangePickerLabels,
-} from '@alittlemore.dev/design-system';
+// LocalizedDatePickerComponent
+const date: string | null = '2026-09-11'; // YYYY-MM-DD or null
 
-const dateLabels: LocalizedDatePickerLabels = {
-  placeholder: 'MM/DD/YYYY',
-  openCalendar: 'Open calendar',
-  changeCalendar: 'Change date',
-  dialog: 'Choose a date',
-  previousMonth: 'Previous month',
-  nextMonth: 'Next month',
-  openMonthYearPicker: 'Choose month and year',
-  previousYear: 'Previous year',
-  nextYear: 'Next year',
-  clear: 'Clear',
-  close: 'Close',
-  formatHint: 'Enter a date as MM/DD/YYYY.',
-  invalidDate: 'Enter an available date.',
-  requiredDate: 'Choose a date.',
-  keyboardHelp: 'Use arrow keys to move through dates.',
-};
+// LocalizedTimePickerComponent
+const time: string | null = '14:30'; // HH:mm or null
 
-const dateRangeLabels: LocalizedDateRangePickerLabels = {
-  ...dateLabels,
-  groupLabel: 'Availability date range',
-  startDate: 'Start date',
-  endDate: 'End date',
-  selectStartDate: 'Choose the start date.',
-  selectEndDate: 'Choose the end date.',
-  invalidRange: 'Enter an available date range in chronological order.',
-  requiredRange: 'Choose both dates.',
-};
+// LocalizedDateTimePickerComponent
+const dateTime: string | null = '2026-09-11T14:30'; // YYYY-MM-DDTHH:mm or null
 
-const dateTimeLabels: LocalizedDateTimePickerLabels = {
-  ...dateLabels,
-  groupLabel: 'Appointment date and time',
-  dateInput: 'Date',
-  timeInput: 'Time',
-  timeFormatHint: 'Enter a 24-hour time as HH:mm.',
-  invalidTime: 'Enter an available date and time.',
-  requiredTime: 'Choose a time.',
-};
+interface LocalizedDateRange {
+  readonly start: string | null; // YYYY-MM-DD or null
+  readonly end: string | null; // YYYY-MM-DD or null
+}
 
-const dateTimeRangeLabels: LocalizedDateTimeRangePickerLabels = {
-  ...dateLabels,
-  groupLabel: 'Scheduled date and time range',
-  startDate: 'Start date',
-  startTime: 'Start time',
-  endDate: 'End date',
-  endTime: 'End time',
-  selectStartDate: 'Choose the start date.',
-  selectEndDate: 'Choose the end date.',
-  timeFormatHint: 'Enter a 24-hour time as HH:mm.',
-  invalidTime: 'Enter valid start and end times.',
-  requiredTime: 'Choose both times.',
-  invalidRange: 'Enter an available date and time range in chronological order.',
-  requiredRange: 'Choose both dates and times.',
-};
+interface LocalizedTimeRange {
+  readonly start: string | null; // HH:mm or null
+  readonly end: string | null; // HH:mm or null
+}
+
+interface LocalizedDateTimeRange {
+  readonly start: string | null; // YYYY-MM-DDTHH:mm or null
+  readonly end: string | null; // YYYY-MM-DDTHH:mm or null
+}
 ```
 
-In controlled mode, bind `value` and accept each canonical emission into the owning state. When
-`value` is supplied it remains the source of truth:
+`null` is the only canonical empty single value or range endpoint; an empty range is the non-null
+object `{ start: null, end: null }`. Empty text commits `null`. Malformed, incomplete, out-of-range,
+or unavailable text remains visible as an invalid draft and does not replace the last canonical
+value. Manual entry commits a valid value, valid range, or permitted empty value on Enter or blur.
+Opening a picker dialog instead creates an isolated draft: calendar and time selections, Today,
+Now, and Clear do not emit a model or Angular Forms change. Done commits the complete valid draft;
+Cancel, Escape, and outside dismissal restore the last canonical value. Clear therefore becomes a
+committed empty value only after Done.
+
+Each range is one accessible, composite field with one trigger and start/end endpoints inside the
+same shell. Date and datetime range dialogs preview the interval from the selected start through a
+hovered or keyboard-focused candidate end without committing it, and announce that preview with
+consumer-supplied localized text. Calendar selections alternate between replacing start and end;
+when a replacement crosses the other endpoint, the two dates are ordered automatically. This cycle
+continues after a complete range, so changing either boundary never requires Clear or a visible
+endpoint-mode switch.
+
+Single-value controls use `required`. Range controls instead use the breaking
+`LocalizedRangeRequirements` contract:
+
+```ts
+interface LocalizedRangeRequirements {
+  readonly start: boolean;
+  readonly end: boolean;
+  readonly paired: boolean;
+}
+```
+
+`paired` leaves an entirely empty optional range valid, but once either endpoint is present it
+requires the opposite endpoint. The complete requirements truth table is:
+
+| `start` | `end` | `paired` | Effective start requirement | Effective end requirement |
+| ------- | ----- | -------- | --------------------------- | ------------------------- |
+| false   | false | false    | Never                       | Never                     |
+| false   | false | true     | When end is present         | When start is present     |
+| false   | true  | false    | Never                       | Always                    |
+| false   | true  | true     | When end is present         | Always                    |
+| true    | false | false    | Always                      | Never                     |
+| true    | false | true     | Always                      | When start is present     |
+| true    | true  | false    | Always                      | Always                    |
+| true    | true  | true     | Always                      | Always                    |
+
+Range endpoints may be independently nullable when the requirements permit it. Non-null endpoints
+must still be canonical, available, and ordered. Equal endpoints are valid. A
+`LocalizedTimeRange` is always a same-day interval, so `start` must be earlier than or equal to
+`end`; an overnight range such as `22:00` to `02:00` is invalid. Datetime ranges use their complete
+date and time values, so the same time-order rule applies when both endpoints are on the same date.
+
+Valid `min` and `max` inputs are inclusive and use the canonical format for that picker. Invalid
+bound strings are ignored. `disabledDates` uses canonical `YYYY-MM-DD` values on date-capable
+pickers and disables each whole local calendar date. A complete date or datetime range cannot cross
+a disabled date.
+
+Time-capable controls accept `timePickerMode: LocalizedTimePickerMode`, where the value is `auto`,
+`native`, or `custom`. `custom` uses the package's segmented 24-hour HH:mm control with direct
+numeric entry, keyboard stepping, and visible mouse increment/decrement buttons above and below
+each segment. `native` uses a minute-precision browser time input when running in a browser. `auto`
+chooses native UI for a coarse pointer and custom UI otherwise, evaluating that capability whenever
+the dialog opens; server rendering remains custom. Time-range and datetime-range dialogs show both
+time endpoints together and route edits to the focused endpoint. Today applies the current local
+calendar date to the alternating calendar boundary, and Now applies the current local time at
+minute precision (plus the current local date for a focused datetime endpoint). Both honor
+availability and remain draft-only until Done.
+
+Dates and times are local wall-clock strings. They have no offset or zone and the package never
+converts them to UTC. `dateLocale` affects date parsing, display, calendar labels, and week layout
+only; application code decides which timezone, if any, gives a value meaning.
+
+Every picker label contract is required and exhaustive:
+`LocalizedDatePickerLabels`, `LocalizedDateRangePickerLabels`, `LocalizedTimePickerLabels`,
+`LocalizedTimeRangePickerLabels`, `LocalizedDateTimePickerLabels`, and
+`LocalizedDateTimeRangePickerLabels`. Supply every visible label, message, hint, action, and range
+preview announcement through application i18n.
+
+All six pickers support controlled `value`/`valueChange` use and implement `ControlValueAccessor`
+and `Validator`. In Reactive Forms, bind one `FormControl` to the whole range component rather than
+creating a control for each endpoint:
+
+```ts
+import { FormControl } from '@angular/forms';
+import type { LocalizedDateTimeRange } from '@alittlemore.dev/design-system';
+
+export class AvailabilityForm {
+  readonly availability = new FormControl<LocalizedDateTimeRange>(
+    { start: null, end: null },
+    { nonNullable: true },
+  );
+}
+```
 
 ```html
-<ds-localized-date-range-picker
+<ds-localized-datetime-range-picker
   inputId="availability"
-  [value]="availability()"
-  (valueChange)="availability.set($event)"
+  [formControl]="availability"
   controlSize="default"
   dateLocale="en-US"
-  [labels]="dateRangeLabels"
-  [required]="false"
-  [invalid]="false"
+  [labels]="dateTimeRangeLabels"
+  [requirements]="{ start: false, end: false, paired: true }"
+  [invalid]="availability.invalid && availability.touched"
   [controlDisabled]="false"
   [readonly]="false"
-  min="2026-01-01"
-  max="2026-12-31"
-  [disabledDates]="['2026-08-31']"
+  timePickerMode="auto"
 />
 ```
 
-All four pickers also implement `ControlValueAccessor` and `Validator`. Omit `value` and bind a
-Reactive Forms control when Angular Forms should own the value, disabled state, touched state, and
-validation lifecycle:
+If an application payload represents missing endpoints by omitting properties, map the canonical
+range at the application boundary:
 
 ```ts
-import { Component } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import {
-  LocalizedDateTimePickerComponent,
-  type LocalizedDateTimePickerLabels,
-} from '@alittlemore.dev/design-system';
-
-@Component({
-  standalone: true,
-  imports: [ReactiveFormsModule, LocalizedDateTimePickerComponent],
-  template: `
-    <ds-localized-datetime-picker
-      inputId="appointment"
-      [formControl]="appointment"
-      controlSize="default"
-      dateLocale="en-US"
-      [labels]="labels"
-      [required]="true"
-      [invalid]="appointment.invalid && appointment.touched"
-      [controlDisabled]="false"
-      [readonly]="false"
-      min="2026-08-01T08:00"
-      max="2026-09-30T18:00"
-      [disabledDates]="['2026-08-31']"
-    />
-  `,
-})
-export class AppointmentFormComponent {
-  readonly appointment = new FormControl('', { nonNullable: true });
-  readonly labels: LocalizedDateTimePickerLabels = dateTimeLabels;
+function createAvailabilityPayload(range: LocalizedDateTimeRange) {
+  const payload = {
+    ...(range.start === null ? {} : { availableFrom: range.start }),
+    ...(range.end === null ? {} : { availableTo: range.end }),
+  };
+  return payload;
 }
 ```
 

@@ -58,6 +58,24 @@
 - [x] datetime range picker component
   - [x] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for datetime range selection.
 - [x] Replace emoji calendar glyphs in the new range and datetime picker toggles with the existing inline SVG icon.
+- [x] Verify transactional Done, Cancel, and Clear behavior across all six localized temporal pickers.
+- [x] Verify composite single-shell range fields and date/datetime range preview behavior.
+- [x] Verify nullable canonical value shapes and independent start/end/paired requirements contracts.
+- [x] Verify the localized time and same-day time-range components.
+- [x] Verify adaptive custom/native HH:mm UI and Today/Now draft actions.
+- [x] Verify the 0.3.0 documentation, packed demo, and public contracts.
+- [x] Fix calendar time-draft forwarding, time-first datetime ranges, and stale pending-edit confirmation.
+- [x] Finalize segmented HH:mm edits atomically before boundary advance and confirmation.
+- [x] Preserve malformed committed temporal values per endpoint until canonical replacement or explicit Clear.
+- [x] Align required, invalid, and unavailable temporal validation with raw endpoint presence and validator precedence.
+- [x] Make the localized date picker retain and validate malformed runtime/CVA values without throwing.
+- [x] Ignore cross-kind min/max bounds consistently in temporal dialog controls and controllers.
+- [x] Route Today and new range starts through consistent clearing, advance, and reorder transitions.
+- [x] Keep closed temporal-dialog SSR markup free of wall-clock-dependent content across hydration time zones.
+- [x] Derive localized date-picker Clear visibility from the current dialog draft.
+- [x] Alternate calendar-selected range boundaries after every accepted date without visible endpoint-mode controls.
+- [x] Show both start and end time editors together in time-range and datetime-range dialogs.
+- [x] Add visible mouse-operable increment and decrement controls to each custom time segment.
 - [ ] Support pasting a complete date, time, or datetime range separated by an en dash into either range endpoint and distribute the parsed values between both endpoints.
 
 ## Notifications

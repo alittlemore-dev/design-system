@@ -30,68 +30,60 @@ import {
   type CalendarDialogLabels,
   type TemporalRangeDraft,
 } from './calendar-dialog.component';
+import { isTimeWithinBounds, parseTime } from './localized-date-picker.utils';
 import {
-  formatDateForLocale,
-  formatLongDate,
-  isDateUnavailable as dateIsUnavailable,
-  parseIsoDate,
-  parseNullableDateForLocale,
-} from './localized-date-picker.utils';
-import { type LocalizedDatePickerControlSize } from './localized-temporal-picker.types';
+  type LocalizedDatePickerControlSize,
+  type LocalizedTimePickerMode,
+} from './localized-temporal-picker.types';
 import {
   TemporalPickerFieldComponent,
   type TemporalFieldEndpointEvent,
 } from './temporal-picker-field.component';
 
-export type { LocalizedDatePickerControlSize } from './localized-temporal-picker.types';
-
-export interface LocalizedDatePickerLabels {
+export interface LocalizedTimePickerLabels {
   readonly placeholder: string;
-  readonly openCalendar: string;
-  readonly changeCalendar: string;
+  readonly openTimePicker: string;
+  readonly changeTime: string;
   readonly dialog: string;
-  readonly previousMonth: string;
-  readonly nextMonth: string;
-  readonly openMonthYearPicker: string;
-  readonly previousYear: string;
-  readonly nextYear: string;
+  readonly timeInput: string;
+  readonly hour: string;
+  readonly minute: string;
+  readonly formatHint: string;
+  readonly invalidTime: string;
+  readonly unavailableTime: string;
+  readonly requiredTime: string;
   readonly clear: string;
   readonly cancel: string;
   readonly done: string;
-  readonly today: string;
-  readonly formatHint: string;
-  readonly selectDate: string;
-  readonly invalidDate: string;
-  readonly unavailableDate: string;
-  readonly requiredDate: string;
+  readonly now: string;
   readonly keyboardHelp: string;
 }
 
-type DateInvalidity = 'invalid' | 'unavailable' | null;
+type TimeInvalidity = 'invalid' | 'unavailable' | null;
 
-let nextCalendarId = 0;
+let nextTimePickerId = 0;
 
 @Component({
-  selector: 'ds-localized-date-picker',
+  selector: 'ds-localized-time-picker',
   standalone: true,
   imports: [CalendarDialogComponent, TemporalPickerFieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './localized-date-picker.component.html',
-  styleUrl: './localized-date-picker.component.scss',
+  templateUrl: './localized-time-picker.component.html',
+  styleUrl: './localized-time-picker.component.scss',
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => LocalizedDatePickerComponent),
+      useExisting: forwardRef(() => LocalizedTimePickerComponent),
       multi: true,
     },
     {
       provide: NG_VALIDATORS,
-      useExisting: forwardRef(() => LocalizedDatePickerComponent),
+      useExisting: forwardRef(() => LocalizedTimePickerComponent),
       multi: true,
     },
   ],
 })
-export class LocalizedDatePickerComponent implements ControlValueAccessor, OnChanges, Validator {
+export class LocalizedTimePickerComponent implements ControlValueAccessor, OnChanges, Validator {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly hostElement = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -100,15 +92,14 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
   readonly inputId = input.required<string>();
   readonly value = input<string | null>();
   readonly controlSize = input.required<LocalizedDatePickerControlSize>();
-  readonly dateLocale = input.required<string>();
-  readonly labels = input.required<LocalizedDatePickerLabels>();
+  readonly labels = input.required<LocalizedTimePickerLabels>();
   readonly required = input(false);
   readonly invalid = input.required<boolean>();
   readonly controlDisabled = input.required<boolean>();
   readonly readonly = input.required<boolean>();
   readonly min = input<string>();
   readonly max = input<string>();
-  readonly disabledDates = input<readonly string[]>();
+  readonly timePickerMode = input<LocalizedTimePickerMode>('auto');
 
   readonly valueChange = output<string | null>();
   readonly validityChange = output<boolean>();
@@ -120,19 +111,19 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
   protected readonly manualText = signal('');
 
   /** @internal */
-  protected readonly manualInvalidity = signal<DateInvalidity>(null);
+  protected readonly manualInvalidity = signal<TimeInvalidity>(null);
 
   /** @internal */
   protected readonly formValue = signal<unknown>(null);
 
   /** @internal */
-  protected readonly dialogDraft = signal<TemporalRangeDraft>(emptySingleDraft());
+  protected readonly dialogDraft = signal<TemporalRangeDraft>(emptyTimeDraft());
 
   /** @internal */
   protected readonly formDisabled = signal(false);
 
   /** @internal */
-  protected readonly calendarId = `localizedDatePicker${nextCalendarId++}`;
+  protected readonly calendarId = `localizedTimePicker${nextTimePickerId++}`;
 
   /** @internal */
   protected readonly formatHintId = `${this.calendarId}FormatHint`;
@@ -149,7 +140,7 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
   /** @internal */
   protected readonly currentValue = computed<string | null>(() => {
     const value = this.rawCurrentValue();
-    return typeof value === 'string' && parseIsoDate(value) !== null ? value : null;
+    return typeof value === 'string' && parseTime(value) !== null ? value : null;
   });
 
   /** @internal */
@@ -158,16 +149,8 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
   );
 
   /** @internal */
-  protected readonly committedInvalidity = computed<DateInvalidity>(() =>
+  protected readonly committedInvalidity = computed(() =>
     this.valueInvalidity(this.rawCurrentValue()),
-  );
-
-  private readonly requiredMissing = computed(
-    () =>
-      this.required() &&
-      (this.manualDirty
-        ? this.manualText().trim() === ''
-        : this.rawCurrentValue() === null || this.rawCurrentValue() === undefined),
   );
 
   /** @internal */
@@ -175,7 +158,7 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
     () =>
       this.manualInvalidity() !== null ||
       this.committedInvalidity() !== null ||
-      this.requiredMissing(),
+      (this.required() && this.currentValue() === null),
   );
 
   /** @internal */
@@ -191,18 +174,21 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
   /** @internal */
   protected readonly validationMessage = computed(() => {
     if (!this.effectiveInvalid()) return '';
-    if (this.requiredMissing()) return this.labels().requiredDate;
     const invalidity = this.manualInvalidity() ?? this.committedInvalidity();
-    return invalidity === 'unavailable' ? this.labels().unavailableDate : this.labels().invalidDate;
+    if (invalidity !== null) {
+      return invalidity === 'unavailable'
+        ? this.labels().unavailableTime
+        : this.labels().invalidTime;
+    }
+    return this.labels().requiredTime;
   });
 
   /** @internal */
-  protected readonly toggleAriaLabel = computed(() => {
-    const value = this.currentValue();
-    const parsed = value === null ? null : parseIsoDate(value);
-    if (parsed === null) return this.labels().openCalendar;
-    return `${this.labels().changeCalendar}, ${formatLongDate(parsed, this.dateLocale())}`;
-  });
+  protected readonly triggerLabel = computed(() =>
+    this.currentValue() === null || parseTime(this.currentValue() ?? '') === null
+      ? this.labels().openTimePicker
+      : `${this.labels().changeTime}, ${this.currentValue()}`,
+  );
 
   /** @internal */
   protected readonly canClear = computed(
@@ -210,33 +196,32 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
       !this.required() &&
       !this.effectiveDisabled() &&
       !this.readonly() &&
-      (this.dialogDraft().start.date !== null || this.dialogDraft().start.sourceInvalid === true),
+      (this.dialogDraft().start.time !== null || this.dialogDraft().start.sourceInvalid === true),
   );
 
   /** @internal */
   protected readonly canConfirmDialog = computed(() => {
-    const date = this.dialogDraft().start.date;
+    const time = this.dialogDraft().start.time;
     if (this.dialogDraft().start.sourceInvalid === true) return false;
-    if (date === null) return !this.required();
-    return parseIsoDate(date) !== null && !this.isDateUnavailable(date);
+    return time === null ? !this.required() : this.timeInvalidity(time) === null;
   });
 
   /** @internal */
   protected readonly dialogLabels = computed<CalendarDialogLabels>(() => ({
     dialog: this.labels().dialog,
-    previousMonth: this.labels().previousMonth,
-    nextMonth: this.labels().nextMonth,
-    openMonthYearPicker: this.labels().openMonthYearPicker,
-    previousYear: this.labels().previousYear,
-    nextYear: this.labels().nextYear,
+    previousMonth: '',
+    nextMonth: '',
+    openMonthYearPicker: '',
+    previousYear: '',
+    nextYear: '',
     clear: this.labels().clear,
     cancel: this.labels().cancel,
     done: this.labels().done,
-    today: this.labels().today,
-    now: '',
-    timeInput: '',
-    hour: '',
-    minute: '',
+    today: '',
+    now: this.labels().now,
+    timeInput: this.labels().timeInput,
+    hour: this.labels().hour,
+    minute: this.labels().minute,
     keyboardHelp: this.labels().keyboardHelp,
     announceRangePreview: () => '',
   }));
@@ -249,9 +234,8 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
 
   private readonly valueSyncEffect = effect(() => {
     const value = this.currentValue();
-    const renderedValue = formatDateForLocale(value, this.dateLocale());
     untracked(() => {
-      this.manualText.set(renderedValue);
+      this.manualText.set(value ?? '');
       this.manualInvalidity.set(null);
       this.manualDirty = false;
     });
@@ -262,16 +246,14 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
     const input = this.hostElement.nativeElement.querySelector<HTMLInputElement>(
       'ds-temporal-picker-field input',
     );
-    if (input === null) return;
-    input.setCustomValidity(this.internalValueInvalid() ? this.validationMessage() : '');
+    input?.setCustomValidity(this.internalValueInvalid() ? this.validationMessage() : '');
   });
 
   private readonly validatorInputsEffect = effect(() => {
     this.required();
     this.min();
     this.max();
-    this.disabledDates();
-    this.rawCurrentValue();
+    this.currentValue();
     this.manualInvalidity();
     this.onValidatorChange?.();
   });
@@ -306,15 +288,14 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
   }
 
   validate(control: AbstractControl<unknown>): ValidationErrors | null {
-    if (this.manualInvalidity() === 'invalid') return { dateInvalid: true };
-    if (this.manualInvalidity() === 'unavailable') return { dateUnavailable: true };
+    if (this.manualInvalidity() === 'invalid') return { timeInvalid: true };
+    if (this.manualInvalidity() === 'unavailable') return { timeUnavailable: true };
     const value = control.value;
     if (value === null || value === undefined) return this.required() ? { required: true } : null;
-    if (typeof value !== 'string' || value === '' || parseIsoDate(value) === null) {
-      return { dateInvalid: true };
+    if (typeof value !== 'string' || value === '' || parseTime(value) === null) {
+      return { timeInvalid: true };
     }
-    if (this.isDateUnavailable(value)) return { dateUnavailable: true };
-    return null;
+    return this.timeInvalidity(value) === 'unavailable' ? { timeUnavailable: true } : null;
   }
 
   registerOnValidatorChange(fn: () => void): void {
@@ -332,21 +313,6 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
   }
 
   /** @internal */
-  protected openCalendar(): void {
-    if (this.effectiveDisabled() || this.readonly()) return;
-    const value = this.currentValue();
-    this.dialogDraft.set(singleDraft(value, this.committedInvalidity() === 'invalid'));
-    const trigger = this.hostElement.nativeElement.querySelector<HTMLElement>(
-      'button[aria-haspopup="dialog"]',
-    );
-    if (trigger === null) return;
-    const opened = this.calendarDialog().open(trigger, value ?? '');
-    if (!opened) return;
-    this.calendarOpen.set(true);
-    this.changeDetectorRef.detectChanges();
-  }
-
-  /** @internal */
   protected onDialogDraftChange(draft: TemporalRangeDraft): void {
     if (!this.calendarOpen() || this.effectiveDisabled() || this.readonly()) return;
     this.dialogDraft.set(draft);
@@ -357,15 +323,13 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
     if (!this.calendarOpen() || this.effectiveDisabled() || this.readonly() || !this.canClear()) {
       return;
     }
-    this.dialogDraft.set(emptySingleDraft());
+    this.dialogDraft.set(emptyTimeDraft());
   }
 
   /** @internal */
   protected cancelDialog(): void {
     if (!this.calendarOpen()) return;
-    this.dialogDraft.set(
-      singleDraft(this.currentValue(), this.committedInvalidity() === 'invalid'),
-    );
+    this.dialogDraft.set(timeDraft(this.currentValue(), this.committedInvalidity() === 'invalid'));
     this.calendarOpen.set(false);
     this.markTouched();
   }
@@ -373,8 +337,7 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
   /** @internal */
   protected confirmDialog(): void {
     if (!this.calendarOpen() || !this.canConfirmDialog()) return;
-    const value = this.dialogDraft().start.date;
-    this.commitValue(value);
+    this.commitValue(this.dialogDraft().start.time);
     this.syncManualTextToCommitted();
     this.calendarOpen.set(false);
     this.markTouched();
@@ -389,14 +352,7 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
   }
 
   /** @internal */
-  protected onTextBlur(event: TemporalFieldEndpointEvent): void {
-    if (this.effectiveDisabled() || this.readonly()) return;
-    this.manualText.set(event.text);
-    this.completeManualInteraction();
-  }
-
-  /** @internal */
-  protected onTextEnter(event: TemporalFieldEndpointEvent): void {
+  protected onTextComplete(event: TemporalFieldEndpointEvent): void {
     if (this.effectiveDisabled() || this.readonly()) return;
     this.manualText.set(event.text);
     this.completeManualInteraction();
@@ -409,13 +365,17 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
     this.markTouched();
   }
 
-  /** @internal */
-  protected isDateUnavailable(iso: string): boolean {
-    return dateIsUnavailable(iso, {
-      min: this.min(),
-      max: this.max(),
-      disabledDates: this.disabledDates(),
-    });
+  private openCalendar(): void {
+    if (this.effectiveDisabled() || this.readonly()) return;
+    const trigger = this.hostElement.nativeElement.querySelector<HTMLElement>(
+      'button[aria-haspopup="dialog"]',
+    );
+    if (trigger === null) return;
+    this.dialogDraft.set(timeDraft(this.currentValue(), this.committedInvalidity() === 'invalid'));
+    const opened = this.calendarDialog().open(trigger);
+    if (!opened) return;
+    this.calendarOpen.set(true);
+    this.changeDetectorRef.detectChanges();
   }
 
   private completeManualInteraction(): void {
@@ -423,8 +383,8 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
     const invalidity = this.textInvalidity(text);
     this.setManualInvalidity(invalidity);
     if (invalidity === null) {
-      const value = text.trim() === '' ? null : parseNullableDateForLocale(text, this.dateLocale());
-      if (this.manualDirty && (value !== null || text.trim() === '')) this.commitValue(value);
+      const value = text.trim() === '' ? null : text;
+      if (this.manualDirty) this.commitValue(value);
       this.syncManualTextToCommitted();
     }
     this.markTouched();
@@ -438,15 +398,13 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
   }
 
   private syncManualTextToCommitted(): void {
-    this.manualText.set(formatDateForLocale(this.currentValue(), this.dateLocale()));
+    this.manualText.set(this.currentValue() ?? '');
     this.setManualInvalidity(null);
     this.manualDirty = false;
   }
 
   private rollbackAndCloseCalendar(): void {
-    this.dialogDraft.set(
-      singleDraft(this.currentValue(), this.committedInvalidity() === 'invalid'),
-    );
+    this.dialogDraft.set(timeDraft(this.currentValue()));
     this.calendarOpen.set(false);
     this.calendarDialog().close();
     this.markTouched();
@@ -456,36 +414,43 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
     this.onFormTouched?.();
   }
 
-  private textInvalidity(text: string): DateInvalidity {
+  private textInvalidity(text: string): TimeInvalidity {
     if (text.trim() === '') return null;
-    const parsed = parseNullableDateForLocale(text, this.dateLocale());
-    if (parsed === null) return 'invalid';
-    return this.isDateUnavailable(parsed) ? 'unavailable' : null;
+    return this.timeInvalidity(text);
   }
 
-  private valueInvalidity(value: unknown): DateInvalidity {
-    if (value === null || value === undefined) return null;
-    if (typeof value !== 'string' || value === '' || parseIsoDate(value) === null) return 'invalid';
-    return this.isDateUnavailable(value) ? 'unavailable' : null;
+  private valueInvalidity(value: unknown): TimeInvalidity {
+    if (value === null) return null;
+    if (typeof value !== 'string') return 'invalid';
+    return this.timeInvalidity(value);
   }
 
-  private setManualInvalidity(invalidity: DateInvalidity): void {
+  private timeInvalidity(value: string): TimeInvalidity {
+    if (parseTime(value) === null) return 'invalid';
+    return isTimeWithinBounds(value, this.min(), this.max()) ? null : 'unavailable';
+  }
+
+  private setManualInvalidity(invalidity: TimeInvalidity): void {
     if (invalidity === this.manualInvalidity()) return;
     this.manualInvalidity.set(invalidity);
     this.onValidatorChange?.();
   }
 }
 
-function emptySingleDraft(): TemporalRangeDraft {
+function emptyTimeDraft(): TemporalRangeDraft {
   return {
     start: { date: null, time: null },
     end: { date: null, time: null },
   };
 }
 
-function singleDraft(value: string | null, sourceInvalid = false): TemporalRangeDraft {
+function timeDraft(value: string | null, sourceInvalid = false): TemporalRangeDraft {
   return {
-    start: { date: value, time: null, ...(sourceInvalid ? { sourceInvalid: true } : {}) },
+    start: {
+      date: null,
+      time: value !== null && parseTime(value) !== null ? value : null,
+      ...(sourceInvalid ? { sourceInvalid: true } : {}),
+    },
     end: { date: null, time: null },
   };
 }

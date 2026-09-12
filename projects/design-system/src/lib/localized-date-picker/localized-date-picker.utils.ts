@@ -1,3 +1,12 @@
+import {
+  EMPTY_DATE_RANGE,
+  type LocalizedDateRange,
+  type LocalizedDateTimeRange,
+  type LocalizedRangeRequirements,
+  type LocalizedTimePickerMode,
+  type LocalizedTimeRange,
+} from './localized-temporal-picker.types';
+
 type DatePart = 'day' | 'month' | 'year';
 
 const DATE_SEPARATOR_PATTERN = /[./-]/;
@@ -22,6 +31,29 @@ export interface DateConstraints {
   readonly disabledDates?: readonly string[];
 }
 
+export interface TimeConstraints {
+  readonly min?: string;
+  readonly max?: string;
+}
+
+export interface DateTimeConstraints {
+  readonly min?: string;
+  readonly max?: string;
+}
+
+export interface RangeInspection {
+  readonly value: { readonly start: string | null; readonly end: string | null };
+  readonly malformed: { readonly start: boolean; readonly end: boolean };
+  readonly present: { readonly start: boolean; readonly end: boolean };
+  readonly shapeInvalid: boolean;
+}
+
+interface RangeValidationDetails {
+  readonly startUnavailable: boolean;
+  readonly endUnavailable: boolean;
+  readonly rangeUnavailable: boolean;
+}
+
 export function parseIsoDate(value: string): Date | null {
   if (!CANONICAL_ISO_DATE_PATTERN.test(value)) return null;
   const [yearPart, monthPart, dayPart] = value.split('-');
@@ -43,8 +75,8 @@ export function formatIsoDate(date: Date): string {
   )}`;
 }
 
-export function formatDateForLocale(value: string, dateLocale: string): string {
-  if (value === '') return '';
+export function formatDateForLocale(value: string | null, dateLocale: string): string {
+  if (value === null || value === '') return '';
   const date = parseIsoDate(value);
   return date === null
     ? value
@@ -72,6 +104,24 @@ export function parseDateForLocale(value: string, dateLocale: string): string | 
   const year = numericParts[order.indexOf('year')];
   if (!isValidDateParts(year, month, day)) return null;
   return `${String(year).padStart(4, '0')}-${padDatePart(month)}-${padDatePart(day)}`;
+}
+
+export function parseNullableDateForLocale(value: string, dateLocale: string): string | null {
+  const parsed = parseDateForLocale(value, dateLocale);
+  return parsed === '' ? null : parsed;
+}
+
+export function parseDateTimeForLocale(value: string, dateLocale: string): string | null {
+  const match = /^(.+?)\s+(\d{2}:\d{2})$/.exec(value.trim());
+  if (match === null) return null;
+  const date = parseNullableDateForLocale(match[1], dateLocale);
+  return date === null || parseTime(match[2]) === null ? null : `${date}T${match[2]}`;
+}
+
+export function formatDateTimeForLocale(value: string | null, dateLocale: string): string {
+  if (value === null || value === '') return '';
+  const parsed = parseDateTime(value);
+  return parsed === null ? value : `${formatDateForLocale(parsed.date, dateLocale)} ${parsed.time}`;
 }
 
 export function compareIsoDates(left: string, right: string): -1 | 0 | 1 | null {
@@ -128,6 +178,23 @@ export function parseTime(value: string): ParsedTime | null {
   return { hour, minute };
 }
 
+export function compareTimes(left: string, right: string): -1 | 0 | 1 | null {
+  const leftTime = parseTime(left);
+  const rightTime = parseTime(right);
+  if (leftTime === null || rightTime === null) return null;
+  const leftMinutes = leftTime.hour * 60 + leftTime.minute;
+  const rightMinutes = rightTime.hour * 60 + rightTime.minute;
+  if (leftMinutes === rightMinutes) return 0;
+  return leftMinutes < rightMinutes ? -1 : 1;
+}
+
+export function isTimeWithinBounds(value: string, min?: string, max?: string): boolean {
+  if (parseTime(value) === null) return false;
+  const validMin = validTimeOrNull(min);
+  const validMax = validTimeOrNull(max);
+  return (validMin === null || value >= validMin) && (validMax === null || value <= validMax);
+}
+
 export function parseDateTime(value: string): ParsedDateTime | null {
   const match = CANONICAL_DATE_TIME_PATTERN.exec(value);
   if (match === null || parseIsoDate(match[1]) === null || parseTime(match[2]) === null)
@@ -146,6 +213,140 @@ export function isDateRangeOrdered(start: string, end: string): boolean {
 
 export function isDateTimeRangeOrdered(start: string, end: string): boolean {
   return parseDateTime(start) !== null && parseDateTime(end) !== null && start <= end;
+}
+
+export function isNullableDateRangeOrdered(value: LocalizedDateRange): boolean {
+  return (
+    value.start === null ||
+    value.end === null ||
+    (compareIsoDates(value.start, value.end) ?? 1) <= 0
+  );
+}
+
+export function isNullableTimeRangeOrdered(value: LocalizedTimeRange): boolean {
+  return (
+    value.start === null || value.end === null || (compareTimes(value.start, value.end) ?? 1) <= 0
+  );
+}
+
+export function isNullableDateTimeRangeOrdered(value: LocalizedDateTimeRange): boolean {
+  return (
+    value.start === null || value.end === null || isDateTimeRangeOrdered(value.start, value.end)
+  );
+}
+
+export function dateRangeAvailability(
+  value: LocalizedDateRange,
+  constraints: DateConstraints = {},
+): RangeValidationDetails {
+  return {
+    startUnavailable: value.start !== null && isDateUnavailable(value.start, constraints),
+    endUnavailable: value.end !== null && isDateUnavailable(value.end, constraints),
+    rangeUnavailable:
+      value.start !== null &&
+      value.end !== null &&
+      intervalCrossesDisabledDate(value.start, value.end, constraints.disabledDates),
+  };
+}
+
+export function timeRangeAvailability(
+  value: LocalizedTimeRange,
+  constraints: TimeConstraints = {},
+): RangeValidationDetails {
+  return {
+    startUnavailable:
+      value.start !== null && !isTimeWithinBounds(value.start, constraints.min, constraints.max),
+    endUnavailable:
+      value.end !== null && !isTimeWithinBounds(value.end, constraints.min, constraints.max),
+    rangeUnavailable: false,
+  };
+}
+
+export function dateTimeRangeAvailability(
+  value: LocalizedDateTimeRange,
+  constraints: DateTimeConstraints = {},
+): RangeValidationDetails {
+  return {
+    startUnavailable:
+      value.start !== null &&
+      !isDateTimeWithinBounds(value.start, constraints.min, constraints.max),
+    endUnavailable:
+      value.end !== null && !isDateTimeWithinBounds(value.end, constraints.min, constraints.max),
+    rangeUnavailable: false,
+  };
+}
+
+export function requiredEndpoints(
+  requirements: LocalizedRangeRequirements,
+  value: { readonly start: string | null; readonly end: string | null },
+): { readonly start: boolean; readonly end: boolean } {
+  return {
+    start: requirements.start || (requirements.paired && value.end !== null),
+    end: requirements.end || (requirements.paired && value.start !== null),
+  };
+}
+
+export function requiredEndpointsForInspection(
+  requirements: LocalizedRangeRequirements,
+  inspection: RangeInspection,
+): { readonly start: boolean; readonly end: boolean } {
+  return requiredEndpoints(requirements, {
+    start: inspection.present.start ? 'present' : null,
+    end: inspection.present.end ? 'present' : null,
+  });
+}
+
+export function missingRequiredEndpoints(
+  requirements: LocalizedRangeRequirements,
+  inspection: RangeInspection,
+): { readonly start: boolean; readonly end: boolean } {
+  if (inspection.shapeInvalid) return { start: false, end: false };
+  const required = requiredEndpointsForInspection(requirements, inspection);
+  return {
+    start: required.start && !inspection.present.start,
+    end: required.end && !inspection.present.end,
+  };
+}
+
+export function resolveTimePickerMode(
+  requested: LocalizedTimePickerMode,
+  browser: boolean,
+  coarsePointer: boolean,
+): 'native' | 'custom' {
+  if (requested === 'custom') return 'custom';
+  return browser && (requested === 'native' || coarsePointer) ? 'native' : 'custom';
+}
+
+export function inspectRange(
+  value: unknown,
+  parser: (candidate: string) => unknown | null,
+  allowNullReset = false,
+): RangeInspection {
+  if (value === null && allowNullReset) {
+    return {
+      value: EMPTY_DATE_RANGE,
+      malformed: { start: false, end: false },
+      present: { start: false, end: false },
+      shapeInvalid: false,
+    };
+  }
+  if (!isRangeRecord(value)) {
+    return {
+      value: EMPTY_DATE_RANGE,
+      malformed: { start: false, end: false },
+      present: { start: false, end: false },
+      shapeInvalid: true,
+    };
+  }
+
+  const start = inspectRangeEndpoint(value['start'], parser);
+  const end = inspectRangeEndpoint(value['end'], parser);
+  return {
+    value: { start: start.value, end: end.value },
+    malformed: { start: start.malformed, end: end.malformed },
+    present: { start: start.present, end: end.present },
+    shapeInvalid: !Object.hasOwn(value, 'start') || !Object.hasOwn(value, 'end'),
+  };
 }
 
 export function createLocalDate(year: number, monthIndex: number, day: number): Date {
@@ -218,6 +419,36 @@ function datePartOrder(dateLocale: string): DatePart[] {
 
 function validIsoDateOrNull(value: string | undefined): string | null {
   return value === undefined || parseIsoDate(value) === null ? null : value;
+}
+
+function validTimeOrNull(value: string | undefined): string | null {
+  return value === undefined || parseTime(value) === null ? null : value;
+}
+
+function isDateTimeWithinBounds(value: string, min?: string, max?: string): boolean {
+  if (parseDateTime(value) === null) return false;
+  const validMin = validDateTimeOrNull(min);
+  const validMax = validDateTimeOrNull(max);
+  return (validMin === null || value >= validMin) && (validMax === null || value <= validMax);
+}
+
+function validDateTimeOrNull(value: string | undefined): string | null {
+  return value === undefined || parseDateTime(value) === null ? null : value;
+}
+
+function isRangeRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function inspectRangeEndpoint(
+  candidate: unknown,
+  parser: (candidate: string) => unknown | null,
+): { readonly value: string | null; readonly malformed: boolean; readonly present: boolean } {
+  if (candidate === null) return { value: null, malformed: false, present: false };
+  if (typeof candidate !== 'string' || parser(candidate) === null) {
+    return { value: null, malformed: true, present: candidate !== undefined };
+  }
+  return { value: candidate, malformed: false, present: true };
 }
 
 function padDatePart(value: number): string {

@@ -1,22 +1,22 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  signal,
-  type WritableSignal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   LocalizedDateRangePickerComponent,
   LocalizedDateTimePickerComponent,
   LocalizedDateTimeRangePickerComponent,
+  LocalizedTimePickerComponent,
+  LocalizedTimeRangePickerComponent,
   type LocalizedDatePickerControlSize,
-  type LocalizedDatePickerLabels,
   type LocalizedDateRange,
   type LocalizedDateRangePickerLabels,
   type LocalizedDateTimePickerLabels,
   type LocalizedDateTimeRange,
   type LocalizedDateTimeRangePickerLabels,
+  type LocalizedRangeRequirements,
+  type LocalizedTimePickerLabels,
+  type LocalizedTimePickerMode,
+  type LocalizedTimeRange,
+  type LocalizedTimeRangePickerLabels,
 } from '@alittlemore.dev/design-system';
 
 import { DemoPageComponent } from '../shared/demo-page.component';
@@ -31,7 +31,7 @@ type DemoLocale = 'en-US' | 'de-DE';
   template: `
     <demo-page
       title="Localized date range picker"
-      description="Emits canonical inclusive date ranges while locale, bounds, disabled dates, validation, and interaction state remain consumer-controlled."
+      description="Keeps nullable canonical endpoints committed separately from calendar drafts while requirements and availability remain consumer-controlled."
     >
       <div demo-preview>
         <label class="form-label" for="demo-date-range">Availability window</label>
@@ -41,7 +41,7 @@ type DemoLocale = 'en-US' | 'de-DE';
           [controlSize]="controlSize()"
           [dateLocale]="locale()"
           [labels]="labels()"
-          [required]="required()"
+          [requirements]="requirements()"
           [invalid]="invalid()"
           [controlDisabled]="disabled()"
           [readonly]="readonly()"
@@ -52,8 +52,8 @@ type DemoLocale = 'en-US' | 'de-DE';
           (validityChange)="valid.set($event)"
         />
         <p class="demo-output" data-demo-date-range-selection aria-live="polite">
-          Selected: {{ selectedRange().start || '(empty)' }} →
-          {{ selectedRange().end || '(empty)' }}
+          Committed: {{ selectedRange().start ?? '(null)' }} →
+          {{ selectedRange().end ?? '(null)' }}
         </p>
         <p class="demo-output">Emitted validity: {{ valid() }}</p>
       </div>
@@ -83,6 +83,21 @@ type DemoLocale = 'en-US' | 'de-DE';
             <option value="small">small</option>
           </select>
         </div>
+        @for (toggle of requirementToggles; track toggle.key) {
+          <div class="form-check">
+            <input
+              [id]="'date-range-require-' + toggle.key"
+              [attr.data-demo-date-range-require-paired]="toggle.key === 'paired' ? '' : null"
+              class="form-check-input"
+              type="checkbox"
+              [ngModel]="toggle.value()"
+              (ngModelChange)="toggle.value.set($event)"
+            />
+            <label class="form-check-label" [for]="'date-range-require-' + toggle.key">
+              requirements.{{ toggle.key }}
+            </label>
+          </div>
+        }
         @for (toggle of toggles; track toggle.key) {
           <div class="form-check">
             <input
@@ -108,7 +123,9 @@ export class LocalizedDateRangePickerPageComponent {
   });
   protected readonly locale = signal<DemoLocale>('en-US');
   protected readonly controlSize = signal<LocalizedDatePickerControlSize>('default');
-  protected readonly required = signal(false);
+  protected readonly requireStart = signal(false);
+  protected readonly requireEnd = signal(false);
+  protected readonly requirePaired = signal(false);
   protected readonly invalid = signal(false);
   protected readonly disabled = signal(false);
   protected readonly readonly = signal(false);
@@ -116,29 +133,312 @@ export class LocalizedDateRangePickerPageComponent {
   protected readonly disableAugust31 = signal(true);
   protected readonly valid = signal(true);
 
-  protected readonly toggles = pickerToggles({
-    required: this.required,
-    invalid: this.invalid,
-    disabled: this.disabled,
-    readonly: this.readonly,
-    limitRange: this.limitRange,
-    disableAugust31: this.disableAugust31,
-  });
+  protected readonly requirements = computed<LocalizedRangeRequirements>(() => ({
+    start: this.requireStart(),
+    end: this.requireEnd(),
+    paired: this.requirePaired(),
+  }));
+  protected readonly requirementToggles = [
+    { key: 'start', value: this.requireStart },
+    { key: 'end', value: this.requireEnd },
+    { key: 'paired', value: this.requirePaired },
+  ] as const;
+  protected readonly toggles = [
+    { key: 'invalid', label: 'invalid', value: this.invalid },
+    { key: 'disabled', label: 'controlDisabled', value: this.disabled },
+    { key: 'readonly', label: 'readonly', value: this.readonly },
+    { key: 'bounds', label: 'min/max: August–September 2026', value: this.limitRange },
+    { key: 'disabled-date', label: 'Disable August 31', value: this.disableAugust31 },
+  ] as const;
   protected readonly min = computed(() => (this.limitRange() ? '2026-08-01' : undefined));
   protected readonly max = computed(() => (this.limitRange() ? '2026-09-30' : undefined));
   protected readonly disabledDates = computed<readonly string[]>(() =>
     this.disableAugust31() ? ['2026-08-31'] : [],
   );
   protected readonly labels = computed<LocalizedDateRangePickerLabels>(() => ({
-    ...baseDateLabels(this.locale()),
+    ...calendarLabels(this.locale()),
+    placeholder: this.locale() === 'de-DE' ? 'TT.MM.JJJJ' : 'MM/DD/YYYY',
+    openPicker: 'Open date range picker',
+    changeValue: 'Change date range',
+    dialog: 'Choose a date range',
     groupLabel: 'Availability date range',
     startDate: 'Start date',
     endDate: 'End date',
     selectStartDate: 'Choose the start date.',
     selectEndDate: 'Choose the end date.',
-    invalidRange: 'Enter an available date range in chronological order.',
-    requiredRange: 'Choose both dates.',
+    accessibleRangeSeparator: 'to',
+    announceRangePreview: (start, end) => `Preview from ${start} to ${end}.`,
+    dateFormatHint:
+      this.locale() === 'de-DE' ? 'Enter dates as TT.MM.JJJJ.' : 'Enter dates as MM/DD/YYYY.',
+    invalidRange: 'Enter a valid date range in chronological order.',
+    unavailableRange: 'That date range is unavailable.',
+    requiredRange: 'Choose both dates required by the current settings.',
   }));
+}
+
+@Component({
+  selector: 'demo-localized-time-picker-page',
+  standalone: true,
+  imports: [DemoPageComponent, FormsModule, LocalizedTimePickerComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <demo-page
+      title="Localized time picker"
+      description="Commits nullable minute-precision local times only after Done; custom mode supports direct typing, arrow keys, and visible step buttons."
+    >
+      <div demo-preview>
+        <label class="form-label" for="demo-time">Reminder time</label>
+        <ds-localized-time-picker
+          inputId="demo-time"
+          [value]="selectedTime()"
+          [controlSize]="controlSize()"
+          [labels]="labels"
+          [required]="required()"
+          [invalid]="invalid()"
+          [controlDisabled]="disabled()"
+          [readonly]="readonly()"
+          [min]="min()"
+          [max]="max()"
+          [timePickerMode]="timePickerMode()"
+          (valueChange)="selectedTime.set($event)"
+          (validityChange)="valid.set($event)"
+        />
+        <p class="demo-output" data-demo-time-selection aria-live="polite">
+          Committed: {{ selectedTime() ?? '(null)' }}
+        </p>
+        <p class="demo-output">Emitted validity: {{ valid() }}</p>
+      </div>
+      <div demo-controls class="demo-form-stack">
+        <div>
+          <label class="form-label" for="time-mode">timePickerMode</label>
+          <select
+            id="time-mode"
+            class="form-select"
+            data-demo-time-mode
+            [ngModel]="timePickerMode()"
+            (ngModelChange)="timePickerMode.set($event)"
+          >
+            <option value="custom">custom</option>
+            <option value="native">native</option>
+            <option value="auto">auto</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="time-size">controlSize</label>
+          <select
+            id="time-size"
+            class="form-select"
+            [ngModel]="controlSize()"
+            (ngModelChange)="controlSize.set($event)"
+          >
+            <option value="default">default</option>
+            <option value="small">small</option>
+          </select>
+        </div>
+        @for (toggle of toggles; track toggle.key) {
+          <div class="form-check">
+            <input
+              [id]="'time-' + toggle.key"
+              class="form-check-input"
+              type="checkbox"
+              [ngModel]="toggle.value()"
+              (ngModelChange)="toggle.value.set($event)"
+            />
+            <label class="form-check-label" [for]="'time-' + toggle.key">
+              {{ toggle.label }}
+            </label>
+          </div>
+        }
+      </div>
+    </demo-page>
+  `,
+})
+export class LocalizedTimePickerPageComponent {
+  protected readonly selectedTime = signal<string | null>('09:30');
+  protected readonly controlSize = signal<LocalizedDatePickerControlSize>('default');
+  protected readonly timePickerMode = signal<LocalizedTimePickerMode>('custom');
+  protected readonly required = signal(false);
+  protected readonly invalid = signal(false);
+  protected readonly disabled = signal(false);
+  protected readonly readonly = signal(false);
+  protected readonly limitRange = signal(true);
+  protected readonly valid = signal(true);
+
+  protected readonly toggles = [
+    { key: 'required', label: 'required', value: this.required },
+    { key: 'invalid', label: 'invalid', value: this.invalid },
+    { key: 'disabled', label: 'controlDisabled', value: this.disabled },
+    { key: 'readonly', label: 'readonly', value: this.readonly },
+    { key: 'bounds', label: 'min/max: 08:00–18:00', value: this.limitRange },
+  ] as const;
+  protected readonly min = computed(() => (this.limitRange() ? '08:00' : undefined));
+  protected readonly max = computed(() => (this.limitRange() ? '18:00' : undefined));
+  protected readonly labels: LocalizedTimePickerLabels = {
+    placeholder: 'HH:mm',
+    openTimePicker: 'Open time picker',
+    changeTime: 'Change time',
+    dialog: 'Choose a time',
+    timeInput: 'Time',
+    hour: 'Hour',
+    minute: 'Minute',
+    formatHint: 'Enter a 24-hour time as HH:mm.',
+    invalidTime: 'Enter a valid time.',
+    unavailableTime: 'That time is unavailable.',
+    requiredTime: 'Choose a time.',
+    clear: 'Clear',
+    cancel: 'Cancel',
+    done: 'Done',
+    now: 'Now',
+    keyboardHelp: 'Use number keys, arrow keys, or the visible buttons to change hour and minute.',
+  };
+}
+
+@Component({
+  selector: 'demo-localized-time-range-picker-page',
+  standalone: true,
+  imports: [DemoPageComponent, FormsModule, LocalizedTimeRangePickerComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <demo-page
+      title="Localized time range picker"
+      description="Shows start and end time editors together and commits the transactional range only after Done."
+    >
+      <div demo-preview>
+        <label class="form-label" for="demo-time-range">Working hours</label>
+        <ds-localized-time-range-picker
+          inputId="demo-time-range"
+          [value]="selectedRange()"
+          [controlSize]="controlSize()"
+          [labels]="labels"
+          [requirements]="requirements()"
+          [invalid]="invalid()"
+          [controlDisabled]="disabled()"
+          [readonly]="readonly()"
+          [min]="min()"
+          [max]="max()"
+          [timePickerMode]="timePickerMode()"
+          (valueChange)="selectedRange.set($event)"
+          (validityChange)="valid.set($event)"
+        />
+        <p class="demo-output" data-demo-time-range-selection aria-live="polite">
+          Committed: {{ selectedRange().start ?? '(null)' }} →
+          {{ selectedRange().end ?? '(null)' }}
+        </p>
+        <p class="demo-output">Emitted validity: {{ valid() }}</p>
+      </div>
+      <div demo-controls class="demo-form-stack">
+        <div>
+          <label class="form-label" for="time-range-mode">timePickerMode</label>
+          <select
+            id="time-range-mode"
+            class="form-select"
+            data-demo-time-range-mode
+            [ngModel]="timePickerMode()"
+            (ngModelChange)="timePickerMode.set($event)"
+          >
+            <option value="custom">custom</option>
+            <option value="native">native</option>
+            <option value="auto">auto</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="time-range-size">controlSize</label>
+          <select
+            id="time-range-size"
+            class="form-select"
+            [ngModel]="controlSize()"
+            (ngModelChange)="controlSize.set($event)"
+          >
+            <option value="default">default</option>
+            <option value="small">small</option>
+          </select>
+        </div>
+        @for (toggle of requirementToggles; track toggle.key) {
+          <div class="form-check">
+            <input
+              [id]="'time-range-require-' + toggle.key"
+              class="form-check-input"
+              type="checkbox"
+              [ngModel]="toggle.value()"
+              (ngModelChange)="toggle.value.set($event)"
+            />
+            <label class="form-check-label" [for]="'time-range-require-' + toggle.key">
+              requirements.{{ toggle.key }}
+            </label>
+          </div>
+        }
+        @for (toggle of toggles; track toggle.key) {
+          <div class="form-check">
+            <input
+              [id]="'time-range-' + toggle.key"
+              class="form-check-input"
+              type="checkbox"
+              [ngModel]="toggle.value()"
+              (ngModelChange)="toggle.value.set($event)"
+            />
+            <label class="form-check-label" [for]="'time-range-' + toggle.key">
+              {{ toggle.label }}
+            </label>
+          </div>
+        }
+      </div>
+    </demo-page>
+  `,
+})
+export class LocalizedTimeRangePickerPageComponent {
+  protected readonly selectedRange = signal<LocalizedTimeRange>({ start: '09:30', end: '17:00' });
+  protected readonly controlSize = signal<LocalizedDatePickerControlSize>('default');
+  protected readonly timePickerMode = signal<LocalizedTimePickerMode>('custom');
+  protected readonly requireStart = signal(false);
+  protected readonly requireEnd = signal(false);
+  protected readonly requirePaired = signal(false);
+  protected readonly invalid = signal(false);
+  protected readonly disabled = signal(false);
+  protected readonly readonly = signal(false);
+  protected readonly limitRange = signal(true);
+  protected readonly valid = signal(true);
+
+  protected readonly requirements = computed<LocalizedRangeRequirements>(() => ({
+    start: this.requireStart(),
+    end: this.requireEnd(),
+    paired: this.requirePaired(),
+  }));
+  protected readonly requirementToggles = [
+    { key: 'start', value: this.requireStart },
+    { key: 'end', value: this.requireEnd },
+    { key: 'paired', value: this.requirePaired },
+  ] as const;
+  protected readonly toggles = [
+    { key: 'invalid', label: 'invalid', value: this.invalid },
+    { key: 'disabled', label: 'controlDisabled', value: this.disabled },
+    { key: 'readonly', label: 'readonly', value: this.readonly },
+    { key: 'bounds', label: 'min/max: 08:00–18:00', value: this.limitRange },
+  ] as const;
+  protected readonly min = computed(() => (this.limitRange() ? '08:00' : undefined));
+  protected readonly max = computed(() => (this.limitRange() ? '18:00' : undefined));
+  protected readonly labels: LocalizedTimeRangePickerLabels = {
+    placeholder: 'HH:mm',
+    openPicker: 'Open time range picker',
+    changeValue: 'Change time range',
+    dialog: 'Choose a time range',
+    groupLabel: 'Working-hours time range',
+    startTime: 'Start time',
+    endTime: 'End time',
+    selectStartTime: 'Choose the start time.',
+    selectEndTime: 'Choose the end time.',
+    accessibleRangeSeparator: 'to',
+    hour: 'Hour',
+    minute: 'Minute',
+    formatHint: 'Enter 24-hour times as HH:mm.',
+    clear: 'Clear',
+    cancel: 'Cancel',
+    done: 'Done',
+    now: 'Now',
+    keyboardHelp: 'Use number keys, arrow keys, or the visible buttons to edit either time.',
+    invalidRange: 'Enter a valid time range in chronological order.',
+    unavailableRange: 'That time range is unavailable.',
+    requiredRange: 'Choose both times required by the current settings.',
+  };
 }
 
 @Component({
@@ -149,7 +449,7 @@ export class LocalizedDateRangePickerPageComponent {
   template: `
     <demo-page
       title="Localized datetime picker"
-      description="Emits a minute-precision local wall-clock datetime with no timezone conversion while the consumer controls locale and availability."
+      description="Commits a nullable minute-precision local wall-clock datetime with no timezone conversion."
     >
       <div demo-preview>
         <label class="form-label" for="demo-datetime">Appointment</label>
@@ -166,11 +466,12 @@ export class LocalizedDateRangePickerPageComponent {
           [min]="min()"
           [max]="max()"
           [disabledDates]="disabledDates()"
+          [timePickerMode]="timePickerMode()"
           (valueChange)="selectedDateTime.set($event)"
           (validityChange)="valid.set($event)"
         />
         <p class="demo-output" data-demo-datetime-selection aria-live="polite">
-          Selected: {{ selectedDateTime() || '(empty)' }}
+          Committed: {{ selectedDateTime() ?? '(null)' }}
         </p>
         <p class="demo-output">Emitted validity: {{ valid() }}</p>
       </div>
@@ -186,6 +487,20 @@ export class LocalizedDateRangePickerPageComponent {
           >
             <option value="en-US">en-US</option>
             <option value="de-DE">de-DE</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="datetime-mode">timePickerMode</label>
+          <select
+            id="datetime-mode"
+            class="form-select"
+            data-demo-datetime-mode
+            [ngModel]="timePickerMode()"
+            (ngModelChange)="timePickerMode.set($event)"
+          >
+            <option value="custom">custom</option>
+            <option value="native">native</option>
+            <option value="auto">auto</option>
           </select>
         </div>
         <div>
@@ -219,9 +534,10 @@ export class LocalizedDateRangePickerPageComponent {
   `,
 })
 export class LocalizedDateTimePickerPageComponent {
-  protected readonly selectedDateTime = signal('2026-08-28T09:30');
+  protected readonly selectedDateTime = signal<string | null>('2026-08-28T09:30');
   protected readonly locale = signal<DemoLocale>('en-US');
   protected readonly controlSize = signal<LocalizedDatePickerControlSize>('default');
+  protected readonly timePickerMode = signal<LocalizedTimePickerMode>('custom');
   protected readonly required = signal(false);
   protected readonly invalid = signal(false);
   protected readonly disabled = signal(false);
@@ -230,27 +546,36 @@ export class LocalizedDateTimePickerPageComponent {
   protected readonly disableAugust31 = signal(true);
   protected readonly valid = signal(true);
 
-  protected readonly toggles = pickerToggles({
-    required: this.required,
-    invalid: this.invalid,
-    disabled: this.disabled,
-    readonly: this.readonly,
-    limitRange: this.limitRange,
-    disableAugust31: this.disableAugust31,
-  });
+  protected readonly toggles = [
+    { key: 'required', label: 'required', value: this.required },
+    { key: 'invalid', label: 'invalid', value: this.invalid },
+    { key: 'disabled', label: 'controlDisabled', value: this.disabled },
+    { key: 'readonly', label: 'readonly', value: this.readonly },
+    { key: 'bounds', label: 'min/max: August–September 2026', value: this.limitRange },
+    { key: 'disabled-date', label: 'Disable August 31', value: this.disableAugust31 },
+  ] as const;
   protected readonly min = computed(() => (this.limitRange() ? '2026-08-01T08:00' : undefined));
   protected readonly max = computed(() => (this.limitRange() ? '2026-09-30T18:00' : undefined));
   protected readonly disabledDates = computed<readonly string[]>(() =>
     this.disableAugust31() ? ['2026-08-31'] : [],
   );
   protected readonly labels = computed<LocalizedDateTimePickerLabels>(() => ({
-    ...baseDateLabels(this.locale()),
-    groupLabel: 'Appointment date and time',
-    dateInput: 'Date',
-    timeInput: 'Time',
+    ...calendarLabels(this.locale()),
+    placeholder: this.locale() === 'de-DE' ? 'TT.MM.JJJJ HH:mm' : 'MM/DD/YYYY HH:mm',
+    openPicker: 'Open date and time picker',
+    changeValue: 'Change date and time',
+    dialog: 'Choose a date and time',
+    dateTimeInput: 'Date and time',
+    hour: 'Hour',
+    minute: 'Minute',
+    dateFormatHint:
+      this.locale() === 'de-DE' ? 'Enter a date as TT.MM.JJJJ.' : 'Enter a date as MM/DD/YYYY.',
     timeFormatHint: 'Enter a 24-hour time as HH:mm.',
-    invalidTime: 'Enter an available date and time.',
-    requiredTime: 'Choose a time.',
+    selectDate: 'Choose the appointment date.',
+    now: 'Now',
+    invalidDateTime: 'Enter a valid date and time.',
+    unavailableDateTime: 'That date and time is unavailable.',
+    requiredDateTime: 'Choose a date and time.',
   }));
 }
 
@@ -262,7 +587,7 @@ export class LocalizedDateTimePickerPageComponent {
   template: `
     <demo-page
       title="Localized datetime range picker"
-      description="Emits an inclusive local wall-clock interval with minute precision, partial-range progress, and consumer-owned availability rules."
+      description="Combines an alternating range calendar with both time editors visible and commits the local wall-clock interval after Done."
     >
       <div demo-preview>
         <label class="form-label" for="demo-datetime-range">Scheduled window</label>
@@ -272,19 +597,20 @@ export class LocalizedDateTimePickerPageComponent {
           [controlSize]="controlSize()"
           [dateLocale]="locale()"
           [labels]="labels()"
-          [required]="required()"
+          [requirements]="requirements()"
           [invalid]="invalid()"
           [controlDisabled]="disabled()"
           [readonly]="readonly()"
           [min]="min()"
           [max]="max()"
           [disabledDates]="disabledDates()"
+          [timePickerMode]="timePickerMode()"
           (valueChange)="selectedRange.set($event)"
           (validityChange)="valid.set($event)"
         />
         <p class="demo-output" data-demo-datetime-range-selection aria-live="polite">
-          Selected: {{ selectedRange().start || '(empty)' }} →
-          {{ selectedRange().end || '(empty)' }}
+          Committed: {{ selectedRange().start ?? '(null)' }} →
+          {{ selectedRange().end ?? '(null)' }}
         </p>
         <p class="demo-output">Emitted validity: {{ valid() }}</p>
       </div>
@@ -303,6 +629,20 @@ export class LocalizedDateTimePickerPageComponent {
           </select>
         </div>
         <div>
+          <label class="form-label" for="datetime-range-mode">timePickerMode</label>
+          <select
+            id="datetime-range-mode"
+            class="form-select"
+            data-demo-datetime-range-mode
+            [ngModel]="timePickerMode()"
+            (ngModelChange)="timePickerMode.set($event)"
+          >
+            <option value="custom">custom</option>
+            <option value="native">native</option>
+            <option value="auto">auto</option>
+          </select>
+        </div>
+        <div>
           <label class="form-label" for="datetime-range-size">controlSize</label>
           <select
             id="datetime-range-size"
@@ -314,6 +654,20 @@ export class LocalizedDateTimePickerPageComponent {
             <option value="small">small</option>
           </select>
         </div>
+        @for (toggle of requirementToggles; track toggle.key) {
+          <div class="form-check">
+            <input
+              [id]="'datetime-range-require-' + toggle.key"
+              class="form-check-input"
+              type="checkbox"
+              [ngModel]="toggle.value()"
+              (ngModelChange)="toggle.value.set($event)"
+            />
+            <label class="form-check-label" [for]="'datetime-range-require-' + toggle.key">
+              requirements.{{ toggle.key }}
+            </label>
+          </div>
+        }
         @for (toggle of toggles; track toggle.key) {
           <div class="form-check">
             <input
@@ -339,7 +693,10 @@ export class LocalizedDateTimeRangePickerPageComponent {
   });
   protected readonly locale = signal<DemoLocale>('en-US');
   protected readonly controlSize = signal<LocalizedDatePickerControlSize>('default');
-  protected readonly required = signal(false);
+  protected readonly timePickerMode = signal<LocalizedTimePickerMode>('custom');
+  protected readonly requireStart = signal(false);
+  protected readonly requireEnd = signal(false);
+  protected readonly requirePaired = signal(false);
   protected readonly invalid = signal(false);
   protected readonly disabled = signal(false);
   protected readonly readonly = signal(false);
@@ -347,72 +704,67 @@ export class LocalizedDateTimeRangePickerPageComponent {
   protected readonly disableAugust31 = signal(true);
   protected readonly valid = signal(true);
 
-  protected readonly toggles = pickerToggles({
-    required: this.required,
-    invalid: this.invalid,
-    disabled: this.disabled,
-    readonly: this.readonly,
-    limitRange: this.limitRange,
-    disableAugust31: this.disableAugust31,
-  });
+  protected readonly requirements = computed<LocalizedRangeRequirements>(() => ({
+    start: this.requireStart(),
+    end: this.requireEnd(),
+    paired: this.requirePaired(),
+  }));
+  protected readonly requirementToggles = [
+    { key: 'start', value: this.requireStart },
+    { key: 'end', value: this.requireEnd },
+    { key: 'paired', value: this.requirePaired },
+  ] as const;
+  protected readonly toggles = [
+    { key: 'invalid', label: 'invalid', value: this.invalid },
+    { key: 'disabled', label: 'controlDisabled', value: this.disabled },
+    { key: 'readonly', label: 'readonly', value: this.readonly },
+    { key: 'bounds', label: 'min/max: August–September 2026', value: this.limitRange },
+    { key: 'disabled-date', label: 'Disable August 31', value: this.disableAugust31 },
+  ] as const;
   protected readonly min = computed(() => (this.limitRange() ? '2026-08-01T08:00' : undefined));
   protected readonly max = computed(() => (this.limitRange() ? '2026-09-30T18:00' : undefined));
   protected readonly disabledDates = computed<readonly string[]>(() =>
     this.disableAugust31() ? ['2026-08-31'] : [],
   );
   protected readonly labels = computed<LocalizedDateTimeRangePickerLabels>(() => ({
-    ...baseDateLabels(this.locale()),
+    ...calendarLabels(this.locale()),
+    placeholder: this.locale() === 'de-DE' ? 'TT.MM.JJJJ HH:mm' : 'MM/DD/YYYY HH:mm',
+    openPicker: 'Open date and time range picker',
+    changeValue: 'Change date and time range',
+    dialog: 'Choose a date and time range',
     groupLabel: 'Scheduled date and time range',
-    startDate: 'Start date',
-    startTime: 'Start time',
-    endDate: 'End date',
-    endTime: 'End time',
-    selectStartDate: 'Choose the start date.',
-    selectEndDate: 'Choose the end date.',
-    timeFormatHint: 'Enter a 24-hour time as HH:mm.',
-    invalidTime: 'Enter valid start and end times.',
-    requiredTime: 'Choose both times.',
-    invalidRange: 'Enter an available date and time range in chronological order.',
-    requiredRange: 'Choose both dates and times.',
+    startDateTime: 'Start date and time',
+    endDateTime: 'End date and time',
+    selectStartDateTime: 'Choose the start date and time.',
+    selectEndDateTime: 'Choose the end date and time.',
+    accessibleRangeSeparator: 'to',
+    announceRangePreview: (start, end) => `Preview from ${start} to ${end}.`,
+    hour: 'Hour',
+    minute: 'Minute',
+    dateFormatHint:
+      this.locale() === 'de-DE' ? 'Enter dates as TT.MM.JJJJ.' : 'Enter dates as MM/DD/YYYY.',
+    timeFormatHint: 'Enter 24-hour times as HH:mm.',
+    now: 'Now',
+    invalidRange: 'Enter a valid date and time range in chronological order.',
+    unavailableRange: 'That date and time range is unavailable.',
+    requiredRange: 'Choose both endpoints required by the current settings.',
   }));
 }
 
-interface PickerState {
-  readonly required: WritableSignal<boolean>;
-  readonly invalid: WritableSignal<boolean>;
-  readonly disabled: WritableSignal<boolean>;
-  readonly readonly: WritableSignal<boolean>;
-  readonly limitRange: WritableSignal<boolean>;
-  readonly disableAugust31: WritableSignal<boolean>;
-}
-
-function pickerToggles(state: PickerState) {
-  return [
-    { key: 'required', label: 'required', value: state.required },
-    { key: 'invalid', label: 'invalid', value: state.invalid },
-    { key: 'disabled', label: 'controlDisabled', value: state.disabled },
-    { key: 'readonly', label: 'readonly', value: state.readonly },
-    { key: 'bounds', label: 'min/max: August–September 2026', value: state.limitRange },
-    { key: 'disabled-date', label: 'Disable August 31', value: state.disableAugust31 },
-  ] as const;
-}
-
-function baseDateLabels(locale: DemoLocale): LocalizedDatePickerLabels {
+function calendarLabels(locale: DemoLocale) {
   return {
-    placeholder: locale === 'de-DE' ? 'TT.MM.JJJJ' : 'MM/DD/YYYY',
-    openCalendar: 'Open calendar',
-    changeCalendar: 'Change date',
-    dialog: 'Choose a date',
     previousMonth: 'Previous month',
     nextMonth: 'Next month',
     openMonthYearPicker: 'Choose month and year',
     previousYear: 'Previous year',
     nextYear: 'Next year',
     clear: 'Clear',
-    close: 'Close',
-    formatHint: locale === 'de-DE' ? 'Enter a date as TT.MM.JJJJ.' : 'Enter a date as MM/DD/YYYY.',
-    invalidDate: 'Enter an available date.',
-    requiredDate: 'Choose a date.',
-    keyboardHelp: 'Use arrow keys to move through dates.',
+    cancel: 'Cancel',
+    done: 'Done',
+    today: 'Today',
+    keyboardHelp:
+      locale === 'de-DE'
+        ? 'Use arrow keys to move through dates; displayed dates use German ordering.'
+        : 'Use arrow keys to move through dates.',
   };
 }

@@ -6,6 +6,7 @@ import {
   ElementRef,
   OnChanges,
   PLATFORM_ID,
+  afterRenderEffect,
   computed,
   effect,
   forwardRef,
@@ -24,45 +25,89 @@ import {
   ValidationErrors,
   Validator,
 } from '@angular/forms';
-import { CalendarActiveBoundary, CalendarDialogComponent } from './calendar-dialog.component';
 import {
-  compareIsoDates,
+  CalendarDialogComponent,
+  CalendarDialogLabels,
+  TemporalRangeDraft,
+} from './calendar-dialog.component';
+import {
+  dateRangeAvailability,
   formatDateForLocale,
-  formatLongDate,
-  intervalCrossesDisabledDate,
-  isDateUnavailable,
+  inspectRange,
+  isNullableDateRangeOrdered,
+  missingRequiredEndpoints,
   parseDateForLocale,
   parseIsoDate,
+  requiredEndpointsForInspection,
 } from './localized-date-picker.utils';
 import {
+  DEFAULT_RANGE_REQUIREMENTS,
+  EMPTY_DATE_RANGE,
   LocalizedDatePickerControlSize,
-  LocalizedDatePickerLabels,
-} from './localized-date-picker.component';
+  LocalizedDateRange,
+  LocalizedRangeRequirements,
+  TemporalBoundary,
+} from './localized-temporal-picker.types';
+import {
+  TemporalFieldEndpointEvent,
+  TemporalPickerFieldComponent,
+} from './temporal-picker-field.component';
 
-export interface LocalizedDateRange {
-  readonly start: string;
-  readonly end: string;
-}
+export { DEFAULT_RANGE_REQUIREMENTS, EMPTY_DATE_RANGE } from './localized-temporal-picker.types';
+export type {
+  LocalizedDatePickerControlSize,
+  LocalizedDateRange,
+  LocalizedRangeRequirements,
+} from './localized-temporal-picker.types';
 
-export interface LocalizedDateRangePickerLabels extends LocalizedDatePickerLabels {
+export interface LocalizedDateRangePickerLabels {
+  readonly placeholder: string;
+  readonly openPicker: string;
+  readonly changeValue: string;
+  readonly dialog: string;
   readonly groupLabel: string;
   readonly startDate: string;
   readonly endDate: string;
   readonly selectStartDate: string;
   readonly selectEndDate: string;
+  readonly accessibleRangeSeparator: string;
+  readonly announceRangePreview: (start: string, end: string) => string;
+  readonly previousMonth: string;
+  readonly nextMonth: string;
+  readonly openMonthYearPicker: string;
+  readonly previousYear: string;
+  readonly nextYear: string;
+  readonly clear: string;
+  readonly cancel: string;
+  readonly done: string;
+  readonly today: string;
+  readonly dateFormatHint: string;
+  readonly keyboardHelp: string;
   readonly invalidRange: string;
+  readonly unavailableRange: string;
   readonly requiredRange: string;
 }
 
-type RangeInvalidity = 'required' | 'invalid' | 'unavailable' | null;
+interface RangeErrors extends ValidationErrors {
+  required?: { readonly start: boolean; readonly end: boolean };
+  dateRangeInvalid?: {
+    readonly start?: boolean;
+    readonly end?: boolean;
+    readonly order?: boolean;
+  };
+  dateRangeUnavailable?: {
+    readonly start?: boolean;
+    readonly end?: boolean;
+    readonly interval?: boolean;
+  };
+}
 
-const EMPTY_RANGE: LocalizedDateRange = { start: '', end: '' };
 let nextCalendarId = 0;
 
 @Component({
   selector: 'ds-localized-date-range-picker',
   standalone: true,
-  imports: [CalendarDialogComponent],
+  imports: [CalendarDialogComponent, TemporalPickerFieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './localized-date-range-picker.component.html',
   styleUrl: './localized-date-range-picker.component.scss',
@@ -83,9 +128,8 @@ export class LocalizedDateRangePickerComponent
   implements ControlValueAccessor, OnChanges, Validator
 {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly hostElement = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  private readonly startInputElement = viewChild<ElementRef<HTMLInputElement>>('startInput');
-  private readonly endInputElement = viewChild<ElementRef<HTMLInputElement>>('endInput');
   private readonly calendarDialog = viewChild.required<CalendarDialogComponent>('calendarDialog');
 
   readonly inputId = input.required<string>();
@@ -93,7 +137,7 @@ export class LocalizedDateRangePickerComponent
   readonly controlSize = input.required<LocalizedDatePickerControlSize>();
   readonly dateLocale = input.required<string>();
   readonly labels = input.required<LocalizedDateRangePickerLabels>();
-  readonly required = input.required<boolean>();
+  readonly requirements = input<LocalizedRangeRequirements>(DEFAULT_RANGE_REQUIREMENTS);
   readonly invalid = input.required<boolean>();
   readonly controlDisabled = input.required<boolean>();
   readonly readonly = input.required<boolean>();
@@ -106,139 +150,179 @@ export class LocalizedDateRangePickerComponent
 
   /** @internal */
   protected readonly calendarOpen = signal(false);
-
   /** @internal */
-  protected readonly displayStart = signal('');
-
+  protected readonly startText = signal('');
   /** @internal */
-  protected readonly displayEnd = signal('');
-
+  protected readonly endText = signal('');
   /** @internal */
-  protected readonly manualInvalidity = signal<RangeInvalidity>(null);
-
+  protected readonly activeBoundary = signal<'start' | 'end'>('start');
   /** @internal */
-  protected readonly formValue = signal<LocalizedDateRange>(EMPTY_RANGE);
-
+  protected readonly dialogDraft = signal<TemporalRangeDraft>(dateRangeDraft(EMPTY_DATE_RANGE));
   /** @internal */
   protected readonly formDisabled = signal(false);
-
-  /** @internal */
-  protected readonly activeBoundary = signal<CalendarActiveBoundary>('start');
-
-  /** @internal */
-  protected readonly calendarRange = signal<LocalizedDateRange>(EMPTY_RANGE);
-
   /** @internal */
   protected readonly calendarId = `localizedDateRangePicker${nextCalendarId++}`;
-
   /** @internal */
   protected readonly formatHintId = `${this.calendarId}FormatHint`;
-
   /** @internal */
   protected readonly errorId = `${this.calendarId}Error`;
 
-  /** @internal */
-  protected readonly currentValue = computed(() => this.value() ?? this.formValue());
+  private readonly formRawValue = signal<unknown>(EMPTY_DATE_RANGE);
+  private readonly manualEditing = signal(false);
+  private manualDirty = false;
 
   /** @internal */
   protected readonly effectiveDisabled = computed(
     () => this.controlDisabled() || this.formDisabled(),
   );
-
-  /** @internal */
-  protected readonly currentInvalidity = computed(() => this.rangeInvalidity(this.currentValue()));
-
-  /** @internal */
-  protected readonly internalInvalidity = computed(
-    () => this.manualInvalidity() ?? this.currentInvalidity(),
+  private readonly currentRawValue = computed<unknown>(() => {
+    const boundValue = this.value();
+    return boundValue === undefined ? this.formRawValue() : boundValue;
+  });
+  private readonly currentInspection = computed(() =>
+    inspectRange(this.currentRawValue(), parseIsoDate),
   );
-
+  /** @internal */
+  protected readonly currentValue = computed<LocalizedDateRange>(
+    () => this.currentInspection().value,
+  );
+  private readonly manualInspection = computed(() =>
+    inspectRange(
+      {
+        start: parseManualDate(this.startText(), this.dateLocale()),
+        end: parseManualDate(this.endText(), this.dateLocale()),
+      },
+      parseIsoDate,
+    ),
+  );
+  private readonly committedErrors = computed(() => this.rangeErrors(this.currentInspection()));
+  private readonly manualErrors = computed(() => this.rangeErrors(this.manualInspection()));
+  /** @internal */
+  protected readonly internalErrors = computed<RangeErrors | null>(() =>
+    this.manualEditing() ? this.manualErrors() : this.committedErrors(),
+  );
   /** @internal */
   protected readonly effectiveInvalid = computed(
-    () => this.invalid() || this.internalInvalidity() !== null,
+    () => this.invalid() || this.internalErrors() !== null,
   );
-
   /** @internal */
-  protected readonly validationMessage = computed(() => {
-    if (!this.effectiveInvalid()) return '';
-    if (this.internalInvalidity() === 'required') return this.labels().requiredRange;
-    return this.labels().invalidRange;
-  });
-
+  protected readonly startInvalid = computed(
+    () => this.invalid() || endpointIsInvalid(this.internalErrors(), 'start'),
+  );
+  /** @internal */
+  protected readonly endInvalid = computed(
+    () => this.invalid() || endpointIsInvalid(this.internalErrors(), 'end'),
+  );
+  private readonly displayedInspection = computed(() =>
+    this.manualEditing() ? this.manualInspection() : this.currentInspection(),
+  );
+  private readonly displayedRequiredEndpoints = computed(() =>
+    requiredEndpointsForInspection(this.requirements(), this.displayedInspection()),
+  );
+  /** @internal */
+  protected readonly startRequired = computed(() => this.displayedRequiredEndpoints().start);
+  /** @internal */
+  protected readonly endRequired = computed(() => this.displayedRequiredEndpoints().end);
   /** @internal */
   protected readonly inputDescribedBy = computed(() =>
     this.effectiveInvalid() ? `${this.formatHintId} ${this.errorId}` : this.formatHintId,
   );
-
   /** @internal */
-  protected readonly startToggleAriaLabel = computed(() =>
-    this.toggleAriaLabel(this.currentValue().start),
-  );
-
+  protected readonly validationMessage = computed(() => {
+    if (!this.effectiveInvalid()) return '';
+    const errors = this.internalErrors();
+    if (errors?.required !== undefined) return this.labels().requiredRange;
+    if (errors?.dateRangeInvalid !== undefined) return this.labels().invalidRange;
+    return this.labels().unavailableRange;
+  });
   /** @internal */
-  protected readonly endToggleAriaLabel = computed(() =>
-    this.toggleAriaLabel(this.currentValue().end),
-  );
-
+  protected readonly triggerLabel = computed(() => {
+    const value = this.currentValue();
+    return value.start === null && value.end === null
+      ? this.labels().openPicker
+      : this.labels().changeValue;
+  });
   /** @internal */
   protected readonly activeBoundaryLabel = computed(() =>
     this.activeBoundary() === 'end' ? this.labels().selectEndDate : this.labels().selectStartDate,
   );
-
   /** @internal */
   protected readonly canClear = computed(
     () =>
-      !this.required() &&
       !this.effectiveDisabled() &&
       !this.readonly() &&
-      (this.displayStart().trim() !== '' || this.displayEnd().trim() !== ''),
+      (this.dialogDraft().start.date !== null ||
+        this.dialogDraft().end.date !== null ||
+        this.dialogDraft().start.sourceInvalid === true ||
+        this.dialogDraft().end.sourceInvalid === true),
   );
+  /** @internal */
+  protected readonly canConfirmDialog = computed(
+    () =>
+      !draftHasSourceInvalid(this.dialogDraft()) &&
+      this.errorsForValue(dialogRange(this.dialogDraft())) === null,
+  );
+  /** @internal */
+  protected readonly dialogLabels = computed<CalendarDialogLabels>(() => ({
+    dialog: this.labels().dialog,
+    previousMonth: this.labels().previousMonth,
+    nextMonth: this.labels().nextMonth,
+    openMonthYearPicker: this.labels().openMonthYearPicker,
+    previousYear: this.labels().previousYear,
+    nextYear: this.labels().nextYear,
+    clear: this.labels().clear,
+    cancel: this.labels().cancel,
+    done: this.labels().done,
+    today: this.labels().today,
+    now: '',
+    timeInput: '',
+    hour: '',
+    minute: '',
+    keyboardHelp: this.labels().keyboardHelp,
+    announceRangePreview: this.labels().announceRangePreview,
+  }));
 
   private onFormChange: ((value: LocalizedDateRange) => void) | null = null;
   private onFormTouched: (() => void) | null = null;
   private onValidatorChange: (() => void) | null = null;
-  private lastCommittedValue: LocalizedDateRange = EMPTY_RANGE;
   private lastEmittedValidity: boolean | undefined;
 
   private readonly valueSyncEffect = effect(() => {
-    const value = normalizedRange(this.currentValue());
-    this.displayStart.set(formatDateForLocale(value.start, this.dateLocale()));
-    this.displayEnd.set(formatDateForLocale(value.end, this.dateLocale()));
-    this.lastCommittedValue = value;
-    this.manualInvalidity.set(null);
-    untracked(() => this.onValidatorChange?.());
+    const raw = this.currentRawValue();
+    this.dateLocale();
+    untracked(() => this.syncManualTextToRaw(raw));
   });
-
-  private readonly nativeValiditySyncEffect = effect(() => {
+  private readonly nativeValiditySyncEffect = afterRenderEffect(() => {
     if (!this.isBrowser) return;
-    const message = this.internalInvalidity() === null ? '' : this.validationMessage();
-    this.startInputElement()?.nativeElement.setCustomValidity(message);
-    this.endInputElement()?.nativeElement.setCustomValidity(message);
+    const inputs = this.hostElement.nativeElement.querySelectorAll<HTMLInputElement>(
+      'ds-temporal-picker-field input',
+    );
+    inputs[0]?.setCustomValidity(this.startInvalid() ? this.validationMessage() : '');
+    inputs[1]?.setCustomValidity(this.endInvalid() ? this.validationMessage() : '');
   });
-
   private readonly validatorInputsEffect = effect(() => {
-    this.required();
+    this.requirements();
     this.min();
     this.max();
     this.disabledDates();
-    this.currentValue();
-    this.internalInvalidity();
+    this.currentRawValue();
+    this.manualErrors();
     this.onValidatorChange?.();
   });
-
   private readonly interactiveStateEffect = effect(() => {
-    if ((this.effectiveDisabled() || this.readonly()) && this.calendarOpen()) this.closeCalendar();
+    if ((this.effectiveDisabled() || this.readonly()) && this.calendarOpen()) {
+      this.rollbackAndCloseCalendar();
+    }
   });
-
   private readonly internalValidityEffect = effect(() => {
-    const valid = this.internalInvalidity() === null;
+    const valid = this.internalErrors() === null;
     if (valid === this.lastEmittedValidity) return;
     this.lastEmittedValidity = valid;
     this.validityChange.emit(valid);
   });
 
   writeValue(value: unknown): void {
-    this.formValue.set(isLocalizedDateRange(value) ? value : EMPTY_RANGE);
+    this.formRawValue.set(value === null ? EMPTY_DATE_RANGE : value);
   }
 
   ngOnChanges(): void {
@@ -254,10 +338,9 @@ export class LocalizedDateRangePickerComponent
   }
 
   validate(control: AbstractControl<unknown>): ValidationErrors | null {
-    const invalidity =
-      this.manualInvalidity() ??
-      this.rangeInvalidity(isLocalizedDateRange(control.value) ? control.value : EMPTY_RANGE);
-    return invalidity === null ? null : validationError(invalidity);
+    return this.manualEditing()
+      ? this.manualErrors()
+      : this.rangeErrors(inspectRange(control.value, parseIsoDate));
   }
 
   registerOnValidatorChange(fn: () => void): void {
@@ -266,181 +349,159 @@ export class LocalizedDateRangePickerComponent
 
   setDisabledState(disabled: boolean): void {
     this.formDisabled.set(disabled);
-    if (disabled && this.calendarOpen()) this.closeCalendar();
   }
 
   /** @internal */
-  protected toggleStartCalendar(trigger: HTMLElement): void {
-    if (this.calendarOpen()) this.closeCalendar();
-    else this.openCalendar('start', trigger);
+  protected setActiveBoundary(boundary: TemporalBoundary): void {
+    if (boundary === 'start' || boundary === 'end') this.activeBoundary.set(boundary);
   }
 
   /** @internal */
-  protected toggleEndCalendar(trigger: HTMLElement): void {
-    if (this.calendarOpen()) this.closeCalendar();
-    else {
-      const boundary: CalendarActiveBoundary = this.currentValue().start === '' ? 'start' : 'end';
-      this.openCalendar(boundary, trigger);
-    }
+  protected toggleCalendar(): void {
+    if (this.calendarOpen()) this.rollbackAndCloseCalendar();
+    else this.openCalendar();
   }
 
   /** @internal */
-  protected closeCalendar(): void {
-    this.calendarDialog().close();
-  }
-
-  /** @internal */
-  protected onCalendarClosed(): void {
-    this.calendarOpen.set(false);
-    this.markTouched();
-    this.changeDetectorRef.detectChanges();
-  }
-
-  /** @internal */
-  protected selectDate(iso: string): void {
-    if (this.effectiveDisabled() || this.readonly() || this.isDateUnavailableForSelection(iso))
-      return;
-    if (this.activeBoundary() === 'start') {
-      const selection = { start: iso, end: '' };
-      this.calendarRange.set(selection);
-      this.commitValue(selection);
-      this.restoreControlledDisplay();
-      this.activeBoundary.set('end');
-      this.changeDetectorRef.detectChanges();
-      return;
-    }
-    const start = this.calendarRange().start;
-    if (parseIsoDate(start) === null) {
-      this.activeBoundary.set('start');
-      this.selectDate(iso);
-      return;
-    }
-    const selection = start <= iso ? { start, end: iso } : { start: iso, end: start };
-    if (this.rangeInvalidity(selection) !== null) return;
-    this.calendarRange.set(selection);
-    this.commitValue(selection);
-    this.restoreControlledDisplay();
-    this.closeCalendar();
-  }
-
-  /** @internal */
-  protected clearRange(): void {
-    if (this.effectiveDisabled() || this.readonly() || !this.canClear()) return;
-    this.manualInvalidity.set(null);
-    this.commitValue(EMPTY_RANGE);
-    this.restoreControlledDisplay();
-    this.closeCalendar();
-  }
-
-  /** @internal */
-  protected onTextInput(boundary: 'start' | 'end', event: Event): void {
+  protected openCalendar(): void {
     if (this.effectiveDisabled() || this.readonly()) return;
-    const value = readInputValue(event);
-    if (boundary === 'start') this.displayStart.set(value);
-    else this.displayEnd.set(value);
-    const draft = this.parseDisplayRange();
-    const invalidity = this.rangeInvalidity(draft);
-    this.manualInvalidity.set(invalidity);
-    if (invalidity === null || invalidity === 'required') {
-      this.commitValue(draft);
-      this.restoreControlledDisplay();
-    }
-  }
-
-  /** @internal */
-  protected onTextBlur(): void {
-    if (this.effectiveDisabled() || this.readonly()) return;
-    const draft = this.parseDisplayRange();
-    const invalidity = this.rangeInvalidity(draft);
-    this.manualInvalidity.set(invalidity);
-    if (invalidity === null || invalidity === 'required') {
-      if (!rangesEqual(draft, this.lastCommittedValue)) this.commitValue(draft);
-      if (this.value() === undefined) {
-        this.displayStart.set(formatDateForLocale(draft.start, this.dateLocale()));
-        this.displayEnd.set(formatDateForLocale(draft.end, this.dateLocale()));
-      }
-    }
-    this.markTouched();
-  }
-
-  private openCalendar(boundary: CalendarActiveBoundary, trigger: HTMLElement): void {
-    if (this.effectiveDisabled() || this.readonly()) return;
-    const current = normalizedRange(this.currentValue());
-    this.activeBoundary.set(boundary);
-    this.calendarRange.set(boundary === 'start' ? EMPTY_RANGE : current);
-    const preferred = boundary === 'end' ? current.end || current.start : current.start;
-    const opened = this.calendarDialog().open(trigger, preferred);
-    if (!opened) return;
+    const value = this.currentValue();
+    this.dialogDraft.set(dateRangeDraft(value, this.currentInspection()));
+    const trigger = this.hostElement.nativeElement.querySelector<HTMLElement>(
+      'button[aria-haspopup="dialog"]',
+    );
+    if (trigger === null) return;
+    const preferred = this.activeBoundary() === 'end' ? (value.end ?? value.start) : value.start;
+    if (!this.calendarDialog().open(trigger, preferred ?? '')) return;
     this.calendarOpen.set(true);
     this.changeDetectorRef.detectChanges();
   }
 
-  private parseDisplayRange(): LocalizedDateRange {
-    return {
-      start: parseDateForLocale(this.displayStart(), this.dateLocale()) ?? this.displayStart(),
-      end: parseDateForLocale(this.displayEnd(), this.dateLocale()) ?? this.displayEnd(),
-    };
+  /** @internal */
+  protected onDialogDraftChange(draft: TemporalRangeDraft): void {
+    if (!this.calendarOpen() || this.effectiveDisabled() || this.readonly()) return;
+    this.dialogDraft.set(draft);
   }
 
-  private rangeInvalidity(value: LocalizedDateRange): RangeInvalidity {
-    const range = normalizedRange(value);
-    if (range.start === '' && range.end === '') return this.required() ? 'required' : null;
-    if (parseIsoDate(range.start) === null || parseIsoDate(range.end) === null) return 'invalid';
-    if (compareIsoDates(range.start, range.end) === 1) return 'invalid';
-    if (this.isDateUnavailable(range.start) || this.isDateUnavailable(range.end))
-      return 'unavailable';
-    return intervalCrossesDisabledDate(range.start, range.end, this.disabledDates())
-      ? 'unavailable'
-      : null;
+  /** @internal */
+  protected clearDialogDraft(): void {
+    if (!this.calendarOpen() || this.effectiveDisabled() || this.readonly() || !this.canClear()) {
+      return;
+    }
+    this.dialogDraft.set(dateRangeDraft(EMPTY_DATE_RANGE));
   }
 
-  private isDateUnavailable(iso: string): boolean {
-    return isDateUnavailable(iso, {
+  /** @internal */
+  protected cancelDialog(): void {
+    if (!this.calendarOpen()) return;
+    this.dialogDraft.set(dateRangeDraft(this.currentValue(), this.currentInspection()));
+    this.calendarOpen.set(false);
+    this.markTouched();
+  }
+
+  /** @internal */
+  protected confirmDialog(): void {
+    if (!this.calendarOpen() || !this.canConfirmDialog()) return;
+    this.commitValue(dialogRange(this.dialogDraft()));
+    this.calendarOpen.set(false);
+    this.markTouched();
+  }
+
+  /** @internal */
+  protected onTextInput(event: TemporalFieldEndpointEvent): void {
+    if (this.effectiveDisabled() || this.readonly()) return;
+    this.setEndpointText(event);
+    this.manualDirty = true;
+    this.manualEditing.set(true);
+    this.onValidatorChange?.();
+  }
+
+  /** @internal */
+  protected onTextComplete(event: TemporalFieldEndpointEvent): void {
+    if (this.effectiveDisabled() || this.readonly()) return;
+    this.setEndpointText(event);
+    this.manualEditing.set(true);
+    const inspection = this.manualInspection();
+    if (this.rangeErrors(inspection) === null) {
+      if (this.manualDirty) this.commitValue(inspection.value);
+      else this.syncManualTextToRaw(this.currentRawValue());
+    }
+    this.markTouched();
+  }
+
+  /** @internal */
+  protected restoreManualText(): void {
+    if (this.effectiveDisabled() || this.readonly()) return;
+    this.syncManualTextToRaw(this.currentRawValue());
+    this.markTouched();
+  }
+
+  private rangeErrors(inspection: ReturnType<typeof inspectRange>): RangeErrors | null {
+    const value = inspection.value;
+    const requiredError = missingRequiredEndpoints(this.requirements(), inspection);
+    const invalidStart =
+      inspection.malformed.start || (inspection.shapeInvalid && value.start === null);
+    const invalidEnd = inspection.malformed.end || (inspection.shapeInvalid && value.end === null);
+    const orderInvalid = !invalidStart && !invalidEnd && !isNullableDateRangeOrdered(value);
+    const availability = dateRangeAvailability(value, {
       min: this.min(),
       max: this.max(),
       disabledDates: this.disabledDates(),
     });
+    const errors: RangeErrors = {};
+    if (requiredError.start || requiredError.end) errors.required = requiredError;
+    if (invalidStart || invalidEnd || orderInvalid) {
+      errors.dateRangeInvalid = {
+        ...(invalidStart ? { start: true } : {}),
+        ...(invalidEnd ? { end: true } : {}),
+        ...(orderInvalid ? { order: true } : {}),
+      };
+    }
+    if (
+      availability.startUnavailable ||
+      availability.endUnavailable ||
+      availability.rangeUnavailable
+    ) {
+      errors.dateRangeUnavailable = {
+        ...(availability.startUnavailable ? { start: true } : {}),
+        ...(availability.endUnavailable ? { end: true } : {}),
+        ...(availability.rangeUnavailable ? { interval: true } : {}),
+      };
+    }
+    return Object.keys(errors).length === 0 ? null : errors;
   }
 
-  private isDateUnavailableForSelection(iso: string): boolean {
-    if (this.isDateUnavailable(iso)) return true;
-    const rangeStart = this.calendarRange().start;
-    return (
-      this.activeBoundary() === 'end' &&
-      parseIsoDate(rangeStart) !== null &&
-      intervalCrossesDisabledDate(rangeStart, iso, this.disabledDates())
-    );
+  private errorsForValue(value: LocalizedDateRange): RangeErrors | null {
+    return this.rangeErrors(inspectRange(value, parseIsoDate));
   }
 
-  private toggleAriaLabel(value: string): string {
-    const parsed = parseIsoDate(value);
-    return parsed === null
-      ? this.labels().openCalendar
-      : `${this.labels().changeCalendar}, ${formatLongDate(parsed, this.dateLocale())}`;
+  private setEndpointText(event: TemporalFieldEndpointEvent): void {
+    if (event.boundary === 'end') this.endText.set(event.text);
+    else this.startText.set(event.text);
   }
 
   private commitValue(value: LocalizedDateRange): void {
-    const committed = normalizedRange(value);
-    if (this.value() === undefined) {
-      this.formValue.set(committed);
-      this.lastCommittedValue = committed;
-    }
+    const committed = canonicalRange(value);
+    if (this.value() === undefined) this.formRawValue.set(committed);
     this.valueChange.emit(committed);
     this.onFormChange?.(committed);
+    this.manualDirty = false;
+    this.manualEditing.set(false);
+    this.syncManualTextToRaw(this.currentRawValue());
   }
 
-  private restoreControlledDisplay(): void {
-    const value = this.value();
-    if (value === undefined) return;
-    const range = normalizedRange(value);
-    this.displayStart.set(formatDateForLocale(range.start, this.dateLocale()));
-    this.displayEnd.set(formatDateForLocale(range.end, this.dateLocale()));
-    this.lastCommittedValue = range;
-    if (!this.isBrowser) return;
-    const start = this.startInputElement()?.nativeElement;
-    const end = this.endInputElement()?.nativeElement;
-    if (start !== undefined) start.value = this.displayStart();
-    if (end !== undefined) end.value = this.displayEnd();
+  private syncManualTextToRaw(raw: unknown): void {
+    this.startText.set(renderEndpoint(raw, 'start', this.dateLocale()));
+    this.endText.set(renderEndpoint(raw, 'end', this.dateLocale()));
+    this.manualDirty = false;
+    this.manualEditing.set(false);
+  }
+
+  private rollbackAndCloseCalendar(): void {
+    this.dialogDraft.set(dateRangeDraft(this.currentValue(), this.currentInspection()));
+    this.calendarOpen.set(false);
+    this.calendarDialog().close();
+    this.markTouched();
   }
 
   private markTouched(): void {
@@ -448,28 +509,65 @@ export class LocalizedDateRangePickerComponent
   }
 }
 
-function isLocalizedDateRange(value: unknown): value is LocalizedDateRange {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as LocalizedDateRange).start === 'string' &&
-    typeof (value as LocalizedDateRange).end === 'string'
-  );
+function parseManualDate(text: string, dateLocale: string): string | null {
+  if (text.trim() === '') return null;
+  return parseDateForLocale(text, dateLocale) ?? text;
 }
 
-function normalizedRange(value: LocalizedDateRange): LocalizedDateRange {
+function renderEndpoint(raw: unknown, boundary: 'start' | 'end', dateLocale: string): string {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return '';
+  const endpoint = (raw as Record<string, unknown>)[boundary];
+  if (endpoint === null || endpoint === undefined) return '';
+  return typeof endpoint === 'string' ? formatDateForLocale(endpoint, dateLocale) : '';
+}
+
+function canonicalRange(value: LocalizedDateRange): LocalizedDateRange {
   return { start: value.start, end: value.end };
 }
 
-function rangesEqual(left: LocalizedDateRange, right: LocalizedDateRange): boolean {
-  return left.start === right.start && left.end === right.end;
+function dateRangeDraft(
+  value: LocalizedDateRange,
+  inspection?: ReturnType<typeof inspectRange>,
+): TemporalRangeDraft {
+  return {
+    start: {
+      date: value.start,
+      time: null,
+      ...(endpointSourceInvalid(inspection, 'start') ? { sourceInvalid: true } : {}),
+    },
+    end: {
+      date: value.end,
+      time: null,
+      ...(endpointSourceInvalid(inspection, 'end') ? { sourceInvalid: true } : {}),
+    },
+  };
 }
 
-function validationError(invalidity: Exclude<RangeInvalidity, null>): ValidationErrors {
-  if (invalidity === 'required') return { required: true };
-  return invalidity === 'unavailable' ? { dateRangeUnavailable: true } : { dateRangeInvalid: true };
+function endpointSourceInvalid(
+  inspection: ReturnType<typeof inspectRange> | undefined,
+  boundary: 'start' | 'end',
+): boolean {
+  return (
+    inspection?.malformed[boundary] === true ||
+    (inspection?.shapeInvalid === true && inspection.value[boundary] === null)
+  );
 }
 
-function readInputValue(event: Event): string {
-  return (event.target as HTMLInputElement).value;
+function draftHasSourceInvalid(draft: TemporalRangeDraft): boolean {
+  return draft.start.sourceInvalid === true || draft.end.sourceInvalid === true;
+}
+
+function dialogRange(draft: TemporalRangeDraft): LocalizedDateRange {
+  return { start: draft.start.date, end: draft.end.date };
+}
+
+function endpointIsInvalid(errors: RangeErrors | null, boundary: 'start' | 'end'): boolean {
+  if (errors === null) return false;
+  return (
+    errors.required?.[boundary] === true ||
+    errors.dateRangeInvalid?.[boundary] === true ||
+    errors.dateRangeInvalid?.order === true ||
+    errors.dateRangeUnavailable?.[boundary] === true ||
+    errors.dateRangeUnavailable?.interval === true
+  );
 }

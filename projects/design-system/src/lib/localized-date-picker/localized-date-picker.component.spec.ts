@@ -17,9 +17,13 @@ const LABELS: LocalizedDatePickerLabels = {
   previousYear: 'Предыдущий год',
   nextYear: 'Следующий год',
   clear: 'Очистить',
-  close: 'Закрыть',
+  cancel: 'Отмена',
+  done: 'Готово',
+  today: 'Сегодня',
   formatHint: 'Формат даты: ДД.ММ.ГГГГ',
+  selectDate: 'Выберите дату',
   invalidDate: 'Введите корректную дату в формате ДД.ММ.ГГГГ.',
+  unavailableDate: 'Эта дата недоступна.',
   requiredDate: 'Укажите дату.',
   keyboardHelp: 'Используйте стрелки для выбора даты.',
 };
@@ -40,7 +44,7 @@ const LABELS: LocalizedDatePickerLabels = {
 })
 class DatePickerFormHostComponent {
   readonly labels = LABELS;
-  readonly control = new FormControl('', { nonNullable: true, validators: Validators.required });
+  readonly control = new FormControl<string | null>(null, { validators: Validators.required });
 }
 
 @Component({
@@ -62,7 +66,7 @@ class DatePickerFormHostComponent {
 })
 class DatePickerValidatorHostComponent {
   readonly labels = { ...LABELS, placeholder: 'dd/mm/yyyy' };
-  readonly control = new FormControl('', { nonNullable: true });
+  readonly control = new FormControl<string | null>(null);
   readonly isRequired = signal(false);
   readonly min = signal<string | undefined>(undefined);
   readonly max = signal<string | undefined>(undefined);
@@ -83,7 +87,6 @@ describe('LocalizedDatePickerComponent', () => {
     fixture.componentRef.setInput('controlSize', 'default');
     fixture.componentRef.setInput('dateLocale', 'ru-RU');
     fixture.componentRef.setInput('labels', LABELS);
-    fixture.componentRef.setInput('required', false);
     fixture.componentRef.setInput('invalid', false);
     fixture.componentRef.setInput('controlDisabled', false);
     fixture.componentRef.setInput('readonly', false);
@@ -107,6 +110,23 @@ describe('LocalizedDatePickerComponent', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(toggle.getAttribute('aria-label')).toContain('Изменить дату');
     expect(toggle.getAttribute('aria-label')).toContain('5 февраля 2026');
+    expect(fixture.componentInstance.required()).toBe(false);
+  });
+
+  it('distinguishes a controlled null value from an unbound CVA value', () => {
+    fixture.componentInstance.writeValue('2027-12-15');
+    fixture.componentRef.setInput('value', null);
+    fixture.detectChanges();
+
+    expect(dateInput().value).toBe('');
+
+    fixture.componentRef.setInput('value', undefined);
+    fixture.detectChanges();
+    expect(dateInput().value).toBe('15.12.2027');
+
+    fixture.componentInstance.writeValue(null);
+    fixture.detectChanges();
+    expect(dateInput().value).toBe('');
   });
 
   it('opens a named modal dialog and exposes calendar grid semantics', () => {
@@ -167,13 +187,17 @@ describe('LocalizedDatePickerComponent', () => {
     expect(document.activeElement).toBe(dayButton('2025-02-28'));
   });
 
-  it('selects the focused day with Enter and emits an ISO value', () => {
+  it('selects with Enter as a draft and repeated Enter commits exactly once', () => {
     const valueChange = jest.fn();
     fixture.componentInstance.valueChange.subscribe(valueChange);
     openCalendar();
     dispatchKey(dayButton('2026-02-05'), 'ArrowRight');
     dispatchKey(dayButton('2026-02-06'), 'Enter');
-    expect(valueChange).toHaveBeenCalledWith('2026-02-06');
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(calendarDialog().open).toBe(true);
+
+    dispatchKey(dayButton('2026-02-06'), 'Enter');
+    expect(valueChange.mock.calls).toEqual([['2026-02-06']]);
     expect(calendarDialog().open).toBe(false);
     expect(document.activeElement).toBe(calendarToggle());
   });
@@ -184,6 +208,11 @@ describe('LocalizedDatePickerComponent', () => {
 
     openCalendar();
     dayButton('2026-02-06').click();
+    fixture.detectChanges();
+
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(calendarDialog().open).toBe(true);
+    dialogAction('done').click();
     fixture.detectChanges();
 
     expect(valueChange.mock.calls).toEqual([['2026-02-06']]);
@@ -197,38 +226,44 @@ describe('LocalizedDatePickerComponent', () => {
     expect(valueChange).toHaveBeenCalledTimes(1);
   });
 
-  it('closes without changing the value on Escape or backdrop click and restores focus', () => {
+  it('rolls a changed dialog draft back on Escape or backdrop click and restores focus', () => {
     const valueChange = jest.fn();
     fixture.componentInstance.valueChange.subscribe(valueChange);
     openCalendar();
-    dispatchKey(dayButton('2026-02-05'), 'Escape');
+    dayButton('2026-02-06').click();
+    fixture.detectChanges();
+    dispatchKey(dayButton('2026-02-06'), 'Escape');
     expect(valueChange).not.toHaveBeenCalled();
     expect(calendarDialog().open).toBe(false);
     expect(document.activeElement).toBe(calendarToggle());
     openCalendar();
+    expect(dayButton('2026-02-05').getAttribute('aria-selected')).toBe('true');
+    dayButton('2026-02-07').click();
+    fixture.detectChanges();
     calendarDialog().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    fixture.detectChanges();
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(dateInput().value).toBe('05.02.2026');
     expect(calendarDialog().open).toBe(false);
     expect(document.activeElement).toBe(calendarToggle());
   });
 
   it('wraps Tab and Shift+Tab focus inside the modal dialog', () => {
     openCalendar();
-    const close = calendarDialog().querySelector(
-      '[data-testid="date-picker-close"]',
-    ) as HTMLButtonElement;
+    const done = dialogAction('done');
     const previousMonth = calendarDialog().querySelector(
       '[data-testid="date-picker-previous-month"]',
     ) as HTMLButtonElement;
-    close.focus();
-    dispatchKey(close, 'Tab');
+    done.focus();
+    dispatchKey(done, 'Tab');
     expect(document.activeElement).toBe(previousMonth);
 
     previousMonth.focus();
     dispatchKey(previousMonth, 'Tab', { shiftKey: true });
-    expect(document.activeElement).toBe(close);
+    expect(document.activeElement).toBe(done);
   });
 
-  it('retains invalid manual input and exposes an announced error', () => {
+  it('retains invalid manual input without emitting and Escape restores committed text', () => {
     const valueChange = jest.fn();
     fixture.componentInstance.valueChange.subscribe(valueChange);
     const input = dateInput();
@@ -241,6 +276,24 @@ describe('LocalizedDatePickerComponent', () => {
     expect(input.getAttribute('aria-invalid')).toBe('true');
     expect(input.getAttribute('aria-errormessage')).toContain('Error');
     expect(validationMessage().textContent).toContain(LABELS.invalidDate);
+
+    dispatchKey(input, 'Escape');
+    expect(input.value).toBe('05.02.2026');
+    expect(input.getAttribute('aria-invalid')).toBeNull();
+  });
+
+  it('synchronizes manual invalidity to the native constraint-validation API', () => {
+    const input = dateInput();
+    input.value = '31.02.2026';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(input.validationMessage).toBe(LABELS.invalidDate);
+
+    input.value = '06.02.2026';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(input.validationMessage).toBe('');
   });
 
   it('parses localized manual input and renders a value accepted by the controlled parent', () => {
@@ -261,6 +314,8 @@ describe('LocalizedDatePickerComponent', () => {
     expect(input.value).toBe('03/04/2026');
     input.value = '03/31/2026';
     input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(valueChange).not.toHaveBeenCalled();
     input.dispatchEvent(new Event('blur'));
     fixture.detectChanges();
     expect(valueChange).toHaveBeenCalledWith('2026-03-31');
@@ -274,11 +329,34 @@ describe('LocalizedDatePickerComponent', () => {
 
     input.value = '06.02.2026';
     input.dispatchEvent(new Event('input'));
-    input.dispatchEvent(new Event('blur'));
     fixture.detectChanges();
+
+    expect(valueChange).not.toHaveBeenCalled();
+
+    dispatchKey(input, 'Enter');
 
     expect(valueChange).toHaveBeenCalledTimes(1);
     expect(valueChange).toHaveBeenCalledWith('2026-02-06');
+  });
+
+  it('normalizes a completed empty manual edit to null for outputs and CVA', () => {
+    fixture.componentRef.setInput('value', undefined);
+    fixture.componentInstance.writeValue('2026-02-05');
+    const valueChange = jest.fn();
+    const onChange = jest.fn();
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    fixture.componentInstance.registerOnChange(onChange);
+    fixture.detectChanges();
+
+    const input = dateInput();
+    input.value = '';
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+
+    expect(valueChange.mock.calls).toEqual([[null]]);
+    expect(onChange.mock.calls).toEqual([[null]]);
+    expect(dateInput().value).toBe('');
   });
 
   it('keeps a valid controlled manual edit external through blur until the parent accepts it', () => {
@@ -290,14 +368,14 @@ describe('LocalizedDatePickerComponent', () => {
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
-    expect(valueChange.mock.calls).toEqual([['2026-02-06']]);
-    expect(input.value).toBe('05.02.2026');
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(input.value).toBe('06.02.2026');
 
     input.dispatchEvent(new Event('blur'));
     fixture.detectChanges();
 
     expect(input.value).toBe('05.02.2026');
-    expect(valueChange).toHaveBeenCalledTimes(1);
+    expect(valueChange.mock.calls).toEqual([['2026-02-06']]);
 
     fixture.componentRef.setInput('value', '2026-02-06');
     fixture.detectChanges();
@@ -325,6 +403,12 @@ describe('LocalizedDatePickerComponent', () => {
       dateInvalid: true,
     });
 
+    fixture.componentRef.setInput('value', '');
+    fixture.detectChanges();
+    expect(fixture.componentInstance.validate(new FormControl(''))).toEqual({
+      dateInvalid: true,
+    });
+
     fixture.componentRef.setInput('value', undefined);
     fixture.componentRef.setInput('dateLocale', 'en-US');
     fixture.componentRef.setInput('labels', {
@@ -340,6 +424,10 @@ describe('LocalizedDatePickerComponent', () => {
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
+    expect(valueChange).not.toHaveBeenCalled();
+    input.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+
     expect(valueChange).toHaveBeenCalledWith('0999-03-31');
 
     valueChange.mockClear();
@@ -350,7 +438,60 @@ describe('LocalizedDatePickerComponent', () => {
     expect(valueChange).not.toHaveBeenCalled();
   });
 
-  it('disables dates outside min/max and explicitly unavailable dates', () => {
+  it.each([42, { date: '2026-02-05' }, Symbol('bad-date')])(
+    'guards malformed bound runtime value %p without throwing',
+    (value) => {
+      expect(() => {
+        fixture.componentRef.setInput('value', value);
+        fixture.detectChanges();
+      }).not.toThrow();
+      expect(dateInput().value).toBe('');
+      expect(fixture.componentInstance.validate(new FormControl(value))).toEqual({
+        dateInvalid: true,
+      });
+      expect(dateInput().getAttribute('aria-invalid')).toBe('true');
+      expect(validationMessage().textContent).toContain(LABELS.invalidDate);
+    },
+  );
+
+  it.each([42, { date: '2026-02-05' }, Symbol('bad-date')])(
+    'retains malformed CVA runtime value %p for validation without throwing',
+    (value) => {
+      fixture.componentRef.setInput('value', undefined);
+      expect(() => {
+        fixture.componentInstance.writeValue(value);
+        fixture.detectChanges();
+      }).not.toThrow();
+      expect(dateInput().value).toBe('');
+      expect(dateInput().getAttribute('aria-invalid')).toBe('true');
+      expect(fixture.componentInstance.validate(new FormControl(value))).toEqual({
+        dateInvalid: true,
+      });
+    },
+  );
+
+  it('shows invalid rather than required for a present malformed required value', () => {
+    fixture.componentRef.setInput('value', 42);
+    fixture.componentRef.setInput('required', true);
+    fixture.detectChanges();
+
+    expect(validationMessage().textContent).toContain(LABELS.invalidDate);
+  });
+
+  it('keeps a malformed optional source value unconfirmable until explicit Clear', () => {
+    fixture.componentRef.setInput('value', undefined);
+    fixture.componentInstance.writeValue('bad');
+    fixture.detectChanges();
+
+    openCalendar();
+
+    expect(dialogAction('done').disabled).toBe(true);
+    dialogAction('clear').click();
+    fixture.detectChanges();
+    expect(dialogAction('done').disabled).toBe(false);
+  });
+
+  it('disables unavailable dates and dynamic constraints gate Done', () => {
     fixture.componentRef.setInput('min', '2026-02-05');
     fixture.componentRef.setInput('max', '2026-02-20');
     fixture.componentRef.setInput('disabledDates', ['2026-02-06', '2026-02-10']);
@@ -366,20 +507,41 @@ describe('LocalizedDatePickerComponent', () => {
     dispatchKey(dayButton('2026-02-05'), 'ArrowRight');
     expect(valueChange).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(dayButton('2026-02-07'));
+
+    dayButton('2026-02-07').click();
+    fixture.detectChanges();
+    expect(dialogAction('done').disabled).toBe(false);
+    fixture.componentRef.setInput('max', '2026-02-06');
+    fixture.detectChanges();
+    expect(dialogAction('done').disabled).toBe(true);
   });
 
-  it('clears optional uncontrolled values and hides the clear action for required fields', () => {
+  it('rolls Clear back on Cancel and commits null only after Done', () => {
     fixture.componentRef.setInput('value', undefined);
     fixture.componentInstance.writeValue('2026-02-05');
     const valueChange = jest.fn();
+    const onChange = jest.fn();
     fixture.componentInstance.valueChange.subscribe(valueChange);
+    fixture.componentInstance.registerOnChange(onChange);
     fixture.detectChanges();
     openCalendar();
-    const clear = calendarDialog().querySelector(
-      '[data-testid="date-picker-clear"]',
-    ) as HTMLButtonElement;
+    const clear = dialogAction('clear');
     clear.click();
-    expect(valueChange).toHaveBeenCalledWith('');
+    fixture.detectChanges();
+    expect(valueChange).not.toHaveBeenCalled();
+    expect(calendarDialog().open).toBe(true);
+    expect(calendarDialog().querySelector('[data-testid="date-picker-clear"]')).toBeNull();
+    dialogAction('cancel').click();
+    fixture.detectChanges();
+    expect(dateInput().value).toBe('05.02.2026');
+
+    openCalendar();
+    dialogAction('clear').click();
+    fixture.detectChanges();
+    dialogAction('done').click();
+    fixture.detectChanges();
+    expect(valueChange.mock.calls).toEqual([[null]]);
+    expect(onChange.mock.calls).toEqual([[null]]);
     expect(dateInput().value).toBe('');
     expect(calendarDialog().open).toBe(false);
     fixture.componentRef.setInput('required', true);
@@ -388,22 +550,24 @@ describe('LocalizedDatePickerComponent', () => {
     expect(calendarDialog().querySelector('[data-testid="date-picker-clear"]')).toBeNull();
   });
 
-  it('keeps a controlled clear external until the parent accepts it', () => {
+  it('keeps a confirmed controlled clear external until the parent accepts null', () => {
     const valueChange = jest.fn();
     fixture.componentInstance.valueChange.subscribe(valueChange);
 
     openCalendar();
-    const clear = calendarDialog().querySelector(
-      '[data-testid="date-picker-clear"]',
-    ) as HTMLButtonElement;
+    const clear = dialogAction('clear');
     clear.click();
     fixture.detectChanges();
 
-    expect(valueChange.mock.calls).toEqual([['']]);
+    expect(valueChange).not.toHaveBeenCalled();
+    dialogAction('done').click();
+    fixture.detectChanges();
+
+    expect(valueChange.mock.calls).toEqual([[null]]);
     expect(dateInput().value).toBe('05.02.2026');
     expect(calendarToggle().getAttribute('aria-label')).toContain('5 февраля 2026');
 
-    fixture.componentRef.setInput('value', '');
+    fixture.componentRef.setInput('value', null);
     fixture.detectChanges();
 
     expect(dateInput().value).toBe('');
@@ -411,11 +575,20 @@ describe('LocalizedDatePickerComponent', () => {
   });
 
   it('announces required errors and honors readonly and disabled states', () => {
-    fixture.componentRef.setInput('value', '');
+    fixture.componentRef.setInput('value', null);
     fixture.componentRef.setInput('required', true);
     fixture.componentRef.setInput('invalid', true);
     fixture.detectChanges();
     expect(validationMessage().textContent).toContain(LABELS.requiredDate);
+    expect(dateInput().required).toBe(true);
+    expect(dateInput().getAttribute('aria-required')).toBe('true');
+
+    fixture.componentRef.setInput('required', false);
+    fixture.detectChanges();
+    expect(dateInput().required).toBe(false);
+    expect(dateInput().getAttribute('aria-required')).toBeNull();
+
+    fixture.componentRef.setInput('required', true);
     fixture.componentRef.setInput('readonly', true);
     fixture.detectChanges();
     expect(dateInput().readOnly).toBe(true);
@@ -435,7 +608,7 @@ describe('LocalizedDatePickerComponent', () => {
     fixture.componentRef.setInput('controlDisabled', true);
     fixture.detectChanges();
     expect(calendarDialog().open).toBe(false);
-    dayButton('2026-02-06').click();
+    expect(calendarDialog().querySelector('[data-date]')).toBeNull();
     expect(valueChange).not.toHaveBeenCalled();
 
     fixture.componentRef.setInput('controlDisabled', false);
@@ -447,11 +620,28 @@ describe('LocalizedDatePickerComponent', () => {
     fixture.componentRef.setInput('readonly', true);
     fixture.detectChanges();
     expect(calendarDialog().open).toBe(false);
-    dayButton('2026-02-06').click();
+    expect(calendarDialog().querySelector('[data-date]')).toBeNull();
     expect(valueChange).not.toHaveBeenCalled();
   });
 
-  it('integrates change, touched, writeValue, and disabled state with Angular forms', () => {
+  it('marks the control touched when a manual interaction completes or the dialog closes', () => {
+    const onTouched = jest.fn();
+    fixture.componentInstance.registerOnTouched(onTouched);
+
+    const input = dateInput();
+    input.value = '06.02.2026';
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+    expect(onTouched).toHaveBeenCalledTimes(1);
+
+    openCalendar();
+    dialogAction('cancel').click();
+    fixture.detectChanges();
+    expect(onTouched).toHaveBeenCalledTimes(2);
+  });
+
+  it('integrates nullable change, touched, writeValue, and disabled state with Angular forms', () => {
     fixture.componentRef.setInput('value', undefined);
     const onChange = jest.fn();
     const onTouched = jest.fn();
@@ -466,6 +656,9 @@ describe('LocalizedDatePickerComponent', () => {
     fixture.detectChanges();
     expect(onChange).toHaveBeenCalledWith('2027-12-16');
     expect(onTouched).toHaveBeenCalled();
+    fixture.componentInstance.writeValue(null);
+    fixture.detectChanges();
+    expect(dateInput().value).toBe('');
     fixture.componentInstance.setDisabledState(true);
     fixture.detectChanges();
     expect(dateInput().disabled).toBe(true);
@@ -490,6 +683,7 @@ describe('LocalizedDatePickerComponent', () => {
     expect(validityChange).toHaveBeenCalledWith(false);
     input.value = '16.12.2027';
     input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new Event('blur'));
     fixture.detectChanges();
     expect(fixture.componentInstance.validate(new FormControl('2027-12-16'))).toBeNull();
     expect(validityChange).toHaveBeenCalledWith(true);
@@ -569,7 +763,6 @@ describe('LocalizedDatePickerComponent', () => {
     const input = hostFixture.nativeElement.querySelector('#date') as HTMLInputElement;
     const control = hostFixture.componentInstance.control;
     expect(control.invalid).toBe(true);
-    expect(input.required).toBe(true);
     input.value = '15/12/2027';
     input.dispatchEvent(new Event('input'));
     input.dispatchEvent(new Event('blur'));
@@ -602,7 +795,7 @@ describe('LocalizedDatePickerComponent', () => {
     expect(host.control.errors).toBeNull();
 
     host.isRequired.set(true);
-    host.control.setValue('');
+    host.control.setValue(null);
     hostFixture.changeDetectorRef.markForCheck();
     hostFixture.detectChanges();
     await hostFixture.whenStable();
@@ -667,7 +860,13 @@ describe('LocalizedDatePickerComponent', () => {
 
   function calendarToggle(): HTMLButtonElement {
     return fixture.nativeElement.querySelector(
-      '[data-testid="date-picker-toggle"]',
+      '[data-testid="temporal-picker-field-trigger"]',
+    ) as HTMLButtonElement;
+  }
+
+  function dialogAction(action: 'clear' | 'cancel' | 'done'): HTMLButtonElement {
+    return calendarDialog().querySelector(
+      `[data-testid="date-picker-${action}"]`,
     ) as HTMLButtonElement;
   }
 
