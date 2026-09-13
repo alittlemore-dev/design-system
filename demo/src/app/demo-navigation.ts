@@ -60,8 +60,11 @@ export const DEMO_SECTIONS: readonly FoldableTreeSection[] = [
   {
     key: 'overlays',
     label: 'Overlays',
-    trailingText: '1',
-    items: [{ key: '/components/modal-scroll', label: 'Modal scroll', badgeText: null }],
+    trailingText: '2',
+    items: [
+      { key: '/components/modal-scroll', label: 'Modal scroll', badgeText: null },
+      { key: '/components/disclosures', label: 'Disclosures and drafts', badgeText: 'New' },
+    ],
   },
   {
     key: 'markdown',

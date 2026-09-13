@@ -10,6 +10,27 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Changed
 
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.3.1] - 2026-09-14
+
+### Added
+
+- Add native anchored dropdowns with projected actions and controls, accessible modal drawers,
+  and a reusable native dialog lifecycle with optional dismissal, focus restoration and shared
+  page scroll locking.
+- Add controlled foldable sections that preserve mounted content while collapsed.
+- Add scoped unsaved-change tracking with consumer-owned confirmation, lifetime cleanup, baseline
+  commits, and browser unload protection.
+
+### Changed
+
 - Make calendar range selection alternate start and end replacement after every accepted date,
   ordering crossed endpoints without requiring Clear or visible endpoint-mode controls.
 - Show both time endpoints together in time-range and datetime-range dialogs, and add visible mouse
@@ -31,6 +52,8 @@ policy in [Release workflows](docs/release-workflows.md).
 ### Removed
 
 ### Fixed
+
+- Restore table cell spacing and borders in the embedded Markdown editor preview.
 
 - Preserve the owning page scroll position through delayed browser layout frames when vertical
   arrow navigation moves between rendered Markdown-table cells.

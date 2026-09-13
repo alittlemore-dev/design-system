@@ -30,3 +30,8 @@ export * from './lib/notifications/notification-area.component';
 export * from './lib/theme/theme.service';
 export * from './lib/modal/modal-page-scroll-lock.service';
 export * from './lib/modal/modal-scroll.directive';
+export * from './lib/dropdown/dropdown.component';
+export * from './lib/drawer/drawer.component';
+export * from './lib/unsaved-changes/unsaved-changes.service';
+export * from './lib/foldable-section/foldable-section.component';
+export * from './lib/modal/modal-dialog.directive';

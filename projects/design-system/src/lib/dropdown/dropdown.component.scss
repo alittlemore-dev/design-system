@@ -1,0 +1,34 @@
+:host {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+}
+.ds-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.ds-dropdown-panel[popover] {
+  --bs-dropdown-link-active-color: var(--button-primary-color);
+  --bs-dropdown-link-active-bg: var(--button-primary-bg);
+  position: fixed;
+  inset: auto;
+  inline-size: min(18rem, calc(100vw - 2rem));
+  min-inline-size: 0;
+  max-block-size: calc(100dvh - 2rem);
+  margin: 0.25rem 0;
+  overflow-y: auto;
+  position-area: block-end span-inline-start;
+  position-try-fallbacks:
+    flip-block,
+    flip-inline,
+    flip-block flip-inline;
+}
+.ds-dropdown-panel.ds-dropdown-start {
+  position-area: block-end span-inline-end;
+}
+.ds-dropdown-panel:popover-open {
+  display: block;
+}

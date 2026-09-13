@@ -101,5 +101,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/markdown-pages').then((module) => module.MarkdownEditorPageComponent),
   },
+  {
+    path: 'components/disclosures',
+    loadComponent: () =>
+      import('./pages/disclosures-page.component').then(
+        (module) => module.DisclosuresPageComponent,
+      ),
+  },
   { path: '**', redirectTo: 'overview' },
 ];

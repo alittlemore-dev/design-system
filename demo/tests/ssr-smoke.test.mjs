@@ -119,6 +119,11 @@ test('serves component pages directly without rendering the former all-in-one sh
       content: /data-demo-tree-selection/,
     },
     {
+      path: '/components/disclosures',
+      heading: 'Disclosures and drafts',
+      content: /data-demo-dirty/,
+    },
+    {
       path: '/components/modal-scroll',
       heading: 'Modal scroll',
       content: /Open modal scroll demo/,

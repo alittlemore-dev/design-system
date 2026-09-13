@@ -245,6 +245,16 @@ test('hydrates the routed showcase, tracks the known Source-mode CSP gap, and ke
   await editor.getByRole('tab', { name: 'Preview' }).click();
   const editorPreview = editor.locator('[data-testid="markdown-editor-preview-content"]');
   await editorPreview.locator('code.language-ts').waitFor();
+  const previewCellStyle = await editorPreview
+    .locator('th')
+    .first()
+    .evaluate((cell) => {
+      const style = getComputedStyle(cell);
+      return { border: style.borderTopWidth, padding: style.paddingLeft };
+    });
+  assert.equal(previewCellStyle.border, '1px');
+  assert.ok(Number.parseFloat(previewCellStyle.padding) > 0);
+
   assert.equal(await editorPreview.locator('code.language-ts').count(), 1);
   assert.equal(
     await editorPreview.getByRole('link', { name: 'the editor contract' }).getAttribute('href'),
@@ -1108,4 +1118,74 @@ test('keeps all packed temporal pickers transactional and adaptive without brows
 
   assert.deepEqual(await page.evaluate(() => window.__demoCspViolations), []);
   assert.deepEqual(browserErrors, []);
+});
+
+test('disclosures preserve native keyboard, focus, mobile geometry and draft boundaries', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const browser = await chromium.launch({ headless: true });
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  await page.goto(`${server.url}/components/disclosures`, { waitUntil: 'networkidle' });
+  const trigger = page.getByRole('button', { name: 'Open actions' });
+  await trigger.focus();
+  await trigger.press('ArrowDown');
+  await page.getByRole('button', { name: 'Choose action' }).waitFor();
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.textContent?.trim()),
+    'Choose action',
+  );
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(
+    () =>
+      document.querySelector('button[popovertarget]')?.getAttribute('aria-expanded') === 'false',
+  );
+  await trigger.click();
+  await page.getByRole('checkbox', { name: 'Keep open option' }).check();
+  assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
+  await page.getByRole('button', { name: 'Choose action' }).click();
+  await waitForText(page, '[data-demo-dropdown-state]', 'Closed · Chosen');
+  const drawerTrigger = page.getByRole('button', { name: 'Open drawer', exact: true });
+  await drawerTrigger.click();
+  assert.equal(await page.getByRole('dialog').isVisible(), true);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.getByRole('dialog').isVisible(), false);
+  assert.equal(await drawerTrigger.evaluate((element) => element === document.activeElement), true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await trigger.click();
+  const panel = await page.locator('#demo-actions-panel').boundingBox();
+  assert.ok(panel.x >= 0 && panel.x + panel.width <= 390);
+  await page.keyboard.press('Escape');
+  await drawerTrigger.click();
+  const drawer = await page.getByRole('dialog').boundingBox();
+  assert.ok(drawer.x === 0 && drawer.width < 390 && drawer.height <= 844);
+  await page.mouse.click(385, 200);
+  assert.equal(await page.getByRole('dialog').isVisible(), false);
+  const modalTrigger = page.getByRole('button', { name: 'Open required modal' });
+  await modalTrigger.click();
+  const requiredDialog = page.getByRole('dialog', { name: 'Required example' });
+  await page.keyboard.press('Escape');
+  assert.equal(await requiredDialog.isVisible(), true);
+  await requiredDialog.getByRole('checkbox', { name: 'Allow modal dismissal' }).check();
+  await waitForText(page, '[data-demo-modal-policy]', 'Dismissible');
+  await page.keyboard.press('Escape');
+  await requiredDialog.waitFor({ state: 'hidden' });
+  await waitForText(page, '[data-demo-modal-dismissed]', 'Dismissed');
+  assert.equal(await modalTrigger.evaluate((element) => element === document.activeElement), true);
+  await page.locator('[data-demo-draft]').fill('Changed');
+  await waitForText(page, '[data-demo-dirty]', 'Unsaved');
+  await page.getByRole('button', { name: 'Draft details Content stays mounted' }).click();
+  await page.locator('[data-demo-draft]').waitFor({ state: 'hidden' });
+  assert.equal(await page.locator('[data-demo-draft]').isVisible(), false);
+  await page.getByRole('button', { name: 'Discard draft', exact: true }).click();
+  await waitForText(page, '[data-demo-confirmation]', 'Declined');
+  await page.getByRole('checkbox', { name: 'Allow discard' }).check();
+  await page.getByRole('button', { name: 'Discard draft', exact: true }).click();
+  await waitForText(page, '[data-demo-dirty]', 'Saved');
+  assert.deepEqual(errors, []);
 });

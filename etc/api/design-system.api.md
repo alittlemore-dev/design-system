@@ -7,7 +7,9 @@
 import { AbstractControl } from '@angular/forms';
 import * as _angular_core from '@angular/core';
 import { ControlValueAccessor } from '@angular/forms';
+import { DestroyRef } from '@angular/core';
 import { OnChanges } from '@angular/core';
+import { Signal } from '@angular/core';
 import { SimpleChanges } from '@angular/core';
 import { ValidationErrors } from '@angular/forms';
 import { Validator } from '@angular/forms';
@@ -32,6 +34,52 @@ export class ControlValidationStateDirective {
     static ɵdir: _angular_core.ɵɵDirectiveDeclaration<ControlValidationStateDirective, "input[formControlName], textarea[formControlName]", never, {}, {}, never, never, true, never>;
     // (undocumented)
     static ɵfac: _angular_core.ɵɵFactoryDeclaration<ControlValidationStateDirective, never>;
+}
+
+// @public
+export class DrawerComponent {
+    // (undocumented)
+    close(): void;
+    // (undocumented)
+    readonly closeLabel: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly isOpen: _angular_core.Signal<boolean>;
+    // (undocumented)
+    readonly label: _angular_core.InputSignal<string>;
+    // (undocumented)
+    open(): void;
+    // (undocumented)
+    readonly openChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<DrawerComponent, "ds-drawer", never, { "label": { "alias": "label"; "required": true; "isSignal": true; }; "closeLabel": { "alias": "closeLabel"; "required": true; "isSignal": true; }; }, { "openChange": "openChange"; }, never, ["*"], true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<DrawerComponent, never>;
+}
+
+// @public
+export class DropdownComponent {
+    // (undocumented)
+    readonly align: _angular_core.InputSignal<"start" | "end">;
+    // (undocumented)
+    close(): void;
+    // (undocumented)
+    readonly disabled: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    protected focusFirst(event: Event): void;
+    // (undocumented)
+    readonly id: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly isOpen: _angular_core.Signal<boolean>;
+    // (undocumented)
+    readonly label: _angular_core.InputSignal<string>;
+    // (undocumented)
+    protected onToggle(event: ToggleEvent): void;
+    // (undocumented)
+    readonly openChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<DropdownComponent, "ds-dropdown", never, { "id": { "alias": "id"; "required": true; "isSignal": true; }; "label": { "alias": "label"; "required": true; "isSignal": true; }; "align": { "alias": "align"; "required": false; "isSignal": true; }; "disabled": { "alias": "disabled"; "required": false; "isSignal": true; }; }, { "openChange": "openChange"; }, never, ["[dsDropdownTrigger]", "*"], true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<DropdownComponent, never>;
 }
 
 // @public (undocumented)
@@ -75,6 +123,28 @@ export class ErrorMessageComponent {
 
 // @public (undocumented)
 export function flattenNestedErrorMessages(error: ErrorDisplay): readonly string[];
+
+// @public (undocumented)
+export class FoldableSectionComponent {
+    // (undocumented)
+    readonly bodyId: _angular_core.Signal<string>;
+    // (undocumented)
+    readonly expanded: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly expandedChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    readonly sectionKey: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly summary: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly title: _angular_core.InputSignal<string>;
+    // (undocumented)
+    toggle(): void;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<FoldableSectionComponent, "ds-foldable-section", never, { "sectionKey": { "alias": "sectionKey"; "required": true; "isSignal": true; }; "title": { "alias": "title"; "required": true; "isSignal": true; }; "summary": { "alias": "summary"; "required": true; "isSignal": true; }; "expanded": { "alias": "expanded"; "required": true; "isSignal": true; }; }, { "expandedChange": "expandedChange"; }, never, ["*"], true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<FoldableSectionComponent, never>;
+}
 
 // @public (undocumented)
 export class FoldableTreeComponent {
@@ -773,6 +843,33 @@ export interface LocalizedTimeRangePickerLabels {
     readonly unavailableRange: string;
 }
 
+// @public
+export class ModalDialogDirective {
+    constructor();
+    // (undocumented)
+    protected cancel(event: Event): void;
+    // (undocumented)
+    close(): void;
+    // (undocumented)
+    protected dismissBackdrop(event: PointerEvent): void;
+    // (undocumented)
+    readonly dismissed: _angular_core.OutputEmitterRef<void>;
+    // (undocumented)
+    readonly dismissible: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    protected finishClose(): void;
+    // (undocumented)
+    readonly isOpen: _angular_core.Signal<boolean>;
+    // (undocumented)
+    open(): void;
+    // (undocumented)
+    readonly openChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    static ɵdir: _angular_core.ɵɵDirectiveDeclaration<ModalDialogDirective, "dialog[dsModalDialog]", ["dsModalDialog"], { "dismissible": { "alias": "dismissible"; "required": false; "isSignal": true; }; }, { "dismissed": "dismissed"; "openChange": "openChange"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<ModalDialogDirective, never>;
+}
+
 // @public (undocumented)
 export class ModalPageScrollLockService {
     // (undocumented)
@@ -909,6 +1006,53 @@ export class ThemeService {
     // (undocumented)
     static ɵprov: _angular_core.ɵɵInjectableDeclaration<ThemeService>;
 }
+
+// @public (undocumented)
+export class UnsavedChangesScope {
+    constructor(confirmChanges: () => boolean, removeScope: (scope: UnsavedChangesScope) => void);
+    // (undocumented)
+    commit(): void;
+    // (undocumented)
+    confirmDiscard(): boolean;
+    // (undocumented)
+    confirmDiscardExcept(preservedSources: readonly UnsavedChangesSource[]): boolean;
+    // (undocumented)
+    dispose(): void;
+    // (undocumented)
+    readonly hasChanges: Signal<boolean>;
+    // (undocumented)
+    registerSource(current: Signal<UnsavedValue>, active: Signal<boolean>): UnsavedChangesSource;
+}
+
+// @public (undocumented)
+export class UnsavedChangesService {
+    constructor();
+    // (undocumented)
+    confirmDiscard(confirm: () => boolean): boolean;
+    // (undocumented)
+    createScope(destroyRef: DestroyRef, confirm: () => boolean): UnsavedChangesScope;
+    // (undocumented)
+    discardChanges(): void;
+    // (undocumented)
+    readonly hasChanges: Signal<boolean>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<UnsavedChangesService, never>;
+    // (undocumented)
+    static ɵprov: _angular_core.ɵɵInjectableDeclaration<UnsavedChangesService>;
+}
+
+// @public (undocumented)
+export interface UnsavedChangesSource {
+    // (undocumented)
+    commit(): void;
+    // (undocumented)
+    readonly hasChanges: Signal<boolean>;
+    // (undocumented)
+    unregister(): void;
+}
+
+// @public (undocumented)
+export type UnsavedValue = unknown;
 
 // (No @packageDocumentation comment for this package)
 
