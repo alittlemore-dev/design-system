@@ -108,6 +108,18 @@ export function isolatedNpmEnvironment(cacheDirectory, environment = process.env
   };
 }
 
+export function browserInstallCommands(demoManifest) {
+  const playwrightRange = demoManifest?.devDependencies?.playwright;
+  if (typeof playwrightRange !== 'string' || playwrightRange === '') {
+    throw new Error('The demo manifest must declare a Playwright development dependency.');
+  }
+  return [
+    ['npm', ['ci']],
+    ['npm', ['install', '--no-save', '--package-lock=false', `playwright@${playwrightRange}`]],
+    ['npm', ['exec', '--', 'playwright', 'install', 'chromium']],
+  ];
+}
+
 export async function assertProductionBundlesExcludeTestingEntryPoint(statsPath) {
   const stats = JSON.parse(await readFile(statsPath, 'utf8'));
   const inputs =
@@ -180,11 +192,10 @@ async function installBrowser() {
   const cacheDirectory = await mkdtemp(join(tmpdir(), 'design-system-demo-browser-cache-'));
   const env = isolatedNpmEnvironment(cacheDirectory);
   try {
-    await runCommand('npm', ['ci'], { cwd: demoRoot, env });
-    await runCommand('npm', ['exec', '--', 'playwright', 'install', 'chromium'], {
-      cwd: demoRoot,
-      env,
-    });
+    const demoManifest = JSON.parse(await readFile(manifestPaths[0], 'utf8'));
+    for (const [command, args] of browserInstallCommands(demoManifest)) {
+      await runCommand(command, args, { cwd: demoRoot, env });
+    }
   } finally {
     await rm(cacheDirectory, { recursive: true, force: true });
   }

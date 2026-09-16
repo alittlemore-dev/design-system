@@ -21,6 +21,9 @@
 - [x] Add weekly Dependabot version updates for root, published-package, and demo npm dependencies and GitHub Actions.
 - [x] Enforce peer floors in the workspace, verify the packed package in a current-version consumer during CI and release, group coupled Dependabot updates, and require an up-to-date successful CI check for `main`.
 - [x] Give packed-demo npm subprocesses an isolated temporary cache so consumer validation never depends on user-cache permissions.
+- [x] Make `make install-demo-browser` resolve the demo's declared Playwright range before downloading Chromium so it installs the revision used by packed no-lock demo checks.
+- [x] Wait for the Site-select disabled state in the real-browser smoke before asserting its live control update.
+- [x] Preserve owning-page scroll through a late third layout frame when ArrowUp or ArrowDown moves between rendered Markdown-table cells.
 - [ ] Update the demo Express dependency tree so `qs` resolves to `6.16.0` or newer, then verify that `npm --prefix demo audit` reports no vulnerabilities.
 
 ## Design tokens and shared styles
@@ -48,12 +51,32 @@
   - [x] Migrate the duplicated `FoldableTreeComponent` from `my-site` and `personal-workspace` with neutral item and section contracts, template, styles, and tests.
 - [x] date picker component
   - [x] Migrate the duplicated `LocalizedDatePickerComponent` from `my-site` and `personal-workspace` with labels and control contracts, template, styles, and tests.
-- [ ] date range picker component
-  - [ ] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for range selection.
-- [ ] datetime picker component
-  - [ ] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for datetime selection.
-- [ ] datetime range picker component
-  - [ ] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for datetime range selection.
+- [x] date range picker component
+  - [x] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for range selection.
+- [x] datetime picker component
+  - [x] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for datetime selection.
+- [x] datetime range picker component
+  - [x] Implements the duplicated `LocalizedDatePickerComponent` from current repo with logic for datetime range selection.
+- [x] Replace emoji calendar glyphs in the new range and datetime picker toggles with the existing inline SVG icon.
+- [x] Verify transactional Done, Cancel, and Clear behavior across all six localized temporal pickers.
+- [x] Verify composite single-shell range fields and date/datetime range preview behavior.
+- [x] Verify nullable canonical value shapes and independent start/end/paired requirements contracts.
+- [x] Verify the localized time and same-day time-range components.
+- [x] Verify adaptive custom/native HH:mm UI and Today/Now draft actions.
+- [x] Verify the 0.3.0 documentation, packed demo, and public contracts.
+- [x] Fix calendar time-draft forwarding, time-first datetime ranges, and stale pending-edit confirmation.
+- [x] Finalize segmented HH:mm edits atomically before boundary advance and confirmation.
+- [x] Preserve malformed committed temporal values per endpoint until canonical replacement or explicit Clear.
+- [x] Align required, invalid, and unavailable temporal validation with raw endpoint presence and validator precedence.
+- [x] Make the localized date picker retain and validate malformed runtime/CVA values without throwing.
+- [x] Ignore cross-kind min/max bounds consistently in temporal dialog controls and controllers.
+- [x] Route Today and new range starts through consistent clearing, advance, and reorder transitions.
+- [x] Keep closed temporal-dialog SSR markup free of wall-clock-dependent content across hydration time zones.
+- [x] Derive localized date-picker Clear visibility from the current dialog draft.
+- [x] Alternate calendar-selected range boundaries after every accepted date without visible endpoint-mode controls.
+- [x] Show both start and end time editors together in time-range and datetime-range dialogs.
+- [x] Add visible mouse-operable increment and decrement controls to each custom time segment.
+- [ ] Support pasting a complete date, time, or datetime range separated by an en dash into either range endpoint and distribute the parsed values between both endpoints.
 
 ## Notifications
 
@@ -123,3 +146,7 @@
 - [x] Keep table-cell navigation from scrolling a visible target while minimally revealing a genuinely offscreen target.
 - [ ] Eliminate the inline `style` attribute CSP violation from Markdown-editor Source mode without changing its placement or interactions.
 - [ ] Add ordinary-file attachment support with a separate transport and insertion contract, configurable picker, paste, and drop sources, exact MIME and size validation, sequential retryable queues, and non-image preview semantics.
+
+- [x] Restore borders and spacing for tables in the embedded Markdown editor preview.
+- [x] Ignore delayed native drawer close events after the drawer has reopened.
+- [x] Keep native dropdown popover targets distinct from static Angular host IDs.

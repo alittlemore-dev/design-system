@@ -1,0 +1,65 @@
+:host {
+  display: inline-block;
+}
+
+.segmented-time-input {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.segmented-time-input-column {
+  display: grid;
+  gap: 0.125rem;
+  justify-items: center;
+}
+
+.segmented-time-input-adjust,
+.segmented-time-input-segment {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  display: inline-flex;
+  font: inherit;
+  justify-content: center;
+  padding: 0;
+}
+
+.segmented-time-input-adjust {
+  border-radius: var(--bs-border-radius-sm);
+  color: var(--bs-secondary-color);
+  min-height: 1.5rem;
+  min-width: 2rem;
+}
+
+.segmented-time-input-adjust:hover:not(:disabled) {
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-emphasis-color);
+}
+
+.segmented-time-input-segment {
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  min-height: 2.5rem;
+  min-width: 2.75rem;
+  padding-inline: 0.5rem;
+}
+
+.segmented-time-input-adjust:focus-visible,
+.segmented-time-input-segment:focus-visible {
+  outline: 2px solid currentcolor;
+  outline-offset: 2px;
+}
+
+.segmented-time-input-colon {
+  user-select: none;
+}
+
+.segmented-time-input-disabled {
+  opacity: 0.6;
+}
+
+.segmented-time-input-readonly .segmented-time-input-segment {
+  cursor: default;
+}

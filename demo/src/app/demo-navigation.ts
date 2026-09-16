@@ -19,11 +19,36 @@ export const DEMO_SECTIONS: readonly FoldableTreeSection[] = [
   {
     key: 'forms',
     label: 'Forms',
-    trailingText: '3',
+    trailingText: '8',
     items: [
       { key: '/components/form-validation', label: 'Form validation', badgeText: null },
       { key: '/components/site-select', label: 'Site select', badgeText: null },
       { key: '/components/localized-date-picker', label: 'Localized date picker', badgeText: null },
+      {
+        key: '/components/localized-date-range-picker',
+        label: 'Localized date range picker',
+        badgeText: 'New',
+      },
+      {
+        key: '/components/localized-time-picker',
+        label: 'Localized time picker',
+        badgeText: 'New',
+      },
+      {
+        key: '/components/localized-time-range-picker',
+        label: 'Localized time range picker',
+        badgeText: 'New',
+      },
+      {
+        key: '/components/localized-datetime-picker',
+        label: 'Localized datetime picker',
+        badgeText: 'New',
+      },
+      {
+        key: '/components/localized-datetime-range-picker',
+        label: 'Localized datetime range picker',
+        badgeText: 'New',
+      },
     ],
   },
   {
@@ -35,8 +60,11 @@ export const DEMO_SECTIONS: readonly FoldableTreeSection[] = [
   {
     key: 'overlays',
     label: 'Overlays',
-    trailingText: '1',
-    items: [{ key: '/components/modal-scroll', label: 'Modal scroll', badgeText: null }],
+    trailingText: '2',
+    items: [
+      { key: '/components/modal-scroll', label: 'Modal scroll', badgeText: null },
+      { key: '/components/disclosures', label: 'Disclosures and drafts', badgeText: 'New' },
+    ],
   },
   {
     key: 'markdown',

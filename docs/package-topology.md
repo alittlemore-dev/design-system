@@ -35,7 +35,29 @@ The primary entry point owns:
 - notifications and their neutral models;
 - theme and modal UI infrastructure;
 - form-validation presentation behavior;
-- shared presentation utilities.
+- shared presentation utilities;
+- native disclosure popovers and modal drawers with consumer-owned content;
+- controlled foldable sections and scoped unsaved-change tracking.
+
+`DropdownComponent` projects a trigger through `[dsDropdownTrigger]` and arbitrary panel content.
+Consumers supply a stable unique `id` and an accessible `label`; selection policy remains with the
+consumer, which calls `close()` when appropriate. The native popover owns light dismissal and Escape.
+`DrawerComponent` exposes `open()` and `close()` and requires `label` and `closeLabel`; its native
+dialog owns focus containment while the component restores the opener and shares page scroll locks.
+`ModalDialogDirective` attaches the same native lifecycle to a consumer-owned `dialog`. It exposes
+`open()` and `close()` without opening during SSR; consumers call `open()` after rendering. Its
+`dismissible` input controls Escape and backdrop dismissal, and `dismissed` reports only user
+requests. Programmatic close still releases the shared scroll lock and restores focus. The drawer
+uses this directive internally, and it can be combined with `ModalScrollDirective` safely.
+
+The disclosure components expose read-only `isOpen` signals and `openChange` outputs. No routes or account models are owned
+by these primitives.
+
+`UnsavedChangesService.createScope(destroyRef, confirm)` registers a lifetime-bound scope. A source
+supplies current-value and active signals; `commit()` advances its baseline. Scope discard checks
+and the global `confirmDiscard(confirm)` invoke the supplied synchronous confirmation only when
+changes exist. Applications own translated confirmation and navigation. `discardChanges()` accepts
+current values as baselines; it does not mutate consumer data.
 
 It must not re-export Markdown-rendering or Markdown-editor APIs.
 

@@ -19,6 +19,28 @@ async function navigateToDemoPage(page, name, path) {
   assert.equal(await page.getByRole('heading', { name, level: 1, exact: true }).count(), 1);
 }
 
+async function readText(page, selector) {
+  return (await page.locator(selector).textContent())?.trim();
+}
+
+async function setCustomTime(page, hour, minute, boundary) {
+  const timeInput = boundary
+    ? page.locator(
+        `[data-testid="date-picker-time-panel"] [data-time-boundary="${boundary}"] [data-testid="segmented-time-input"]`,
+      )
+    : page.locator('[data-testid="segmented-time-input"]');
+  const hourSegment = timeInput.locator('[data-segment="hour"]');
+  const minuteSegment = timeInput.locator('[data-segment="minute"]');
+  await hourSegment.focus();
+  await hourSegment.pressSequentially(hour);
+  await minuteSegment.focus();
+  await minuteSegment.pressSequentially(minute);
+}
+
+async function expectCommittedUnchanged(page, selector, expected) {
+  assert.equal(await readText(page, selector), expected);
+}
+
 async function assertAndResetInlineStyleViolations(page, browserErrors, expectedCount) {
   const violations = await page.evaluate(() => window.__demoCspViolations);
   assert.equal(violations.length, expectedCount);
@@ -66,6 +88,9 @@ test('navigates the component catalogue and applies Site select inputs live', as
   await page.locator('[data-demo-site-size]').selectOption('small');
   await page.locator('[data-demo-site-invalid]').check();
   await page.locator('[data-demo-site-disabled]').check();
+  await page.waitForFunction(
+    () => document.querySelector('[data-testid="demo-site-select"]')?.disabled === true,
+  );
   assert.equal(
     await siteSelect.evaluate((element) =>
       element.classList.contains('site-select-trigger-bordered'),
@@ -163,12 +188,6 @@ test('hydrates the routed showcase, tracks the known Source-mode CSP gap, and ke
   await page.locator('[role="option"][data-value="beta"]').click();
   await waitForText(page, '[data-demo-site-selection]', 'Selected: beta');
 
-  await navigateToDemoPage(page, 'Localized date picker', '/components/localized-date-picker');
-  await waitForText(page, '[data-demo-localized-date]', 'Formatted date: Aug 28, 2026');
-  await page.locator('[data-testid="date-picker-toggle"]').click();
-  await page.locator('[data-date="2026-08-29"]').click();
-  await waitForText(page, '[data-demo-date-selection]', 'Selected: 2026-08-29');
-
   await page.locator('[data-demo-theme="dark"]').click();
   await page.waitForFunction(
     () => document.documentElement.getAttribute('data-bs-theme') === 'dark',
@@ -226,6 +245,16 @@ test('hydrates the routed showcase, tracks the known Source-mode CSP gap, and ke
   await editor.getByRole('tab', { name: 'Preview' }).click();
   const editorPreview = editor.locator('[data-testid="markdown-editor-preview-content"]');
   await editorPreview.locator('code.language-ts').waitFor();
+  const previewCellStyle = await editorPreview
+    .locator('th')
+    .first()
+    .evaluate((cell) => {
+      const style = getComputedStyle(cell);
+      return { border: style.borderTopWidth, padding: style.paddingLeft };
+    });
+  assert.equal(previewCellStyle.border, '1px');
+  assert.ok(Number.parseFloat(previewCellStyle.padding) > 0);
+
   assert.equal(await editorPreview.locator('code.language-ts').count(), 1);
   assert.equal(
     await editorPreview.getByRole('link', { name: 'the editor contract' }).getAttribute('href'),
@@ -698,4 +727,465 @@ test('hydrates the routed showcase, tracks the known Source-mode CSP gap, and ke
   const cspViolations = await page.evaluate(() => window.__demoCspViolations);
   assert.deepEqual(cspViolations, []);
   assert.deepEqual(browserErrors, []);
+});
+
+test('hydrates closed temporal dialogs consistently across client time zones', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const browser = await chromium.launch({ headless: true });
+  t.after(() => browser.close());
+
+  for (const timezoneId of ['Pacific/Kiritimati', 'Pacific/Pago_Pago']) {
+    const context = await browser.newContext({ timezoneId });
+    const page = await context.newPage();
+    const browserErrors = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') browserErrors.push(`console: ${message.text()}`);
+    });
+    page.on('pageerror', (error) => browserErrors.push(`page: ${error.message}`));
+
+    await page.goto(`${server.url}/components/localized-date-picker`, {
+      waitUntil: 'networkidle',
+    });
+    const dialog = page.locator('[data-testid="date-picker-calendar"]');
+    assert.equal(await dialog.count(), 1, timezoneId);
+    assert.equal(
+      await dialog.locator('.localized-date-picker-calendar-content').count(),
+      0,
+      timezoneId,
+    );
+    assert.equal(await dialog.locator('[data-date]').count(), 0, timezoneId);
+
+    await page
+      .locator('ds-localized-date-picker [data-testid="temporal-picker-field-trigger"]')
+      .click();
+    assert.equal(
+      await dialog.locator('.localized-date-picker-calendar-content').count(),
+      1,
+      timezoneId,
+    );
+    await page.locator('[data-testid="date-picker-cancel"]').click();
+    assert.equal(
+      await dialog.locator('.localized-date-picker-calendar-content').count(),
+      0,
+      timezoneId,
+    );
+    assert.deepEqual(browserErrors, [], timezoneId);
+    await context.close();
+  }
+});
+
+test('keeps all packed temporal pickers transactional and adaptive without browser violations', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const browser = await chromium.launch({ headless: true });
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  const browserErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(`console: ${message.text()}`);
+  });
+  page.on('pageerror', (error) => browserErrors.push(`page: ${error.message}`));
+  await page.addInitScript(() => {
+    const nativeMatchMedia = window.matchMedia.bind(window);
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (query) => {
+        if (query !== '(hover: none) and (pointer: coarse)') return nativeMatchMedia(query);
+        return {
+          matches: true,
+          media: query,
+          onchange: null,
+          addEventListener() {},
+          removeEventListener() {},
+          addListener() {},
+          removeListener() {},
+          dispatchEvent: () => false,
+        };
+      },
+    });
+    window.__demoCspViolations = [];
+    document.addEventListener('securitypolicyviolation', (event) => {
+      window.__demoCspViolations.push(`${event.violatedDirective}: ${event.blockedURI}`);
+    });
+  });
+
+  await page.goto(`${server.url}/components/localized-date-picker`, { waitUntil: 'networkidle' });
+  const dateCommitted = '[data-demo-date-selection]';
+  const originalDate = 'Committed: 2026-08-28';
+  const dateTrigger = page.locator(
+    'ds-localized-date-picker [data-testid="temporal-picker-field-trigger"]',
+  );
+  await waitForText(page, dateCommitted, originalDate);
+  await dateTrigger.click();
+  const previousMonth = page.locator('[data-testid="date-picker-previous-month"]');
+  const doneButton = page.locator('[data-testid="date-picker-done"]');
+  await previousMonth.focus();
+  await previousMonth.press('Shift+Tab');
+  assert.equal(await doneButton.evaluate((element) => document.activeElement === element), true);
+  await doneButton.press('Tab');
+  assert.equal(await previousMonth.evaluate((element) => document.activeElement === element), true);
+  await page.locator('[data-date="2026-08-29"]').click();
+  await expectCommittedUnchanged(page, dateCommitted, originalDate);
+  await page.locator('[data-testid="date-picker-done"]').click();
+  await waitForText(page, dateCommitted, 'Committed: 2026-08-29');
+  await dateTrigger.click();
+  await page.locator('[data-date="2026-08-30"]').click();
+  await expectCommittedUnchanged(page, dateCommitted, 'Committed: 2026-08-29');
+  await page.locator('[data-testid="date-picker-cancel"]').click();
+  await expectCommittedUnchanged(page, dateCommitted, 'Committed: 2026-08-29');
+  assert.equal(await dateTrigger.evaluate((element) => document.activeElement === element), true);
+
+  await dateTrigger.click();
+  await page.locator('[data-date="2026-08-30"]').click();
+  await page.mouse.click(2, 2);
+  assert.equal(
+    await page.locator('[data-testid="date-picker-calendar"]').evaluate((element) => element.open),
+    false,
+  );
+  await expectCommittedUnchanged(page, dateCommitted, 'Committed: 2026-08-29');
+  assert.equal(await dateTrigger.evaluate((element) => document.activeElement === element), true);
+
+  await navigateToDemoPage(
+    page,
+    'Localized date range picker',
+    '/components/localized-date-range-picker',
+  );
+  const dateRangeCommitted = '[data-demo-date-range-selection]';
+  const originalDateRange = 'Committed: 2026-08-28 → 2026-08-30';
+  await waitForText(page, dateRangeCommitted, originalDateRange);
+  await page.locator('#demo-date-range').focus();
+  await page
+    .locator('ds-localized-date-range-picker [data-testid="temporal-picker-field-trigger"]')
+    .click();
+  assert.equal(await page.locator('[data-date="2026-08-31"]').isDisabled(), true);
+  await page.locator('[data-testid="date-picker-clear"]').click();
+  await page.locator('[data-date="2026-08-28"]').click();
+  await page.locator('[data-date="2026-08-30"]').click();
+  await page.locator('[data-date="2026-08-27"]').click();
+  await page.locator('[data-date="2026-08-26"]').click();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-date="2026-08-26"]')
+        ?.classList.contains('localized-date-picker-range-start') === true &&
+      document
+        .querySelector('[data-date="2026-08-27"]')
+        ?.classList.contains('localized-date-picker-range-end') === true,
+  );
+  assert.equal(
+    await page
+      .locator('[data-date="2026-08-26"]')
+      .evaluate((element) => element.classList.contains('localized-date-picker-range-start')),
+    true,
+  );
+  assert.equal(
+    await page
+      .locator('[data-date="2026-08-27"]')
+      .evaluate((element) => element.classList.contains('localized-date-picker-range-end')),
+    true,
+  );
+  await page.locator('[data-testid="date-picker-cancel"]').click();
+  await expectCommittedUnchanged(page, dateRangeCommitted, originalDateRange);
+  await page
+    .locator('ds-localized-date-range-picker [data-testid="temporal-picker-field-trigger"]')
+    .click();
+  await page.locator('[data-testid="date-picker-clear"]').click();
+  await page.locator('[data-date="2026-08-27"]').click();
+  await expectCommittedUnchanged(page, dateRangeCommitted, originalDateRange);
+  await page.locator('[data-testid="date-picker-done"]').click();
+  await waitForText(page, dateRangeCommitted, 'Committed: 2026-08-27 → (null)');
+  await page.locator('#demo-date-range-end').focus();
+  await page
+    .locator('ds-localized-date-range-picker [data-testid="temporal-picker-field-trigger"]')
+    .click();
+  await page.locator('[data-date="2026-08-27"]').press('ArrowRight');
+  const keyboardPreview = page.locator('[data-date="2026-08-28"]');
+  await page.waitForFunction(() =>
+    document
+      .querySelector('[data-date="2026-08-28"]')
+      ?.classList.contains('localized-date-picker-preview-end'),
+  );
+  assert.equal(await keyboardPreview.getAttribute('aria-selected'), 'false');
+  assert.equal(
+    await keyboardPreview.evaluate((element) =>
+      element.classList.contains('localized-date-picker-preview-end'),
+    ),
+    true,
+  );
+  assert.match(
+    (await page.locator('[data-testid="date-picker-status"]').textContent()) ?? '',
+    /Preview from August 27, 2026 to August 28, 2026/,
+  );
+  const pointerPreview = page.locator('[data-date="2026-08-29"]');
+  await pointerPreview.hover();
+  assert.equal(await pointerPreview.getAttribute('aria-selected'), 'false');
+  assert.equal(
+    await pointerPreview.evaluate((element) =>
+      element.classList.contains('localized-date-picker-preview-end'),
+    ),
+    true,
+  );
+  await page.locator('[data-date="2026-08-29"]').click();
+  await expectCommittedUnchanged(page, dateRangeCommitted, 'Committed: 2026-08-27 → (null)');
+  await page.locator('[data-testid="date-picker-cancel"]').click();
+  await expectCommittedUnchanged(page, dateRangeCommitted, 'Committed: 2026-08-27 → (null)');
+  await page.locator('[data-demo-date-range-require-paired]').check();
+  await page.waitForFunction(
+    () => document.querySelector('#demo-date-range-end')?.getAttribute('aria-invalid') === 'true',
+  );
+  assert.equal(await page.locator('#demo-date-range-end').getAttribute('aria-invalid'), 'true');
+  assert.match(
+    (await page.locator('[data-testid="date-range-validation-message"]').textContent()) ?? '',
+    /both dates/i,
+  );
+
+  await navigateToDemoPage(page, 'Localized time picker', '/components/localized-time-picker');
+  await page.locator('[data-demo-time-mode]').selectOption('custom');
+  const timeCommitted = '[data-demo-time-selection]';
+  const originalTime = 'Committed: 09:30';
+  await waitForText(page, timeCommitted, originalTime);
+  await page
+    .locator('ds-localized-time-picker [data-testid="temporal-picker-field-trigger"]')
+    .click();
+  await setCustomTime(page, '14', '45');
+  await expectCommittedUnchanged(page, timeCommitted, originalTime);
+  await page.locator('[data-testid="date-picker-done"]').click();
+  await waitForText(page, timeCommitted, 'Committed: 14:45');
+  await page
+    .locator('ds-localized-time-picker [data-testid="temporal-picker-field-trigger"]')
+    .click();
+  await setCustomTime(page, '16', '15');
+  await expectCommittedUnchanged(page, timeCommitted, 'Committed: 14:45');
+  await page.locator('[data-testid="date-picker-cancel"]').click();
+  await expectCommittedUnchanged(page, timeCommitted, 'Committed: 14:45');
+  await page.locator('[data-demo-time-mode]').selectOption('auto');
+  await page
+    .locator('ds-localized-time-picker [data-testid="temporal-picker-field-trigger"]')
+    .click();
+  assert.equal(await page.locator('[data-testid="date-picker-native-time"]').count(), 1);
+  await page.locator('[data-testid="date-picker-cancel"]').click();
+
+  await navigateToDemoPage(
+    page,
+    'Localized time range picker',
+    '/components/localized-time-range-picker',
+  );
+  await page.locator('[data-demo-time-range-mode]').selectOption('custom');
+  const timeRangeCommitted = '[data-demo-time-range-selection]';
+  const originalTimeRange = 'Committed: 09:30 → 17:00';
+  await waitForText(page, timeRangeCommitted, originalTimeRange);
+  await page.locator('#demo-time-range-end').focus();
+  await page
+    .locator('ds-localized-time-range-picker [data-testid="temporal-picker-field-trigger"]')
+    .click();
+  assert.equal(await page.locator('[data-testid="segmented-time-input"]').count(), 2);
+  assert.deepEqual(
+    (await page.locator('[data-testid="date-picker-time-boundary-label"]').allTextContents()).map(
+      (label) => label.trim(),
+    ),
+    ['Start time', 'End time'],
+  );
+  await page
+    .locator('[data-time-boundary="end"] [data-adjust-segment="minute"][data-adjust="1"]')
+    .click();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-time-boundary="end"] [data-testid="segmented-time-input"]')
+        ?.getAttribute('aria-label') === '17:01',
+  );
+  assert.equal(
+    await page
+      .locator('[data-time-boundary="end"] [data-testid="segmented-time-input"]')
+      .getAttribute('aria-label'),
+    '17:01',
+  );
+  await setCustomTime(page, '16', '15', 'end');
+  await expectCommittedUnchanged(page, timeRangeCommitted, originalTimeRange);
+  await page.locator('[data-testid="date-picker-done"]').click();
+  await waitForText(page, timeRangeCommitted, 'Committed: 09:30 → 16:15');
+  await page.locator('#demo-time-range-end').focus();
+  await page
+    .locator('ds-localized-time-range-picker [data-testid="temporal-picker-field-trigger"]')
+    .click();
+  await setCustomTime(page, '15', '30', 'end');
+  await expectCommittedUnchanged(page, timeRangeCommitted, 'Committed: 09:30 → 16:15');
+  await page.locator('[data-testid="date-picker-cancel"]').click();
+  await expectCommittedUnchanged(page, timeRangeCommitted, 'Committed: 09:30 → 16:15');
+
+  await navigateToDemoPage(
+    page,
+    'Localized datetime picker',
+    '/components/localized-datetime-picker',
+  );
+  await page.locator('[data-demo-datetime-mode]').selectOption('custom');
+  const dateTimeCommitted = '[data-demo-datetime-selection]';
+  const originalDateTime = 'Committed: 2026-08-28T09:30';
+  await waitForText(page, dateTimeCommitted, originalDateTime);
+  await page
+    .locator('ds-localized-datetime-picker [data-testid="temporal-picker-field-trigger"]')
+    .click();
+  assert.equal(await page.locator('[data-date="2026-08-31"]').isDisabled(), true);
+  await page.locator('[data-date="2026-08-29"]').click();
+  await expectCommittedUnchanged(page, dateTimeCommitted, originalDateTime);
+  await page.locator('[data-testid="date-picker-done"]').click();
+  await waitForText(page, dateTimeCommitted, 'Committed: 2026-08-29T09:30');
+  await page
+    .locator('ds-localized-datetime-picker [data-testid="temporal-picker-field-trigger"]')
+    .click();
+  await page.locator('[data-date="2026-08-30"]').click();
+  await expectCommittedUnchanged(page, dateTimeCommitted, 'Committed: 2026-08-29T09:30');
+  await page.locator('[data-testid="date-picker-cancel"]').click();
+  await expectCommittedUnchanged(page, dateTimeCommitted, 'Committed: 2026-08-29T09:30');
+
+  await navigateToDemoPage(
+    page,
+    'Localized datetime range picker',
+    '/components/localized-datetime-range-picker',
+  );
+  await page.locator('[data-demo-datetime-range-mode]').selectOption('custom');
+  const dateTimeRangeCommitted = '[data-demo-datetime-range-selection]';
+  const originalDateTimeRange = 'Committed: 2026-08-28T09:30 → 2026-08-30T17:00';
+  await waitForText(page, dateTimeRangeCommitted, originalDateTimeRange);
+  await page.locator('#demo-datetime-range').focus();
+  await page
+    .locator('ds-localized-datetime-range-picker [data-testid="temporal-picker-field-trigger"]')
+    .click();
+  await page.locator('[data-date="2026-08-27"]').click();
+  await page.locator('[data-time-boundary="start"] [data-segment="hour"]').focus();
+  await page.locator('[data-date="2026-08-26"]').focus();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-date="2026-08-26"]')
+        ?.classList.contains('localized-date-picker-preview-end') === true &&
+      document
+        .querySelector('[data-testid="date-picker-status"]')
+        ?.textContent?.includes('Choose the end date and time.'),
+  );
+  await page.locator('[data-date="2026-08-29"]').click();
+  assert.equal(await page.locator('[data-testid="segmented-time-input"]').count(), 2);
+  await setCustomTime(page, '10', '15', 'start');
+  await setCustomTime(page, '16', '45', 'end');
+  await expectCommittedUnchanged(page, dateTimeRangeCommitted, originalDateTimeRange);
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-time-boundary="start"] [data-testid="segmented-time-input"]')
+        ?.getAttribute('aria-label') === '10:15' &&
+      document
+        .querySelector('[data-time-boundary="end"] [data-testid="segmented-time-input"]')
+        ?.getAttribute('aria-label') === '16:45' &&
+      document.querySelector('[data-date="2026-08-29"]')?.getAttribute('aria-selected') ===
+        'true' &&
+      !document.querySelector('[data-testid="date-picker-done"]')?.hasAttribute('disabled'),
+  );
+  const replacementEndState = await page.evaluate(() => ({
+    activeStatus: document.querySelector('[data-testid="date-picker-status"]')?.textContent?.trim(),
+    displayedTimes: [...document.querySelectorAll('[data-testid="segmented-time-input"]')].map(
+      (element) => element.getAttribute('aria-label'),
+    ),
+    doneDisabled: document
+      .querySelector('[data-testid="date-picker-done"]')
+      ?.hasAttribute('disabled'),
+    selectedDates: [...document.querySelectorAll('[data-date][aria-selected="true"]')].map(
+      (element) => element.getAttribute('data-date'),
+    ),
+  }));
+  assert.equal(replacementEndState.activeStatus, 'Choose the end date and time.');
+  assert.deepEqual(replacementEndState.displayedTimes, ['10:15', '16:45']);
+  assert.deepEqual(replacementEndState.selectedDates, ['2026-08-27', '2026-08-28', '2026-08-29']);
+  assert.equal(replacementEndState.doneDisabled, false, JSON.stringify(replacementEndState));
+  await page.locator('[data-testid="date-picker-done"]').click();
+  await waitForText(page, dateTimeRangeCommitted, 'Committed: 2026-08-27T10:15 → 2026-08-29T16:45');
+  await page.locator('#demo-datetime-range').focus();
+  await page
+    .locator('ds-localized-datetime-range-picker [data-testid="temporal-picker-field-trigger"]')
+    .click();
+  await page.locator('[data-date="2026-08-26"]').click();
+  await expectCommittedUnchanged(
+    page,
+    dateTimeRangeCommitted,
+    'Committed: 2026-08-27T10:15 → 2026-08-29T16:45',
+  );
+  await page.locator('[data-testid="date-picker-cancel"]').click();
+  await expectCommittedUnchanged(
+    page,
+    dateTimeRangeCommitted,
+    'Committed: 2026-08-27T10:15 → 2026-08-29T16:45',
+  );
+
+  assert.deepEqual(await page.evaluate(() => window.__demoCspViolations), []);
+  assert.deepEqual(browserErrors, []);
+});
+
+test('disclosures preserve native keyboard, focus, mobile geometry and draft boundaries', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const browser = await chromium.launch({ headless: true });
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  await page.goto(`${server.url}/components/disclosures`, { waitUntil: 'networkidle' });
+  const trigger = page.getByRole('button', { name: 'Open actions' });
+  await trigger.focus();
+  await trigger.press('ArrowDown');
+  await page.getByRole('button', { name: 'Choose action' }).waitFor();
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.textContent?.trim()),
+    'Choose action',
+  );
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(
+    () =>
+      document.querySelector('button[popovertarget]')?.getAttribute('aria-expanded') === 'false',
+  );
+  await trigger.click();
+  await page.getByRole('checkbox', { name: 'Keep open option' }).check();
+  assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
+  await page.getByRole('button', { name: 'Choose action' }).click();
+  await waitForText(page, '[data-demo-dropdown-state]', 'Closed · Chosen');
+  const drawerTrigger = page.getByRole('button', { name: 'Open drawer', exact: true });
+  await drawerTrigger.click();
+  assert.equal(await page.getByRole('dialog').isVisible(), true);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.getByRole('dialog').isVisible(), false);
+  assert.equal(await drawerTrigger.evaluate((element) => element === document.activeElement), true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await trigger.click();
+  const panel = await page.locator('#demo-actions-panel').boundingBox();
+  assert.ok(panel.x >= 0 && panel.x + panel.width <= 390);
+  await page.keyboard.press('Escape');
+  await drawerTrigger.click();
+  const drawer = await page.getByRole('dialog').boundingBox();
+  assert.ok(drawer.x === 0 && drawer.width < 390 && drawer.height <= 844);
+  await page.mouse.click(385, 200);
+  assert.equal(await page.getByRole('dialog').isVisible(), false);
+  const modalTrigger = page.getByRole('button', { name: 'Open required modal' });
+  await modalTrigger.click();
+  const requiredDialog = page.getByRole('dialog', { name: 'Required example' });
+  await page.keyboard.press('Escape');
+  assert.equal(await requiredDialog.isVisible(), true);
+  await requiredDialog.getByRole('checkbox', { name: 'Allow modal dismissal' }).check();
+  await waitForText(page, '[data-demo-modal-policy]', 'Dismissible');
+  await page.keyboard.press('Escape');
+  await requiredDialog.waitFor({ state: 'hidden' });
+  await waitForText(page, '[data-demo-modal-dismissed]', 'Dismissed');
+  assert.equal(await modalTrigger.evaluate((element) => element === document.activeElement), true);
+  await page.locator('[data-demo-draft]').fill('Changed');
+  await waitForText(page, '[data-demo-dirty]', 'Unsaved');
+  await page.getByRole('button', { name: 'Draft details Content stays mounted' }).click();
+  await page.locator('[data-demo-draft]').waitFor({ state: 'hidden' });
+  assert.equal(await page.locator('[data-demo-draft]').isVisible(), false);
+  await page.getByRole('button', { name: 'Discard draft', exact: true }).click();
+  await waitForText(page, '[data-demo-confirmation]', 'Declined');
+  await page.getByRole('checkbox', { name: 'Allow discard' }).check();
+  await page.getByRole('button', { name: 'Discard draft', exact: true }).click();
+  await waitForText(page, '[data-demo-dirty]', 'Saved');
+  assert.deepEqual(errors, []);
 });

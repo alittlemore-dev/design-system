@@ -1,0 +1,102 @@
+<div
+  class="segmented-time-input"
+  data-testid="segmented-time-input"
+  role="group"
+  [attr.aria-label]="timeValueText()"
+  [class.segmented-time-input-disabled]="disabled()"
+  [class.segmented-time-input-readonly]="readonly()"
+>
+  <div class="segmented-time-input-column">
+    <button
+      class="segmented-time-input-adjust"
+      data-adjust-segment="hour"
+      data-adjust="1"
+      type="button"
+      [attr.aria-label]="hourLabel() + ' +1'"
+      [disabled]="disabled() || readonly()"
+      (click)="adjustSegment('hour', 1)"
+    >
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+        <path d="m3 10 5-5 5 5" fill="none" stroke="currentColor" stroke-width="1.75" />
+      </svg>
+    </button>
+    <button
+      class="segmented-time-input-segment"
+      data-segment="hour"
+      type="button"
+      role="spinbutton"
+      [attr.aria-label]="hourLabel()"
+      aria-valuemin="0"
+      aria-valuemax="23"
+      [attr.aria-valuenow]="segmentValue('hour')"
+      [attr.aria-readonly]="readonly() || null"
+      [disabled]="disabled()"
+      (keydown)="onSegmentKeydown('hour', $event)"
+      (focus)="onSegmentFocus('hour')"
+      (blur)="onSegmentBlur('hour', $event)"
+    >
+      {{ hourText() }}
+    </button>
+    <button
+      class="segmented-time-input-adjust"
+      data-adjust-segment="hour"
+      data-adjust="-1"
+      type="button"
+      [attr.aria-label]="hourLabel() + ' −1'"
+      [disabled]="disabled() || readonly()"
+      (click)="adjustSegment('hour', -1)"
+    >
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+        <path d="m3 6 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.75" />
+      </svg>
+    </button>
+  </div>
+  <span class="segmented-time-input-colon" data-testid="segmented-time-colon" aria-hidden="true"
+    >:</span
+  >
+  <div class="segmented-time-input-column">
+    <button
+      class="segmented-time-input-adjust"
+      data-adjust-segment="minute"
+      data-adjust="1"
+      type="button"
+      [attr.aria-label]="minuteLabel() + ' +1'"
+      [disabled]="disabled() || readonly()"
+      (click)="adjustSegment('minute', 1)"
+    >
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+        <path d="m3 10 5-5 5 5" fill="none" stroke="currentColor" stroke-width="1.75" />
+      </svg>
+    </button>
+    <button
+      class="segmented-time-input-segment"
+      data-segment="minute"
+      type="button"
+      role="spinbutton"
+      [attr.aria-label]="minuteLabel()"
+      aria-valuemin="0"
+      aria-valuemax="59"
+      [attr.aria-valuenow]="segmentValue('minute')"
+      [attr.aria-readonly]="readonly() || null"
+      [disabled]="disabled()"
+      (keydown)="onSegmentKeydown('minute', $event)"
+      (focus)="onSegmentFocus('minute')"
+      (blur)="onSegmentBlur('minute', $event)"
+    >
+      {{ minuteText() }}
+    </button>
+    <button
+      class="segmented-time-input-adjust"
+      data-adjust-segment="minute"
+      data-adjust="-1"
+      type="button"
+      [attr.aria-label]="minuteLabel() + ' −1'"
+      [disabled]="disabled() || readonly()"
+      (click)="adjustSegment('minute', -1)"
+    >
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+        <path d="m3 6 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.75" />
+      </svg>
+    </button>
+  </div>
+</div>
