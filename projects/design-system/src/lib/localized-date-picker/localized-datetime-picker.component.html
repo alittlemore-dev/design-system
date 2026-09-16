@@ -1,0 +1,63 @@
+<div class="localized-datetime-picker">
+  <ds-temporal-picker-field
+    [inputId]="inputId()"
+    [startText]="manualText()"
+    [groupLabel]="triggerLabel()"
+    [triggerLabel]="triggerLabel()"
+    [startLabel]="labels().dateTimeInput"
+    [activeBoundary]="'single'"
+    [startInvalid]="effectiveInvalid()"
+    [startRequired]="required()"
+    [controlSize]="controlSize()"
+    [disabled]="effectiveDisabled()"
+    [readonly]="readonly()"
+    [startDescribedBy]="inputDescribedBy()"
+    [startErrorId]="errorId"
+    [placeholder]="labels().placeholder"
+    [expanded]="calendarOpen()"
+    [dialogId]="calendarId"
+    iconKind="calendar"
+    (endpointInput)="onTextInput($event)"
+    (endpointBlur)="onTextComplete($event)"
+    (endpointEnter)="onTextComplete($event)"
+    (endpointEscape)="restoreManualText()"
+    (triggerActivated)="toggleCalendar()"
+  />
+  <div [id]="formatHintId" class="visually-hidden">
+    {{ labels().dateFormatHint }} {{ labels().timeFormatHint }}
+  </div>
+  @if (effectiveInvalid()) {
+    <div
+      [id]="errorId"
+      class="invalid-feedback d-block"
+      data-testid="datetime-picker-validation-message"
+      role="alert"
+    >
+      {{ validationMessage() }}
+    </div>
+  }
+  <ds-calendar-dialog
+    #calendarDialog
+    [dialogId]="calendarId"
+    [dateLocale]="dateLocale()"
+    [labels]="dialogLabels()"
+    kind="datetime"
+    [range]="false"
+    [draft]="dialogDraft()"
+    [canConfirm]="canConfirmDialog()"
+    [timePickerMode]="timePickerMode()"
+    [required]="required()"
+    [canClear]="canClear()"
+    [disabled]="effectiveDisabled()"
+    [readonly]="readonly()"
+    [activeBoundary]="'single'"
+    [activeBoundaryLabel]="labels().selectDate"
+    [min]="min()"
+    [max]="max()"
+    [disabledDates]="disabledDates()"
+    (draftChange)="onDialogDraftChange($event)"
+    (cleared)="clearDialogDraft()"
+    (cancelled)="cancelDialog()"
+    (done)="confirmDialog()"
+  />
+</div>

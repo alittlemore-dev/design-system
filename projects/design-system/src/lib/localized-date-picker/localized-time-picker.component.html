@@ -1,0 +1,59 @@
+<div class="localized-time-picker">
+  <ds-temporal-picker-field
+    [inputId]="inputId()"
+    [startText]="manualText()"
+    [groupLabel]="triggerLabel()"
+    [triggerLabel]="triggerLabel()"
+    [startLabel]="labels().timeInput"
+    [activeBoundary]="'single'"
+    [startInvalid]="effectiveInvalid()"
+    [startRequired]="required()"
+    [controlSize]="controlSize()"
+    [disabled]="effectiveDisabled()"
+    [readonly]="readonly()"
+    [startDescribedBy]="inputDescribedBy()"
+    [startErrorId]="errorId"
+    [placeholder]="labels().placeholder"
+    [expanded]="calendarOpen()"
+    [dialogId]="calendarId"
+    iconKind="clock"
+    (endpointInput)="onTextInput($event)"
+    (endpointBlur)="onTextComplete($event)"
+    (endpointEnter)="onTextComplete($event)"
+    (endpointEscape)="restoreManualText()"
+    (triggerActivated)="toggleCalendar()"
+  />
+  <div [id]="formatHintId" class="visually-hidden">{{ labels().formatHint }}</div>
+  @if (effectiveInvalid()) {
+    <div
+      [id]="errorId"
+      class="invalid-feedback d-block"
+      data-testid="time-picker-validation-message"
+      role="alert"
+    >
+      {{ validationMessage() }}
+    </div>
+  }
+  <ds-calendar-dialog
+    #calendarDialog
+    [dialogId]="calendarId"
+    [labels]="dialogLabels()"
+    kind="time"
+    [range]="false"
+    [draft]="dialogDraft()"
+    [canConfirm]="canConfirmDialog()"
+    [timePickerMode]="timePickerMode()"
+    [required]="required()"
+    [canClear]="canClear()"
+    [disabled]="effectiveDisabled()"
+    [readonly]="readonly()"
+    [activeBoundary]="'single'"
+    [activeBoundaryLabel]="labels().timeInput"
+    [min]="min()"
+    [max]="max()"
+    (draftChange)="onDialogDraftChange($event)"
+    (cleared)="clearDialogDraft()"
+    (cancelled)="cancelDialog()"
+    (done)="confirmDialog()"
+  />
+</div>

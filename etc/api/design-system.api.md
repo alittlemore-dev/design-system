@@ -7,7 +7,9 @@
 import { AbstractControl } from '@angular/forms';
 import * as _angular_core from '@angular/core';
 import { ControlValueAccessor } from '@angular/forms';
+import { DestroyRef } from '@angular/core';
 import { OnChanges } from '@angular/core';
+import { Signal } from '@angular/core';
 import { SimpleChanges } from '@angular/core';
 import { ValidationErrors } from '@angular/forms';
 import { Validator } from '@angular/forms';
@@ -32,6 +34,52 @@ export class ControlValidationStateDirective {
     static ɵdir: _angular_core.ɵɵDirectiveDeclaration<ControlValidationStateDirective, "input[formControlName], textarea[formControlName]", never, {}, {}, never, never, true, never>;
     // (undocumented)
     static ɵfac: _angular_core.ɵɵFactoryDeclaration<ControlValidationStateDirective, never>;
+}
+
+// @public
+export class DrawerComponent {
+    // (undocumented)
+    close(): void;
+    // (undocumented)
+    readonly closeLabel: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly isOpen: _angular_core.Signal<boolean>;
+    // (undocumented)
+    readonly label: _angular_core.InputSignal<string>;
+    // (undocumented)
+    open(): void;
+    // (undocumented)
+    readonly openChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<DrawerComponent, "ds-drawer", never, { "label": { "alias": "label"; "required": true; "isSignal": true; }; "closeLabel": { "alias": "closeLabel"; "required": true; "isSignal": true; }; }, { "openChange": "openChange"; }, never, ["*"], true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<DrawerComponent, never>;
+}
+
+// @public
+export class DropdownComponent {
+    // (undocumented)
+    readonly align: _angular_core.InputSignal<"start" | "end">;
+    // (undocumented)
+    close(): void;
+    // (undocumented)
+    readonly disabled: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    protected focusFirst(event: Event): void;
+    // (undocumented)
+    readonly id: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly isOpen: _angular_core.Signal<boolean>;
+    // (undocumented)
+    readonly label: _angular_core.InputSignal<string>;
+    // (undocumented)
+    protected onToggle(event: ToggleEvent): void;
+    // (undocumented)
+    readonly openChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<DropdownComponent, "ds-dropdown", never, { "id": { "alias": "id"; "required": true; "isSignal": true; }; "label": { "alias": "label"; "required": true; "isSignal": true; }; "align": { "alias": "align"; "required": false; "isSignal": true; }; "disabled": { "alias": "disabled"; "required": false; "isSignal": true; }; }, { "openChange": "openChange"; }, never, ["[dsDropdownTrigger]", "*"], true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<DropdownComponent, never>;
 }
 
 // @public (undocumented)
@@ -75,6 +123,28 @@ export class ErrorMessageComponent {
 
 // @public (undocumented)
 export function flattenNestedErrorMessages(error: ErrorDisplay): readonly string[];
+
+// @public (undocumented)
+export class FoldableSectionComponent {
+    // (undocumented)
+    readonly bodyId: _angular_core.Signal<string>;
+    // (undocumented)
+    readonly expanded: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly expandedChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    readonly sectionKey: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly summary: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly title: _angular_core.InputSignal<string>;
+    // (undocumented)
+    toggle(): void;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<FoldableSectionComponent, "ds-foldable-section", never, { "sectionKey": { "alias": "sectionKey"; "required": true; "isSignal": true; }; "title": { "alias": "title"; "required": true; "isSignal": true; }; "summary": { "alias": "summary"; "required": true; "isSignal": true; }; "expanded": { "alias": "expanded"; "required": true; "isSignal": true; }; }, { "expandedChange": "expandedChange"; }, never, ["*"], true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<FoldableSectionComponent, never>;
+}
 
 // @public (undocumented)
 export class FoldableTreeComponent {
@@ -166,7 +236,7 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
     // (undocumented)
     readonly readonly: _angular_core.InputSignal<boolean>;
     // (undocumented)
-    registerOnChange(fn: (value: string) => void): void;
+    registerOnChange(fn: (value: string | null) => void): void;
     // (undocumented)
     registerOnTouched(fn: () => void): void;
     // (undocumented)
@@ -180,13 +250,13 @@ export class LocalizedDatePickerComponent implements ControlValueAccessor, OnCha
     // (undocumented)
     readonly validityChange: _angular_core.OutputEmitterRef<boolean>;
     // (undocumented)
-    readonly value: _angular_core.InputSignal<string | undefined>;
+    readonly value: _angular_core.InputSignal<string | null | undefined>;
     // (undocumented)
-    readonly valueChange: _angular_core.OutputEmitterRef<string>;
+    readonly valueChange: _angular_core.OutputEmitterRef<string | null>;
     // (undocumented)
     writeValue(value: unknown): void;
     // (undocumented)
-    static ɵcmp: _angular_core.ɵɵComponentDeclaration<LocalizedDatePickerComponent, "ds-localized-date-picker", never, { "inputId": { "alias": "inputId"; "required": true; "isSignal": true; }; "value": { "alias": "value"; "required": false; "isSignal": true; }; "controlSize": { "alias": "controlSize"; "required": true; "isSignal": true; }; "dateLocale": { "alias": "dateLocale"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "required": { "alias": "required"; "required": true; "isSignal": true; }; "invalid": { "alias": "invalid"; "required": true; "isSignal": true; }; "controlDisabled": { "alias": "controlDisabled"; "required": true; "isSignal": true; }; "readonly": { "alias": "readonly"; "required": true; "isSignal": true; }; "min": { "alias": "min"; "required": false; "isSignal": true; }; "max": { "alias": "max"; "required": false; "isSignal": true; }; "disabledDates": { "alias": "disabledDates"; "required": false; "isSignal": true; }; }, { "valueChange": "valueChange"; "validityChange": "validityChange"; }, never, never, true, never>;
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<LocalizedDatePickerComponent, "ds-localized-date-picker", never, { "inputId": { "alias": "inputId"; "required": true; "isSignal": true; }; "value": { "alias": "value"; "required": false; "isSignal": true; }; "controlSize": { "alias": "controlSize"; "required": true; "isSignal": true; }; "dateLocale": { "alias": "dateLocale"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "required": { "alias": "required"; "required": false; "isSignal": true; }; "invalid": { "alias": "invalid"; "required": true; "isSignal": true; }; "controlDisabled": { "alias": "controlDisabled"; "required": true; "isSignal": true; }; "readonly": { "alias": "readonly"; "required": true; "isSignal": true; }; "min": { "alias": "min"; "required": false; "isSignal": true; }; "max": { "alias": "max"; "required": false; "isSignal": true; }; "disabledDates": { "alias": "disabledDates"; "required": false; "isSignal": true; }; }, { "valueChange": "valueChange"; "validityChange": "validityChange"; }, never, never, true, never>;
     // (undocumented)
     static ɵfac: _angular_core.ɵɵFactoryDeclaration<LocalizedDatePickerComponent, never>;
 }
@@ -197,13 +267,15 @@ export type LocalizedDatePickerControlSize = 'default' | 'small';
 // @public (undocumented)
 export interface LocalizedDatePickerLabels {
     // (undocumented)
+    readonly cancel: string;
+    // (undocumented)
     readonly changeCalendar: string;
     // (undocumented)
     readonly clear: string;
     // (undocumented)
-    readonly close: string;
-    // (undocumented)
     readonly dialog: string;
+    // (undocumented)
+    readonly done: string;
     // (undocumented)
     readonly formatHint: string;
     // (undocumented)
@@ -226,6 +298,576 @@ export interface LocalizedDatePickerLabels {
     readonly previousYear: string;
     // (undocumented)
     readonly requiredDate: string;
+    // (undocumented)
+    readonly selectDate: string;
+    // (undocumented)
+    readonly today: string;
+    // (undocumented)
+    readonly unavailableDate: string;
+}
+
+// @public (undocumented)
+export interface LocalizedDateRange {
+    // (undocumented)
+    readonly end: string | null;
+    // (undocumented)
+    readonly start: string | null;
+}
+
+// @public (undocumented)
+export class LocalizedDateRangePickerComponent implements ControlValueAccessor, OnChanges, Validator {
+    // (undocumented)
+    readonly controlDisabled: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly controlSize: _angular_core.InputSignal<LocalizedDatePickerControlSize>;
+    // (undocumented)
+    readonly dateLocale: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly disabledDates: _angular_core.InputSignal<readonly string[] | undefined>;
+    // (undocumented)
+    readonly inputId: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly invalid: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly labels: _angular_core.InputSignal<LocalizedDateRangePickerLabels>;
+    // (undocumented)
+    readonly max: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    readonly min: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    ngOnChanges(): void;
+    // (undocumented)
+    readonly readonly: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    registerOnChange(fn: (value: LocalizedDateRange) => void): void;
+    // (undocumented)
+    registerOnTouched(fn: () => void): void;
+    // (undocumented)
+    registerOnValidatorChange(fn: () => void): void;
+    // (undocumented)
+    readonly requirements: _angular_core.InputSignal<LocalizedRangeRequirements>;
+    // (undocumented)
+    setDisabledState(disabled: boolean): void;
+    // (undocumented)
+    validate(control: AbstractControl<unknown>): ValidationErrors | null;
+    // (undocumented)
+    readonly validityChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    readonly value: _angular_core.InputSignal<LocalizedDateRange | undefined>;
+    // (undocumented)
+    readonly valueChange: _angular_core.OutputEmitterRef<LocalizedDateRange>;
+    // (undocumented)
+    writeValue(value: unknown): void;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<LocalizedDateRangePickerComponent, "ds-localized-date-range-picker", never, { "inputId": { "alias": "inputId"; "required": true; "isSignal": true; }; "value": { "alias": "value"; "required": false; "isSignal": true; }; "controlSize": { "alias": "controlSize"; "required": true; "isSignal": true; }; "dateLocale": { "alias": "dateLocale"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "requirements": { "alias": "requirements"; "required": false; "isSignal": true; }; "invalid": { "alias": "invalid"; "required": true; "isSignal": true; }; "controlDisabled": { "alias": "controlDisabled"; "required": true; "isSignal": true; }; "readonly": { "alias": "readonly"; "required": true; "isSignal": true; }; "min": { "alias": "min"; "required": false; "isSignal": true; }; "max": { "alias": "max"; "required": false; "isSignal": true; }; "disabledDates": { "alias": "disabledDates"; "required": false; "isSignal": true; }; }, { "valueChange": "valueChange"; "validityChange": "validityChange"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<LocalizedDateRangePickerComponent, never>;
+}
+
+// @public (undocumented)
+export interface LocalizedDateRangePickerLabels {
+    // (undocumented)
+    readonly accessibleRangeSeparator: string;
+    // (undocumented)
+    readonly announceRangePreview: (start: string, end: string) => string;
+    // (undocumented)
+    readonly cancel: string;
+    // (undocumented)
+    readonly changeValue: string;
+    // (undocumented)
+    readonly clear: string;
+    // (undocumented)
+    readonly dateFormatHint: string;
+    // (undocumented)
+    readonly dialog: string;
+    // (undocumented)
+    readonly done: string;
+    // (undocumented)
+    readonly endDate: string;
+    // (undocumented)
+    readonly groupLabel: string;
+    // (undocumented)
+    readonly invalidRange: string;
+    // (undocumented)
+    readonly keyboardHelp: string;
+    // (undocumented)
+    readonly nextMonth: string;
+    // (undocumented)
+    readonly nextYear: string;
+    // (undocumented)
+    readonly openMonthYearPicker: string;
+    // (undocumented)
+    readonly openPicker: string;
+    // (undocumented)
+    readonly placeholder: string;
+    // (undocumented)
+    readonly previousMonth: string;
+    // (undocumented)
+    readonly previousYear: string;
+    // (undocumented)
+    readonly requiredRange: string;
+    // (undocumented)
+    readonly selectEndDate: string;
+    // (undocumented)
+    readonly selectStartDate: string;
+    // (undocumented)
+    readonly startDate: string;
+    // (undocumented)
+    readonly today: string;
+    // (undocumented)
+    readonly unavailableRange: string;
+}
+
+// @public (undocumented)
+export class LocalizedDateTimePickerComponent implements ControlValueAccessor, OnChanges, Validator {
+    // (undocumented)
+    readonly controlDisabled: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly controlSize: _angular_core.InputSignal<LocalizedDatePickerControlSize>;
+    // (undocumented)
+    readonly dateLocale: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly disabledDates: _angular_core.InputSignal<readonly string[] | undefined>;
+    // (undocumented)
+    readonly inputId: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly invalid: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly labels: _angular_core.InputSignal<LocalizedDateTimePickerLabels>;
+    // (undocumented)
+    readonly max: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    readonly min: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    ngOnChanges(): void;
+    // (undocumented)
+    readonly readonly: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    registerOnChange(fn: (value: string | null) => void): void;
+    // (undocumented)
+    registerOnTouched(fn: () => void): void;
+    // (undocumented)
+    registerOnValidatorChange(fn: () => void): void;
+    // (undocumented)
+    readonly required: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    setDisabledState(disabled: boolean): void;
+    // (undocumented)
+    readonly timePickerMode: _angular_core.InputSignal<LocalizedTimePickerMode>;
+    // (undocumented)
+    validate(control: AbstractControl<unknown>): ValidationErrors | null;
+    // (undocumented)
+    readonly validityChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    readonly value: _angular_core.InputSignal<string | null | undefined>;
+    // (undocumented)
+    readonly valueChange: _angular_core.OutputEmitterRef<string | null>;
+    // (undocumented)
+    writeValue(value: unknown): void;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<LocalizedDateTimePickerComponent, "ds-localized-datetime-picker", never, { "inputId": { "alias": "inputId"; "required": true; "isSignal": true; }; "value": { "alias": "value"; "required": false; "isSignal": true; }; "controlSize": { "alias": "controlSize"; "required": true; "isSignal": true; }; "dateLocale": { "alias": "dateLocale"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "required": { "alias": "required"; "required": false; "isSignal": true; }; "invalid": { "alias": "invalid"; "required": true; "isSignal": true; }; "controlDisabled": { "alias": "controlDisabled"; "required": true; "isSignal": true; }; "readonly": { "alias": "readonly"; "required": true; "isSignal": true; }; "min": { "alias": "min"; "required": false; "isSignal": true; }; "max": { "alias": "max"; "required": false; "isSignal": true; }; "disabledDates": { "alias": "disabledDates"; "required": false; "isSignal": true; }; "timePickerMode": { "alias": "timePickerMode"; "required": false; "isSignal": true; }; }, { "valueChange": "valueChange"; "validityChange": "validityChange"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<LocalizedDateTimePickerComponent, never>;
+}
+
+// @public (undocumented)
+export interface LocalizedDateTimePickerLabels {
+    // (undocumented)
+    readonly cancel: string;
+    // (undocumented)
+    readonly changeValue: string;
+    // (undocumented)
+    readonly clear: string;
+    // (undocumented)
+    readonly dateFormatHint: string;
+    // (undocumented)
+    readonly dateTimeInput: string;
+    // (undocumented)
+    readonly dialog: string;
+    // (undocumented)
+    readonly done: string;
+    // (undocumented)
+    readonly hour: string;
+    // (undocumented)
+    readonly invalidDateTime: string;
+    // (undocumented)
+    readonly keyboardHelp: string;
+    // (undocumented)
+    readonly minute: string;
+    // (undocumented)
+    readonly nextMonth: string;
+    // (undocumented)
+    readonly nextYear: string;
+    // (undocumented)
+    readonly now: string;
+    // (undocumented)
+    readonly openMonthYearPicker: string;
+    // (undocumented)
+    readonly openPicker: string;
+    // (undocumented)
+    readonly placeholder: string;
+    // (undocumented)
+    readonly previousMonth: string;
+    // (undocumented)
+    readonly previousYear: string;
+    // (undocumented)
+    readonly requiredDateTime: string;
+    // (undocumented)
+    readonly selectDate: string;
+    // (undocumented)
+    readonly timeFormatHint: string;
+    // (undocumented)
+    readonly today: string;
+    // (undocumented)
+    readonly unavailableDateTime: string;
+}
+
+// @public (undocumented)
+export interface LocalizedDateTimeRange {
+    // (undocumented)
+    readonly end: string | null;
+    // (undocumented)
+    readonly start: string | null;
+}
+
+// @public (undocumented)
+export class LocalizedDateTimeRangePickerComponent implements ControlValueAccessor, OnChanges, Validator {
+    // (undocumented)
+    readonly controlDisabled: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly controlSize: _angular_core.InputSignal<LocalizedDatePickerControlSize>;
+    // (undocumented)
+    readonly dateLocale: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly disabledDates: _angular_core.InputSignal<readonly string[] | undefined>;
+    // (undocumented)
+    readonly inputId: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly invalid: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly labels: _angular_core.InputSignal<LocalizedDateTimeRangePickerLabels>;
+    // (undocumented)
+    readonly max: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    readonly min: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    ngOnChanges(): void;
+    // (undocumented)
+    readonly readonly: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    registerOnChange(fn: (value: LocalizedDateTimeRange) => void): void;
+    // (undocumented)
+    registerOnTouched(fn: () => void): void;
+    // (undocumented)
+    registerOnValidatorChange(fn: () => void): void;
+    // (undocumented)
+    readonly requirements: _angular_core.InputSignal<LocalizedRangeRequirements>;
+    // (undocumented)
+    setDisabledState(disabled: boolean): void;
+    // (undocumented)
+    readonly timePickerMode: _angular_core.InputSignal<LocalizedTimePickerMode>;
+    // (undocumented)
+    validate(control: AbstractControl<unknown>): ValidationErrors | null;
+    // (undocumented)
+    readonly validityChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    readonly value: _angular_core.InputSignal<LocalizedDateTimeRange | undefined>;
+    // (undocumented)
+    readonly valueChange: _angular_core.OutputEmitterRef<LocalizedDateTimeRange>;
+    // (undocumented)
+    writeValue(value: unknown): void;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<LocalizedDateTimeRangePickerComponent, "ds-localized-datetime-range-picker", never, { "inputId": { "alias": "inputId"; "required": true; "isSignal": true; }; "value": { "alias": "value"; "required": false; "isSignal": true; }; "controlSize": { "alias": "controlSize"; "required": true; "isSignal": true; }; "dateLocale": { "alias": "dateLocale"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "requirements": { "alias": "requirements"; "required": false; "isSignal": true; }; "invalid": { "alias": "invalid"; "required": true; "isSignal": true; }; "controlDisabled": { "alias": "controlDisabled"; "required": true; "isSignal": true; }; "readonly": { "alias": "readonly"; "required": true; "isSignal": true; }; "min": { "alias": "min"; "required": false; "isSignal": true; }; "max": { "alias": "max"; "required": false; "isSignal": true; }; "disabledDates": { "alias": "disabledDates"; "required": false; "isSignal": true; }; "timePickerMode": { "alias": "timePickerMode"; "required": false; "isSignal": true; }; }, { "valueChange": "valueChange"; "validityChange": "validityChange"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<LocalizedDateTimeRangePickerComponent, never>;
+}
+
+// @public (undocumented)
+export interface LocalizedDateTimeRangePickerLabels {
+    // (undocumented)
+    readonly accessibleRangeSeparator: string;
+    // (undocumented)
+    readonly announceRangePreview: (start: string, end: string) => string;
+    // (undocumented)
+    readonly cancel: string;
+    // (undocumented)
+    readonly changeValue: string;
+    // (undocumented)
+    readonly clear: string;
+    // (undocumented)
+    readonly dateFormatHint: string;
+    // (undocumented)
+    readonly dialog: string;
+    // (undocumented)
+    readonly done: string;
+    // (undocumented)
+    readonly endDateTime: string;
+    // (undocumented)
+    readonly groupLabel: string;
+    // (undocumented)
+    readonly hour: string;
+    // (undocumented)
+    readonly invalidRange: string;
+    // (undocumented)
+    readonly keyboardHelp: string;
+    // (undocumented)
+    readonly minute: string;
+    // (undocumented)
+    readonly nextMonth: string;
+    // (undocumented)
+    readonly nextYear: string;
+    // (undocumented)
+    readonly now: string;
+    // (undocumented)
+    readonly openMonthYearPicker: string;
+    // (undocumented)
+    readonly openPicker: string;
+    // (undocumented)
+    readonly placeholder: string;
+    // (undocumented)
+    readonly previousMonth: string;
+    // (undocumented)
+    readonly previousYear: string;
+    // (undocumented)
+    readonly requiredRange: string;
+    // (undocumented)
+    readonly selectEndDateTime: string;
+    // (undocumented)
+    readonly selectStartDateTime: string;
+    // (undocumented)
+    readonly startDateTime: string;
+    // (undocumented)
+    readonly timeFormatHint: string;
+    // (undocumented)
+    readonly today: string;
+    // (undocumented)
+    readonly unavailableRange: string;
+}
+
+// @public (undocumented)
+export interface LocalizedRangeRequirements {
+    // (undocumented)
+    readonly end: boolean;
+    // (undocumented)
+    readonly paired: boolean;
+    // (undocumented)
+    readonly start: boolean;
+}
+
+// @public (undocumented)
+export class LocalizedTimePickerComponent implements ControlValueAccessor, OnChanges, Validator {
+    // (undocumented)
+    readonly controlDisabled: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly controlSize: _angular_core.InputSignal<LocalizedDatePickerControlSize>;
+    // (undocumented)
+    readonly inputId: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly invalid: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly labels: _angular_core.InputSignal<LocalizedTimePickerLabels>;
+    // (undocumented)
+    readonly max: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    readonly min: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    ngOnChanges(): void;
+    // (undocumented)
+    readonly readonly: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    registerOnChange(fn: (value: string | null) => void): void;
+    // (undocumented)
+    registerOnTouched(fn: () => void): void;
+    // (undocumented)
+    registerOnValidatorChange(fn: () => void): void;
+    // (undocumented)
+    readonly required: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    setDisabledState(disabled: boolean): void;
+    // (undocumented)
+    readonly timePickerMode: _angular_core.InputSignal<LocalizedTimePickerMode>;
+    // (undocumented)
+    validate(control: AbstractControl<unknown>): ValidationErrors | null;
+    // (undocumented)
+    readonly validityChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    readonly value: _angular_core.InputSignal<string | null | undefined>;
+    // (undocumented)
+    readonly valueChange: _angular_core.OutputEmitterRef<string | null>;
+    // (undocumented)
+    writeValue(value: unknown): void;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<LocalizedTimePickerComponent, "ds-localized-time-picker", never, { "inputId": { "alias": "inputId"; "required": true; "isSignal": true; }; "value": { "alias": "value"; "required": false; "isSignal": true; }; "controlSize": { "alias": "controlSize"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "required": { "alias": "required"; "required": false; "isSignal": true; }; "invalid": { "alias": "invalid"; "required": true; "isSignal": true; }; "controlDisabled": { "alias": "controlDisabled"; "required": true; "isSignal": true; }; "readonly": { "alias": "readonly"; "required": true; "isSignal": true; }; "min": { "alias": "min"; "required": false; "isSignal": true; }; "max": { "alias": "max"; "required": false; "isSignal": true; }; "timePickerMode": { "alias": "timePickerMode"; "required": false; "isSignal": true; }; }, { "valueChange": "valueChange"; "validityChange": "validityChange"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<LocalizedTimePickerComponent, never>;
+}
+
+// @public (undocumented)
+export interface LocalizedTimePickerLabels {
+    // (undocumented)
+    readonly cancel: string;
+    // (undocumented)
+    readonly changeTime: string;
+    // (undocumented)
+    readonly clear: string;
+    // (undocumented)
+    readonly dialog: string;
+    // (undocumented)
+    readonly done: string;
+    // (undocumented)
+    readonly formatHint: string;
+    // (undocumented)
+    readonly hour: string;
+    // (undocumented)
+    readonly invalidTime: string;
+    // (undocumented)
+    readonly keyboardHelp: string;
+    // (undocumented)
+    readonly minute: string;
+    // (undocumented)
+    readonly now: string;
+    // (undocumented)
+    readonly openTimePicker: string;
+    // (undocumented)
+    readonly placeholder: string;
+    // (undocumented)
+    readonly requiredTime: string;
+    // (undocumented)
+    readonly timeInput: string;
+    // (undocumented)
+    readonly unavailableTime: string;
+}
+
+// @public (undocumented)
+export type LocalizedTimePickerMode = 'auto' | 'native' | 'custom';
+
+// @public (undocumented)
+export interface LocalizedTimeRange {
+    // (undocumented)
+    readonly end: string | null;
+    // (undocumented)
+    readonly start: string | null;
+}
+
+// @public (undocumented)
+export class LocalizedTimeRangePickerComponent implements ControlValueAccessor, OnChanges, Validator {
+    // (undocumented)
+    readonly controlDisabled: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly controlSize: _angular_core.InputSignal<LocalizedDatePickerControlSize>;
+    // (undocumented)
+    readonly inputId: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly invalid: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly labels: _angular_core.InputSignal<LocalizedTimeRangePickerLabels>;
+    // (undocumented)
+    readonly max: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    readonly min: _angular_core.InputSignal<string | undefined>;
+    // (undocumented)
+    ngOnChanges(): void;
+    // (undocumented)
+    readonly readonly: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    registerOnChange(fn: (value: LocalizedTimeRange) => void): void;
+    // (undocumented)
+    registerOnTouched(fn: () => void): void;
+    // (undocumented)
+    registerOnValidatorChange(fn: () => void): void;
+    // (undocumented)
+    readonly requirements: _angular_core.InputSignal<LocalizedRangeRequirements>;
+    // (undocumented)
+    setDisabledState(disabled: boolean): void;
+    // (undocumented)
+    readonly timePickerMode: _angular_core.InputSignal<LocalizedTimePickerMode>;
+    // (undocumented)
+    validate(control: AbstractControl<unknown>): ValidationErrors | null;
+    // (undocumented)
+    readonly validityChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    readonly value: _angular_core.InputSignal<LocalizedTimeRange | undefined>;
+    // (undocumented)
+    readonly valueChange: _angular_core.OutputEmitterRef<LocalizedTimeRange>;
+    // (undocumented)
+    writeValue(value: unknown): void;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<LocalizedTimeRangePickerComponent, "ds-localized-time-range-picker", never, { "inputId": { "alias": "inputId"; "required": true; "isSignal": true; }; "value": { "alias": "value"; "required": false; "isSignal": true; }; "controlSize": { "alias": "controlSize"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "requirements": { "alias": "requirements"; "required": false; "isSignal": true; }; "invalid": { "alias": "invalid"; "required": true; "isSignal": true; }; "controlDisabled": { "alias": "controlDisabled"; "required": true; "isSignal": true; }; "readonly": { "alias": "readonly"; "required": true; "isSignal": true; }; "min": { "alias": "min"; "required": false; "isSignal": true; }; "max": { "alias": "max"; "required": false; "isSignal": true; }; "timePickerMode": { "alias": "timePickerMode"; "required": false; "isSignal": true; }; }, { "valueChange": "valueChange"; "validityChange": "validityChange"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<LocalizedTimeRangePickerComponent, never>;
+}
+
+// @public (undocumented)
+export interface LocalizedTimeRangePickerLabels {
+    // (undocumented)
+    readonly accessibleRangeSeparator: string;
+    // (undocumented)
+    readonly cancel: string;
+    // (undocumented)
+    readonly changeValue: string;
+    // (undocumented)
+    readonly clear: string;
+    // (undocumented)
+    readonly dialog: string;
+    // (undocumented)
+    readonly done: string;
+    // (undocumented)
+    readonly endTime: string;
+    // (undocumented)
+    readonly formatHint: string;
+    // (undocumented)
+    readonly groupLabel: string;
+    // (undocumented)
+    readonly hour: string;
+    // (undocumented)
+    readonly invalidRange: string;
+    // (undocumented)
+    readonly keyboardHelp: string;
+    // (undocumented)
+    readonly minute: string;
+    // (undocumented)
+    readonly now: string;
+    // (undocumented)
+    readonly openPicker: string;
+    // (undocumented)
+    readonly placeholder: string;
+    // (undocumented)
+    readonly requiredRange: string;
+    // (undocumented)
+    readonly selectEndTime: string;
+    // (undocumented)
+    readonly selectStartTime: string;
+    // (undocumented)
+    readonly startTime: string;
+    // (undocumented)
+    readonly unavailableRange: string;
+}
+
+// @public
+export class ModalDialogDirective {
+    constructor();
+    // (undocumented)
+    protected cancel(event: Event): void;
+    // (undocumented)
+    close(): void;
+    // (undocumented)
+    protected dismissBackdrop(event: PointerEvent): void;
+    // (undocumented)
+    readonly dismissed: _angular_core.OutputEmitterRef<void>;
+    // (undocumented)
+    readonly dismissible: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    protected finishClose(): void;
+    // (undocumented)
+    readonly isOpen: _angular_core.Signal<boolean>;
+    // (undocumented)
+    open(): void;
+    // (undocumented)
+    readonly openChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    static ɵdir: _angular_core.ɵɵDirectiveDeclaration<ModalDialogDirective, "dialog[dsModalDialog]", ["dsModalDialog"], { "dismissible": { "alias": "dismissible"; "required": false; "isSignal": true; }; }, { "dismissed": "dismissed"; "openChange": "openChange"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<ModalDialogDirective, never>;
 }
 
 // @public (undocumented)
@@ -364,6 +1006,53 @@ export class ThemeService {
     // (undocumented)
     static ɵprov: _angular_core.ɵɵInjectableDeclaration<ThemeService>;
 }
+
+// @public (undocumented)
+export class UnsavedChangesScope {
+    constructor(confirmChanges: () => boolean, removeScope: (scope: UnsavedChangesScope) => void);
+    // (undocumented)
+    commit(): void;
+    // (undocumented)
+    confirmDiscard(): boolean;
+    // (undocumented)
+    confirmDiscardExcept(preservedSources: readonly UnsavedChangesSource[]): boolean;
+    // (undocumented)
+    dispose(): void;
+    // (undocumented)
+    readonly hasChanges: Signal<boolean>;
+    // (undocumented)
+    registerSource(current: Signal<UnsavedValue>, active: Signal<boolean>): UnsavedChangesSource;
+}
+
+// @public (undocumented)
+export class UnsavedChangesService {
+    constructor();
+    // (undocumented)
+    confirmDiscard(confirm: () => boolean): boolean;
+    // (undocumented)
+    createScope(destroyRef: DestroyRef, confirm: () => boolean): UnsavedChangesScope;
+    // (undocumented)
+    discardChanges(): void;
+    // (undocumented)
+    readonly hasChanges: Signal<boolean>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<UnsavedChangesService, never>;
+    // (undocumented)
+    static ɵprov: _angular_core.ɵɵInjectableDeclaration<UnsavedChangesService>;
+}
+
+// @public (undocumented)
+export interface UnsavedChangesSource {
+    // (undocumented)
+    commit(): void;
+    // (undocumented)
+    readonly hasChanges: Signal<boolean>;
+    // (undocumented)
+    unregister(): void;
+}
+
+// @public (undocumented)
+export type UnsavedValue = unknown;
 
 // (No @packageDocumentation comment for this package)
 

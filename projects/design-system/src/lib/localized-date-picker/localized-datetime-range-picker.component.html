@@ -1,0 +1,74 @@
+<div class="localized-datetime-range-picker">
+  <ds-temporal-picker-field
+    [range]="true"
+    [inputId]="inputId()"
+    [startText]="startText()"
+    [endText]="endText()"
+    [groupLabel]="labels().groupLabel"
+    [triggerLabel]="triggerLabel()"
+    [startLabel]="labels().startDateTime"
+    [endLabel]="labels().endDateTime"
+    [accessibleSeparator]="labels().accessibleRangeSeparator"
+    [activeBoundary]="activeBoundary()"
+    [startInvalid]="startInvalid()"
+    [endInvalid]="endInvalid()"
+    [startRequired]="startRequired()"
+    [endRequired]="endRequired()"
+    [controlSize]="controlSize()"
+    [disabled]="effectiveDisabled()"
+    [readonly]="readonly()"
+    [startDescribedBy]="inputDescribedBy()"
+    [endDescribedBy]="inputDescribedBy()"
+    [startErrorId]="errorId"
+    [endErrorId]="errorId"
+    [placeholder]="labels().placeholder"
+    [expanded]="calendarOpen()"
+    [dialogId]="calendarId"
+    iconKind="calendar"
+    (endpointInput)="onTextInput($event)"
+    (endpointBlur)="onTextComplete($event)"
+    (endpointEnter)="onTextComplete($event)"
+    (endpointEscape)="restoreManualText()"
+    (endpointActivated)="setActiveBoundary($event)"
+    (triggerActivated)="toggleCalendar()"
+  />
+  <div [id]="formatHintId" class="visually-hidden">
+    {{ labels().dateFormatHint }} {{ labels().timeFormatHint }}
+  </div>
+  @if (effectiveInvalid()) {
+    <div
+      [id]="errorId"
+      class="invalid-feedback d-block"
+      data-testid="datetime-range-validation-message"
+      role="alert"
+    >
+      {{ validationMessage() }}
+    </div>
+  }
+  <ds-calendar-dialog
+    #calendarDialog
+    [dialogId]="calendarId"
+    [dateLocale]="dateLocale()"
+    [labels]="dialogLabels()"
+    kind="datetime"
+    [range]="true"
+    [draft]="dialogDraft()"
+    [canConfirm]="canConfirmDialog()"
+    [timePickerMode]="timePickerMode()"
+    [canClear]="canClear()"
+    [disabled]="effectiveDisabled()"
+    [readonly]="readonly()"
+    [activeBoundary]="activeBoundary()"
+    [activeBoundaryLabel]="activeBoundaryLabel()"
+    [startTimeLabel]="labels().startDateTime"
+    [endTimeLabel]="labels().endDateTime"
+    [min]="min()"
+    [max]="max()"
+    [disabledDates]="disabledDates()"
+    (draftChange)="onDialogDraftChange($event)"
+    (activeBoundaryChange)="onDialogActiveBoundaryChange($event)"
+    (cleared)="clearDialogDraft()"
+    (cancelled)="cancelDialog()"
+    (done)="confirmDialog()"
+  />
+</div>

@@ -102,6 +102,17 @@ ds-markdown-editor.is-invalid .markdown-editor-shell {
   display: block;
 }
 
+.markdown-editor-preview table {
+  border-collapse: collapse;
+}
+.markdown-editor-preview :is(th, td) {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color-solid);
+}
+.markdown-editor-preview th {
+  background: var(--surface-2);
+}
+
 .rendered-markdown img {
   max-width: 100%;
   height: auto;

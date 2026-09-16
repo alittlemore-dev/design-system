@@ -252,3 +252,20 @@ function linearizeColor(value) {
   const channel = value / 255;
   return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
 }
+
+test('editor preview table cells retain renderer spacing and visible borders', () => {
+  const css = sass.compile(
+    join(
+      repositoryRoot,
+      'projects/design-system/markdown-editor/src/lib/markdown-editor.component.scss',
+    ),
+  ).css;
+  assert.match(
+    css,
+    /\.markdown-editor-preview[^{}]*:is\(th, td\)\s*\{[^}]*padding:\s*0\.5rem 0\.75rem;/,
+  );
+  assert.match(
+    css,
+    /\.markdown-editor-preview[^{}]*:is\(th, td\)\s*\{[^}]*border:\s*1px solid var\(--border-color-solid\)/,
+  );
+});

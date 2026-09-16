@@ -31,6 +31,23 @@ test('isolates packed-demo npm commands from the user cache', () => {
   assert.deepEqual(environment, { PATH: '/usr/bin' });
 });
 
+test('installs Chromium for the Playwright range resolved by no-lock packed demo installs', () => {
+  assert.deepEqual(
+    packedDemo.browserInstallCommands({
+      devDependencies: { playwright: '^1.48.0' },
+    }),
+    [
+      ['npm', ['ci']],
+      ['npm', ['install', '--no-save', '--package-lock=false', 'playwright@^1.48.0']],
+      ['npm', ['exec', '--', 'playwright', 'install', 'chromium']],
+    ],
+  );
+  assert.throws(
+    () => packedDemo.browserInstallCommands({ devDependencies: {} }),
+    /demo manifest must declare a Playwright development dependency/i,
+  );
+});
+
 test('detects a changed demo manifest after a packed run', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'packed-demo-manifest-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
