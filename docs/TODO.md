@@ -91,6 +91,7 @@
 - [x] Migrate the byte-identical `ModalPageScrollLockService` and tests from `my-site` and `personal-workspace`.
 - [x] Migrate the byte-identical `ModalScrollDirective` and tests from `my-site` and `personal-workspace`.
 - [x] Add regression coverage for reference-counted page locking, nested modals, SSR execution, wheel scrolling, touch scrolling, and Angular CDK integration.
+- [x] Keep modal-dialog destruction SSR-safe by avoiding native dialog lifecycle methods on the server.
 
 ## Form validation behavior
 

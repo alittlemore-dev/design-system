@@ -80,13 +80,26 @@ describe('ModalDialogDirective', () => {
     expect(modal.isOpen()).toBe(true);
   });
 
-  it('does not call browser methods during SSR', () => {
+  it('ignores open and close requests during SSR', () => {
     TestBed.configureTestingModule({ providers: [{ provide: PLATFORM_ID, useValue: 'server' }] });
     const { dialog, modal } = createHost();
     dialog.showModal = () => {
       throw new Error('browser API');
     };
+    dialog.close = () => {
+      throw new Error('browser API');
+    };
     modal.open();
     expect(modal.isOpen()).toBe(false);
+    expect(() => modal.close()).not.toThrow();
+  });
+
+  it('does not call browser methods during SSR destruction', () => {
+    TestBed.configureTestingModule({ providers: [{ provide: PLATFORM_ID, useValue: 'server' }] });
+    const { fixture, dialog } = createHost();
+    dialog.close = () => {
+      throw new Error('browser API');
+    };
+    expect(() => fixture.destroy()).not.toThrow();
   });
 });
