@@ -16,6 +16,7 @@ test('serves the packed UI showcase through SSR with a nonce-based style policy'
   assert.ok(nonceMatch, `Style policy must contain a nonce: ${policy}`);
 
   const html = await response.text();
+  assert.doesNotMatch(server.output(), /uncaughtException Error: NotYetImplemented/);
   assert.match(html, /data-demo-shell/);
   assert.match(html, /data-demo-sidebar/);
   assert.match(html, /<h1[^>]*>Overview<\/h1>/);

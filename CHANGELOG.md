@@ -18,6 +18,22 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Security
 
+## [0.3.2] - 2026-09-21
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Keep native modal-dialog lifecycle methods out of server rendering and destruction.
+
+### Security
+
 ## [0.3.1] - 2026-09-14
 
 ### Added

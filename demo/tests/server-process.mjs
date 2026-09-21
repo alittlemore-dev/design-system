@@ -59,7 +59,7 @@ export async function startDemoServer(demoRoot) {
     await stopDemoServer(child);
     throw error;
   }
-  return { child, url };
+  return { child, url, output: () => output };
 }
 
 export async function stopDemoServer(child) {

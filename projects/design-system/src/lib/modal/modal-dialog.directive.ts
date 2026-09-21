@@ -39,7 +39,7 @@ export class ModalDialogDirective {
   constructor() {
     inject(DestroyRef).onDestroy(() => {
       this.destroying = true;
-      this.dialog.close?.();
+      if (isPlatformBrowser(this.platformId)) this.dialog.close?.();
       this.releaseScroll?.();
       this.trigger?.focus();
     });
@@ -56,6 +56,7 @@ export class ModalDialogDirective {
   }
 
   close(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
     this.dialog.close?.();
     this.finishClose();
   }
