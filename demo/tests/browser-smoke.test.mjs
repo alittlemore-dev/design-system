@@ -344,6 +344,25 @@ test('hydrates the routed showcase, tracks the known Source-mode CSP gap, and ke
   assert.deepEqual(await page.evaluate(() => window.__demoCspViolations), []);
   assert.deepEqual(browserErrors, []);
   await editor.getByRole('tab', { name: 'Source' }).click();
+  await editorContent.fill('');
+  await editor.getByRole('tab', { name: 'Edit' }).click();
+  assert.equal(
+    (await markdownDemo.locator('[data-demo-markdown-value]').textContent())?.trim(),
+    '',
+  );
+  await editorContent.click();
+  await editorContent.pressSequentially('[[');
+  const domainTooltip = editor.locator('.cm-tooltip-autocomplete');
+  await domainTooltip.getByRole('listbox', { name: 'Completions' }).waitFor({ state: 'attached' });
+  const domainTooltipBounds = await domainTooltip.boundingBox();
+  assert.ok(domainTooltipBounds);
+  assert.ok(
+    domainTooltipBounds.y >= 0 && domainTooltipBounds.y < page.viewportSize().height,
+    `Completion tooltip is outside the viewport: ${JSON.stringify(domainTooltipBounds)}`,
+  );
+  assert.match((await domainTooltip.textContent()) ?? '', /docs/);
+
+  await editor.getByRole('tab', { name: 'Source' }).click();
   await editorContent.click();
   await page.keyboard.press(`${primaryModifier}+A`);
   await page.keyboard.insertText('[[docs:e|the editor contract]]');

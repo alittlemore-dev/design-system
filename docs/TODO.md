@@ -146,6 +146,7 @@
 - [x] Keep ArrowUp and ArrowDown in the same table column when pressed immediately after typing into an empty cell.
 - [x] Keep table-cell navigation from scrolling a visible target while minimally revealing a genuinely offscreen target.
 - [ ] Eliminate the inline `style` attribute CSP violation from Markdown-editor Source mode without changing its placement or interactions.
+- [x] Keep wiki-link suggestions visible at the start of an embedded Markdown editor by limiting CodeMirror scroll margins to the header and footer overlap.
 - [ ] Add ordinary-file attachment support with a separate transport and insertion contract, configurable picker, paste, and drop sources, exact MIME and size validation, sequential retryable queues, and non-image preview semantics.
 
 - [x] Restore borders and spacing for tables in the embedded Markdown editor preview.

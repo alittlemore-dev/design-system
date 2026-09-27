@@ -18,6 +18,22 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Security
 
+## [0.3.3] - 2026-09-27
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Keep wiki-link suggestions visible on the first lines of an embedded Markdown editor.
+
+### Security
+
 ## [0.3.2] - 2026-09-21
 
 ### Added
