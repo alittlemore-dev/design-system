@@ -550,29 +550,34 @@ describe('MarkdownEditorComponent', () => {
     expect(editorView().state.doc.toString()).toBe('content');
   });
 
-  it('uses configured sticky header and footer offsets as editor scroll margins', () => {
+  it('uses only the header and footer overlap as editor scroll margins', () => {
     createFixture();
     const header = query<HTMLElement>('[data-testid="markdown-editor-header"]');
     const footer = query<HTMLElement>('[data-testid="markdown-editor-footer"]');
-    Object.defineProperty(header, 'offsetHeight', { configurable: true, value: 30 });
-    Object.defineProperty(footer, 'offsetHeight', { configurable: true, value: 20 });
-    header.style.top = '12px';
-    footer.style.bottom = '8px';
     const view = editorView();
+    jest
+      .spyOn(view.scrollDOM, 'getBoundingClientRect')
+      .mockReturnValue(rectangle({ top: 100, bottom: 400, height: 300 }));
+    const headerRect = jest
+      .spyOn(header, 'getBoundingClientRect')
+      .mockReturnValue(rectangle({ top: 0, bottom: 100, height: 100 }));
+    const footerRect = jest
+      .spyOn(footer, 'getBoundingClientRect')
+      .mockReturnValue(rectangle({ top: 400, bottom: 430, height: 30 }));
 
     expect(view.state.facet(EditorView.scrollMargins).map((margin) => margin(view))).toContainEqual(
       {
-        top: 42,
-        bottom: 28,
+        top: 0,
+        bottom: 0,
       },
     );
 
-    header.style.top = 'auto';
-    footer.style.bottom = '-2px';
+    headerRect.mockReturnValue(rectangle({ top: 45, bottom: 145, height: 100 }));
+    footerRect.mockReturnValue(rectangle({ top: 370, bottom: 400, height: 30 }));
     expect(view.state.facet(EditorView.scrollMargins).map((margin) => margin(view))).toContainEqual(
       {
-        top: 30,
-        bottom: 20,
+        top: 45,
+        bottom: 30,
       },
     );
   });

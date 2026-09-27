@@ -144,6 +144,7 @@ export class MarkdownRendererPageComponent {
           />
           <label class="form-check-label" for="editor-wiki-links">wikiLinks config</label>
         </div>
+        <p class="form-text">Type [[ in Edit mode to browse wiki-link namespaces.</p>
         <p class="form-text">
           The editor content itself controls the public value/valueChange pair.
         </p>

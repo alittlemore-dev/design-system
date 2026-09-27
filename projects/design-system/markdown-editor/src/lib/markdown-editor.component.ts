@@ -788,7 +788,7 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
         EditorView.contentAttributes.of(this.editorContentAttributes()),
       ),
       panels({ topContainer: this.editorTopPanels.nativeElement }),
-      EditorView.scrollMargins.of(() => this.editorScrollMargins()),
+      EditorView.scrollMargins.of((view) => this.editorScrollMargins(view)),
       keymap.of([
         {
           key: 'Tab',
@@ -816,20 +816,13 @@ export class MarkdownEditorComponent implements AfterViewInit, AfterViewChecked,
     ];
   }
 
-  private editorScrollMargins(): Pick<Rect, 'top' | 'bottom'> {
-    const browserWindow = this.editorShell.nativeElement.ownerDocument.defaultView!;
-    const resolvedTop = Number.parseFloat(
-      browserWindow.getComputedStyle(this.editorHeader.nativeElement).top,
-    );
-    const resolvedBottom = Number.parseFloat(
-      browserWindow.getComputedStyle(this.editorFooter.nativeElement).bottom,
-    );
-    const topDisplacement = Number.isFinite(resolvedTop) && resolvedTop > 0 ? resolvedTop : 0;
-    const bottomDisplacement =
-      Number.isFinite(resolvedBottom) && resolvedBottom > 0 ? resolvedBottom : 0;
+  private editorScrollMargins(view: EditorView): Pick<Rect, 'top' | 'bottom'> {
+    const visible = view.scrollDOM.getBoundingClientRect();
+    const header = this.editorHeader.nativeElement.getBoundingClientRect();
+    const footer = this.editorFooter.nativeElement.getBoundingClientRect();
     return {
-      top: this.editorHeader.nativeElement.offsetHeight + topDisplacement,
-      bottom: this.editorFooter.nativeElement.offsetHeight + bottomDisplacement,
+      top: Math.min(visible.height, Math.max(0, header.bottom - visible.top)),
+      bottom: Math.min(visible.height, Math.max(0, visible.bottom - footer.top)),
     };
   }
 
