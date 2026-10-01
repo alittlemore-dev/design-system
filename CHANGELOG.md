@@ -16,6 +16,11 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Fixed
 
+- Use the theme's green accent for checked and mixed form controls and their focus indicators in
+  both themes, including switches.
+- Keep Bootstrap overrides compatible with consumers that already loaded Bootstrap and preserve
+  explicit and native validation feedback on form controls.
+
 ### Security
 
 ## [0.3.4] - 2026-10-01

@@ -63,6 +63,14 @@ test('compiles the documented entry-point composition', async () => {
   assert.match(styles, /\.markdown-code\s*\{/);
 });
 
+test('compiles Bootstrap overrides after a consumer has already loaded Bootstrap', () => {
+  sass.compileString("@use 'bootstrap/scss/bootstrap'; @use 'bootstrap-overrides';", {
+    loadPaths: [join(sourcePackageRoot, 'styles'), join(repositoryRoot, 'node_modules')],
+    logger: createSassLogger(),
+    verbose: true,
+  });
+});
+
 test('emits reusable UI, Markdown, Bootstrap, and CDK styles only from their owners', async () => {
   const bootstrapOverrides = await compileStyle(sourcePackageRoot, 'bootstrap-overrides');
   const cdkOverlay = await compileStyle(sourcePackageRoot, 'cdk-overlay');

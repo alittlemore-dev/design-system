@@ -48,6 +48,28 @@ import { DemoPageComponent } from '../shared/demo-page.component';
           Status: {{ validationForm.controls.field.status }} · touched:
           {{ validationForm.controls.field.touched }}
         </p>
+        <div class="form-check form-switch mb-3">
+          <input
+            id="demo-enabled-switch"
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            [ngModel]="sampleEnabled()"
+            (ngModelChange)="sampleEnabled.set($event)"
+            [disabled]="disabled()"
+          />
+          <label class="form-check-label" for="demo-enabled-switch">Enable notifications</label>
+        </div>
+        <div class="form-check">
+          <input
+            id="demo-mixed-checkbox"
+            class="form-check-input"
+            type="checkbox"
+            [indeterminate]="true"
+            [disabled]="disabled()"
+          />
+          <label class="form-check-label" for="demo-mixed-checkbox">Mixed selection</label>
+        </div>
       </div>
       <div demo-controls class="demo-form-stack">
         <div class="form-check">
@@ -78,6 +100,7 @@ import { DemoPageComponent } from '../shared/demo-page.component';
   `,
 })
 export class FormValidationPageComponent {
+  protected readonly sampleEnabled = signal(true);
   protected readonly required = signal(true);
   protected readonly disabled = signal(false);
   protected readonly validationForm = new FormGroup({

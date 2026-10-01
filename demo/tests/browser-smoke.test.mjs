@@ -5,6 +5,107 @@ import { chromium } from 'playwright';
 
 import { startDemoServer, stopDemoServer } from './server-process.mjs';
 
+test('form controls use the green accent and preserve switch keyboard behavior in both themes', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const browser = await chromium.launch({ headless: true });
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  await page.goto(`${server.url}/components/form-validation`, { waitUntil: 'networkidle' });
+
+  for (const theme of ['light', 'dark']) {
+    await page.locator(`[data-demo-theme="${theme}"]`).click();
+    await page.waitForFunction(
+      (expected) => document.documentElement.getAttribute('data-bs-theme') === expected,
+      theme,
+    );
+    const accent = await page
+      .locator('html')
+      .evaluate((element) =>
+        getComputedStyle(element).getPropertyValue('--main-component-color').trim(),
+      );
+    for (const selector of [
+      '#validation-required',
+      '#demo-enabled-switch',
+      '#demo-mixed-checkbox',
+    ]) {
+      const control = page.locator(selector);
+      const colors = await control.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { background: style.backgroundColor, border: style.borderColor };
+      });
+      assert.equal(colors.background, accent);
+      assert.equal(colors.border, accent);
+    }
+
+    const danger = await page
+      .locator('html')
+      .evaluate((element) => getComputedStyle(element).getPropertyValue('--danger-color').trim());
+    const checkbox = page.locator('#validation-required');
+    await checkbox.evaluate((element) => element.classList.add('is-invalid'));
+    await checkbox.focus();
+    const invalidCheckbox = await checkbox.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        background: style.backgroundColor,
+        border: style.borderColor,
+        shadow: style.boxShadow,
+      };
+    });
+    assert.equal(invalidCheckbox.background, danger);
+    assert.equal(invalidCheckbox.border, danger);
+    assert.ok(
+      invalidCheckbox.shadow.includes(danger.replace('rgb(', 'rgba(').replace(')', ', 0.25)')),
+    );
+    await checkbox.evaluate((element) => element.classList.remove('is-invalid'));
+
+    const mixedCheckbox = page.locator('#demo-mixed-checkbox');
+    await mixedCheckbox.evaluate((element) => {
+      element.required = true;
+      element.closest('.form-check').classList.add('was-validated');
+    });
+    await mixedCheckbox.focus();
+    assert.equal(
+      await mixedCheckbox.evaluate((element) => getComputedStyle(element).borderColor),
+      danger,
+    );
+    await mixedCheckbox.evaluate((element) => {
+      element.required = false;
+      element.closest('.form-check').classList.remove('was-validated');
+    });
+
+    const toggle = page.getByRole('switch', { name: 'Enable notifications' });
+    await toggle.focus();
+    await toggle.press('Space');
+    assert.equal(await toggle.isChecked(), false);
+    const focused = await toggle.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { image: style.backgroundImage, border: style.borderColor, shadow: style.boxShadow };
+    });
+    assert.equal(focused.border, accent);
+    assert.ok(focused.shadow.includes(accent.replace('rgb(', 'rgba(').replace(')', ', 0.25)')));
+    await page.locator('#demo-required-field').focus();
+    assert.equal(
+      await toggle.evaluate((element) => getComputedStyle(element).backgroundImage),
+      focused.image,
+    );
+    await toggle.focus();
+    await toggle.press('Space');
+    assert.equal(await toggle.isChecked(), true);
+    await page.locator('#validation-disabled').check();
+    await page.waitForFunction(() => document.querySelector('#demo-enabled-switch')?.disabled);
+    assert.equal(await toggle.isDisabled(), true);
+    assert.equal(
+      await toggle.evaluate((element) => getComputedStyle(element).backgroundColor),
+      accent,
+    );
+    await page.locator('#validation-disabled').uncheck();
+    await page.waitForFunction(
+      () => document.querySelector('#demo-enabled-switch')?.disabled === false,
+    );
+  }
+});
+
 test('datetime error presentation can be deferred while validation stays active', async (t) => {
   const server = await startDemoServer(process.cwd());
   t.after(() => stopDemoServer(server.child));
