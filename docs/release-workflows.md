@@ -190,10 +190,13 @@ other than `https://github.com/alittlemore-dev/design-system.git`, any existing 
 existing release tag. Registry `404` is the only response treated as an absent version; registry,
 authentication, and network failures stop the release.
 
-After publication, CI gives the public registry up to 12 isolated lookups, spaced 10 seconds apart,
-to expose the immutable version. An unexpected successful version response fails immediately. If
-all lookups still report an error, CI stops before tagging and emits the final registry error so the
-tag-only recovery path can be used after propagation completes.
+After publication, CI gives the public registry up to 60 isolated lookups, spaced 30 seconds apart,
+to expose the immutable version. This allows roughly 30 minutes for npm's publish-time scanning,
+which can take [15 minutes or longer](https://github.blog/changelog/2026-07-28-npm-publish-time-malware-scanning-and-dual-use-metadata/).
+The publication job has a 40-minute timeout to leave time for archive verification and publication.
+An unexpected successful version response fails immediately. If all lookups still report an error,
+CI stops before tagging and emits the final registry error so the tag-only recovery path can be
+used after scanning and propagation complete.
 
 CI is the only supported publication and release-tag principal. Contributors do not run
 `npm publish`, create release tags, or use a tag to trigger publication. The repository does not
