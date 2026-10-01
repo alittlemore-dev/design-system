@@ -380,6 +380,56 @@ describe('LocalizedDateTimePickerComponent', () => {
     });
   });
 
+  it.each([
+    { value: null, errors: { required: true } },
+    { value: 'not a datetime', errors: { dateTimeInvalid: true } },
+    { value: '2026-02-04T09:30', errors: { dateTimeUnavailable: true } },
+  ])(
+    'can defer error presentation while keeping validation active for $value',
+    ({ value, errors }) => {
+      setInputs(value, { required: true, min: '2026-02-05T00:00' });
+      fixture.componentRef.setInput('showValidationErrors', false);
+      fixture.detectChanges();
+
+      expect(message()).toBe('');
+      expect(input().getAttribute('aria-invalid')).toBeNull();
+      expect(input().classList).not.toContain('is-invalid');
+      expect(input().required).toBe(true);
+      expect(input().checkValidity()).toBe(false);
+      expect(fixture.componentInstance.validate(new FormControl(value))).toEqual(errors);
+
+      fixture.componentRef.setInput('showValidationErrors', true);
+      fixture.detectChanges();
+
+      expect(message()).not.toBe('');
+      expect(input().getAttribute('aria-invalid')).toBe('true');
+      expect(input().classList).toContain('is-invalid');
+      const errorId = fixture.nativeElement.querySelector('[role="alert"]').id as string;
+      expect(input().getAttribute('aria-describedby')).toContain(errorId);
+    },
+  );
+
+  it('can defer manual draft errors without accepting invalid text', () => {
+    fixture.componentRef.setInput('showValidationErrors', false);
+    fixture.detectChanges();
+    setText('unfinished');
+    input().dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(message()).toBe('');
+    expect(input().getAttribute('aria-invalid')).toBeNull();
+    expect(input().checkValidity()).toBe(false);
+    expect(fixture.componentInstance.validate(new FormControl('2026-02-05T09:30'))).toEqual({
+      dateTimeInvalid: true,
+    });
+
+    fixture.componentRef.setInput('showValidationErrors', true);
+    fixture.detectChanges();
+    expect(message()).toBe(LABELS.invalidDateTime);
+    setText('06/02/2026 10:45');
+    expect(message()).toBe('');
+  });
+
   it('treats datetime min and max as inclusive including same-date time edges', () => {
     setInputs('2026-02-05T09:00', {
       min: '2026-02-05T09:00',

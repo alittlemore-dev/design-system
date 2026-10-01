@@ -463,7 +463,10 @@ type LocalizedDateRangePickerPublicKeysContract = Expect<
   Equal<keyof LocalizedDateRangePickerComponent, RangePickerFormsPublicKeys>
 >;
 type LocalizedDateTimePickerPublicKeysContract = Expect<
-  Equal<keyof LocalizedDateTimePickerComponent, SinglePickerFormsPublicKeys | 'timePickerMode'>
+  Equal<
+    keyof LocalizedDateTimePickerComponent,
+    SinglePickerFormsPublicKeys | 'timePickerMode' | 'showValidationErrors'
+  >
 >;
 type LocalizedDateTimeRangePickerPublicKeysContract = Expect<
   Equal<keyof LocalizedDateTimeRangePickerComponent, RangePickerFormsPublicKeys | 'timePickerMode'>

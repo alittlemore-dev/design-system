@@ -453,6 +453,8 @@ export class LocalizedDateTimePickerComponent implements ControlValueAccessor, O
     // (undocumented)
     setDisabledState(disabled: boolean): void;
     // (undocumented)
+    readonly showValidationErrors: _angular_core.InputSignal<boolean>;
+    // (undocumented)
     readonly timePickerMode: _angular_core.InputSignal<LocalizedTimePickerMode>;
     // (undocumented)
     validate(control: AbstractControl<unknown>): ValidationErrors | null;
@@ -465,7 +467,7 @@ export class LocalizedDateTimePickerComponent implements ControlValueAccessor, O
     // (undocumented)
     writeValue(value: unknown): void;
     // (undocumented)
-    static ɵcmp: _angular_core.ɵɵComponentDeclaration<LocalizedDateTimePickerComponent, "ds-localized-datetime-picker", never, { "inputId": { "alias": "inputId"; "required": true; "isSignal": true; }; "value": { "alias": "value"; "required": false; "isSignal": true; }; "controlSize": { "alias": "controlSize"; "required": true; "isSignal": true; }; "dateLocale": { "alias": "dateLocale"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "required": { "alias": "required"; "required": false; "isSignal": true; }; "invalid": { "alias": "invalid"; "required": true; "isSignal": true; }; "controlDisabled": { "alias": "controlDisabled"; "required": true; "isSignal": true; }; "readonly": { "alias": "readonly"; "required": true; "isSignal": true; }; "min": { "alias": "min"; "required": false; "isSignal": true; }; "max": { "alias": "max"; "required": false; "isSignal": true; }; "disabledDates": { "alias": "disabledDates"; "required": false; "isSignal": true; }; "timePickerMode": { "alias": "timePickerMode"; "required": false; "isSignal": true; }; }, { "valueChange": "valueChange"; "validityChange": "validityChange"; }, never, never, true, never>;
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<LocalizedDateTimePickerComponent, "ds-localized-datetime-picker", never, { "inputId": { "alias": "inputId"; "required": true; "isSignal": true; }; "value": { "alias": "value"; "required": false; "isSignal": true; }; "controlSize": { "alias": "controlSize"; "required": true; "isSignal": true; }; "dateLocale": { "alias": "dateLocale"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "required": { "alias": "required"; "required": false; "isSignal": true; }; "invalid": { "alias": "invalid"; "required": true; "isSignal": true; }; "showValidationErrors": { "alias": "showValidationErrors"; "required": false; "isSignal": true; }; "controlDisabled": { "alias": "controlDisabled"; "required": true; "isSignal": true; }; "readonly": { "alias": "readonly"; "required": true; "isSignal": true; }; "min": { "alias": "min"; "required": false; "isSignal": true; }; "max": { "alias": "max"; "required": false; "isSignal": true; }; "disabledDates": { "alias": "disabledDates"; "required": false; "isSignal": true; }; "timePickerMode": { "alias": "timePickerMode"; "required": false; "isSignal": true; }; }, { "valueChange": "valueChange"; "validityChange": "validityChange"; }, never, never, true, never>;
     // (undocumented)
     static ɵfac: _angular_core.ɵɵFactoryDeclaration<LocalizedDateTimePickerComponent, never>;
 }

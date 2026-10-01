@@ -18,6 +18,23 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Security
 
+## [0.3.4] - 2026-10-01
+
+### Added
+
+- Let datetime-picker consumers defer validation messages and invalid styling with
+  `showValidationErrors` while keeping validation active.
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## [0.3.3] - 2026-09-27
 
 ### Added

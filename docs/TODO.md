@@ -152,3 +152,5 @@
 - [x] Restore borders and spacing for tables in the embedded Markdown editor preview.
 - [x] Ignore delayed native drawer close events after the drawer has reopened.
 - [x] Keep native dropdown popover targets distinct from static Angular host IDs.
+- [x] Let consumers defer datetime error messages and invalid styling until form submission while
+      preserving required, format, range, and native validation.
