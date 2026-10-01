@@ -5,6 +5,35 @@ import { chromium } from 'playwright';
 
 import { startDemoServer, stopDemoServer } from './server-process.mjs';
 
+test('datetime error presentation can be deferred while validation stays active', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const browser = await chromium.launch({ headless: true });
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  await page.goto(`${server.url}/components/localized-datetime-picker`, {
+    waitUntil: 'networkidle',
+  });
+  await page.locator('#datetime-show-errors').uncheck();
+  await page.locator('#datetime-required').check();
+  const input = page.locator('#demo-datetime');
+  await input.fill('unfinished');
+  await input.blur();
+  const error = page.locator('[data-testid="datetime-picker-validation-message"]');
+  assert.equal(await error.count(), 0);
+  assert.equal(await input.getAttribute('aria-invalid'), null);
+  assert.equal(await input.evaluate((element) => element.checkValidity()), false);
+
+  await page.locator('#datetime-show-errors').check();
+  await error.waitFor();
+  assert.equal(await input.getAttribute('aria-invalid'), 'true');
+  await input.fill('08/29/2026 10:45');
+  await input.blur();
+  await waitForText(page, '[data-demo-datetime-selection]', 'Committed: 2026-08-29T10:45');
+  assert.equal(await error.count(), 0);
+  assert.equal(await input.evaluate((element) => element.checkValidity()), true);
+});
+
 async function waitForText(page, selector, expected) {
   await page.waitForFunction(
     ({ target, value }) => document.querySelector(target)?.textContent?.trim() === value,

@@ -112,6 +112,7 @@ export class LocalizedDateTimePickerComponent
   readonly labels = input.required<LocalizedDateTimePickerLabels>();
   readonly required = input(false);
   readonly invalid = input.required<boolean>();
+  readonly showValidationErrors = input(true);
   readonly controlDisabled = input.required<boolean>();
   readonly readonly = input.required<boolean>();
   readonly min = input<string>();
@@ -199,8 +200,13 @@ export class LocalizedDateTimePickerComponent
   );
 
   /** @internal */
+  protected readonly visibleInvalid = computed(
+    () => this.showValidationErrors() && this.effectiveInvalid(),
+  );
+
+  /** @internal */
   protected readonly inputDescribedBy = computed(() =>
-    this.effectiveInvalid() ? `${this.formatHintId} ${this.errorId}` : this.formatHintId,
+    this.visibleInvalid() ? `${this.formatHintId} ${this.errorId}` : this.formatHintId,
   );
 
   /** @internal */

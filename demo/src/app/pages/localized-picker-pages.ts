@@ -461,6 +461,7 @@ export class LocalizedTimeRangePickerPageComponent {
           [labels]="labels()"
           [required]="required()"
           [invalid]="invalid()"
+          [showValidationErrors]="showValidationErrors()"
           [controlDisabled]="disabled()"
           [readonly]="readonly()"
           [min]="min()"
@@ -540,6 +541,7 @@ export class LocalizedDateTimePickerPageComponent {
   protected readonly timePickerMode = signal<LocalizedTimePickerMode>('custom');
   protected readonly required = signal(false);
   protected readonly invalid = signal(false);
+  protected readonly showValidationErrors = signal(true);
   protected readonly disabled = signal(false);
   protected readonly readonly = signal(false);
   protected readonly limitRange = signal(true);
@@ -549,6 +551,7 @@ export class LocalizedDateTimePickerPageComponent {
   protected readonly toggles = [
     { key: 'required', label: 'required', value: this.required },
     { key: 'invalid', label: 'invalid', value: this.invalid },
+    { key: 'show-errors', label: 'showValidationErrors', value: this.showValidationErrors },
     { key: 'disabled', label: 'controlDisabled', value: this.disabled },
     { key: 'readonly', label: 'readonly', value: this.readonly },
     { key: 'bounds', label: 'min/max: August–September 2026', value: this.limitRange },
