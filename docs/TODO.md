@@ -154,3 +154,4 @@
 - [x] Keep native dropdown popover targets distinct from static Angular host IDs.
 - [x] Let consumers defer datetime error messages and invalid styling until form submission while
       preserving required, format, range, and native validation.
+- [x] Allow npm publish-time scanning to complete before release confirmation exhausts its retries.
