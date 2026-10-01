@@ -1,5 +1,27 @@
 @use 'bootstrap/scss/bootstrap';
 
+// Keep Bootstrap's validation selectors in control of valid and invalid states.
+.form-check-input:where(:not(.is-valid, .is-invalid, .was-validated .form-check-input)) {
+  &:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+  }
+
+  &:checked,
+  &[type='checkbox']:indeterminate {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+  }
+}
+
+.form-switch .form-check-input:focus:not(:checked) {
+  --bs-form-switch-bg: #{bootstrap.escape-svg(bootstrap.$form-switch-bg-image)};
+}
+
+[data-bs-theme='dark'] .form-switch .form-check-input:focus:not(:checked) {
+  --bs-form-switch-bg: #{bootstrap.escape-svg(bootstrap.$form-switch-bg-image-dark)};
+}
+
 :root[data-bs-theme='light'] {
   --bs-primary: var(--accent-color);
   --bs-primary-rgb: var(--accent-color-rgb);
