@@ -34,10 +34,13 @@ function createContentSecurityPolicy(nonce: string): string {
   ].join('; ');
 }
 
-async function addScriptNonce(angularResponse: Response, nonce: string): Promise<Response> {
+async function addInlineNonce(angularResponse: Response, nonce: string): Promise<Response> {
   if (!angularResponse.headers.get('content-type')?.includes('text/html')) return angularResponse;
   const html = await angularResponse.text();
-  const nonceHtml = html.replace(/<script(?![^>]*\bnonce=)(?=[\s>])/g, `<script nonce="${nonce}"`);
+  const nonceHtml = html.replace(
+    /<(script|style)(?![^>]*\bnonce=)(?=[\s>])/g,
+    `<$1 nonce="${nonce}"`,
+  );
   const headers = new Headers(angularResponse.headers);
   headers.delete('content-length');
   return new Response(nonceHtml, {
@@ -77,7 +80,7 @@ app.use((request, response, next) => {
         next();
         return;
       }
-      const nonceResponse = await addScriptNonce(angularResponse, cspNonce);
+      const nonceResponse = await addInlineNonce(angularResponse, cspNonce);
       writeResponseToNodeResponse(nonceResponse, response);
     })
     .catch(next);

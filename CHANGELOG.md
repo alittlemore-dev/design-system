@@ -16,6 +16,25 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Fixed
 
+### Security
+
+## [0.4.0] - 2026-10-04
+
+### Added
+
+### Changed
+
+- Refresh Markdown sanitization, parsing, and editor dependencies; verify current Angular 22.2
+  consumers in the packed demo.
+- Raise the minimum supported Angular framework version to 22.1.1 to exclude the vulnerable
+  HTTP transfer-cache baseline. Angular CDK still supports 22.1.0.
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
 - Use the theme's green accent for checked and mixed form controls and their focus indicators in
   both themes, including switches.
 - Keep Bootstrap overrides compatible with consumers that already loaded Bootstrap and preserve

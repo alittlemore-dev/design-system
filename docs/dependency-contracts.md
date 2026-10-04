@@ -33,22 +33,22 @@ are not published.
 
 The required peer ranges are:
 
-- `@angular/common`, `@angular/core`, `@angular/forms`, and `@angular/cdk`:
-  `>=22.1.0 <23.0.0`;
+- `@angular/common`, `@angular/core`, and `@angular/forms`: `>=22.1.1 <23.0.0`;
+- `@angular/cdk`: `>=22.1.0 <23.0.0`;
 - `rxjs`: `>=7.8.2 <8.0.0`;
 - `bootstrap`: `>=5.3.8 <6.0.0`.
 
 The runtime dependency ranges are:
 
-- `marked` `^18.0.9`, `prismjs` `^1.30.0`, and `dompurify` `^3.4.13`;
-- `@codemirror/autocomplete` `^6.20.3`, `@codemirror/commands` `^6.10.4`,
+- `marked` `^18.0.14`, `prismjs` `^1.30.0`, and `dompurify` `^3.4.16`;
+- `@codemirror/autocomplete` `^6.20.3`, `@codemirror/commands` `^6.11.1`,
   `@codemirror/lang-markdown` `^6.5.2`, `@codemirror/language` `^6.12.4`,
-  `@codemirror/search` `^6.7.1`, `@codemirror/state` `^6.7.1`, and `@codemirror/view`
-  `^6.43.8`;
-- `@lezer/common` `^1.5.2` and `@lezer/highlight` `^1.2.3`;
+  `@codemirror/search` `^6.7.2`, `@codemirror/state` `^6.7.6`, and `@codemirror/view`
+  `^6.43.13`;
+- `@lezer/common` `^1.5.3` and `@lezer/highlight` `^1.2.5`;
 - `tslib` `^2.3.0`.
 
-The root workspace installs the exact peer floors: Angular and CDK 22.1.0, RxJS 7.8.2, and Bootstrap
+The root workspace installs the exact peer floors: Angular 22.1.1 and CDK 22.1.0, RxJS 7.8.2, and Bootstrap
 5.3.8. The package-content verifier rejects any difference between these exact versions and the
 lower bounds of the published ranges. This makes the production build exercise the claimed floors.
 Runtime and tool dependencies are pinned exactly in the workspace lock file while the published
@@ -61,7 +61,7 @@ the package's interdependent CodeMirror and Lezer updates.
 
 `@angular/platform-browser` and `zone.js` support repository tests only. Jest, jsdom, ESLint,
 TypeScript, Prettier, and their adapters are workspace development dependencies and never appear in
-the published manifest. Dart Sass `1.101.0` is also a direct workspace test dependency: source and
+the published manifest. Dart Sass `1.105.1` is also a direct workspace test dependency: source and
 built-package checks compile every public SCSS entry point and their documented composition. Sass is
 not a published runtime dependency.
 

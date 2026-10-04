@@ -33,12 +33,12 @@ const expectedExports = {
 };
 
 const expectedPeerDependencies = {
-  '@angular/core': '>=22.1.0 <23.0.0',
+  '@angular/core': '>=22.1.1 <23.0.0',
   bootstrap: '>=5.3.8 <6.0.0',
 };
 
 const expectedDependencies = {
-  marked: '^18.0.9',
+  marked: '^18.0.14',
   tslib: '^2.3.0',
 };
 
@@ -70,7 +70,7 @@ function createValidFixture() {
     },
     workspacePackageJson: {
       dependencies: {
-        '@angular/core': '22.1.0',
+        '@angular/core': '22.1.1',
         bootstrap: '5.3.8',
       },
     },
@@ -99,16 +99,16 @@ test('aggregates per-entry-point dependency contracts without widening ranges', 
   const aggregate = aggregateDependencyContracts({
     ui: {
       peerDependencies: {
-        '@angular/core': '>=22.1.0 <23.0.0',
+        '@angular/core': '>=22.1.1 <23.0.0',
         bootstrap: '>=5.3.8 <6.0.0',
       },
     },
     markdown: {
       peerDependencies: {
-        '@angular/core': '>=22.1.0 <23.0.0',
+        '@angular/core': '>=22.1.1 <23.0.0',
       },
       dependencies: {
-        marked: '^18.0.9',
+        marked: '^18.0.14',
       },
     },
     infrastructure: {
@@ -136,24 +136,24 @@ test('derives the repository manifest contract from entry-point ownership', () =
   ]);
   assert.deepEqual(repositoryPeerDependencies, {
     '@angular/cdk': '>=22.1.0 <23.0.0',
-    '@angular/common': '>=22.1.0 <23.0.0',
-    '@angular/core': '>=22.1.0 <23.0.0',
-    '@angular/forms': '>=22.1.0 <23.0.0',
+    '@angular/common': '>=22.1.1 <23.0.0',
+    '@angular/core': '>=22.1.1 <23.0.0',
+    '@angular/forms': '>=22.1.1 <23.0.0',
     bootstrap: '>=5.3.8 <6.0.0',
     rxjs: '>=7.8.2 <8.0.0',
   });
   assert.deepEqual(repositoryDependencies, {
     '@codemirror/autocomplete': '^6.20.3',
-    '@codemirror/commands': '^6.10.4',
+    '@codemirror/commands': '^6.11.1',
     '@codemirror/lang-markdown': '^6.5.2',
     '@codemirror/language': '^6.12.4',
-    '@codemirror/search': '^6.7.1',
-    '@codemirror/state': '^6.7.1',
-    '@codemirror/view': '^6.43.8',
-    '@lezer/common': '^1.5.2',
-    '@lezer/highlight': '^1.2.3',
-    dompurify: '^3.4.13',
-    marked: '^18.0.9',
+    '@codemirror/search': '^6.7.2',
+    '@codemirror/state': '^6.7.6',
+    '@codemirror/view': '^6.43.13',
+    '@lezer/common': '^1.5.3',
+    '@lezer/highlight': '^1.2.5',
+    dompurify: '^3.4.16',
+    marked: '^18.0.14',
     prismjs: '^1.30.0',
     tslib: '^2.3.0',
   });
@@ -165,7 +165,7 @@ test('rejects conflicting ranges across entry-point dependency contracts', () =>
       aggregateDependencyContracts({
         ui: {
           peerDependencies: {
-            '@angular/core': '>=22.1.0 <23.0.0',
+            '@angular/core': '>=22.1.1 <23.0.0',
           },
         },
         editor: {
@@ -191,7 +191,7 @@ test('accepts a package whose manifest and archive match the contracts', () => {
 
 test('rejects dependency drift and bundled dependencies', () => {
   const fixture = createValidFixture();
-  fixture.builtPackageJson.peerDependencies['@angular/core'] = '^22.1.0';
+  fixture.builtPackageJson.peerDependencies['@angular/core'] = '^22.1.1';
   fixture.builtPackageJson.dependencies.marked = '^19.0.0';
   fixture.packResult.bundled = ['marked'];
 
@@ -225,7 +225,7 @@ test('rejects a workspace that no longer exercises every published peer floor', 
       code: 'workspace-peer-floor-mismatch',
       dependency: '@angular/core',
       actual: '22.1.4',
-      expected: '22.1.0',
+      expected: '22.1.1',
     },
     {
       code: 'workspace-peer-floor-mismatch',
@@ -239,7 +239,7 @@ test('rejects a workspace that no longer exercises every published peer floor', 
 test('rejects optional dependency and optional peer policy drift', () => {
   const fixture = createValidFixture();
   fixture.builtPackageJson.optionalDependencies = {
-    marked: '^18.0.9',
+    marked: '^18.0.14',
   };
   fixture.builtPackageJson.peerDependenciesMeta = {
     '@angular/core': {

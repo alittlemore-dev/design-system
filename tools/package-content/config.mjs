@@ -1,11 +1,11 @@
 import { aggregateDependencyContracts } from './package-content.mjs';
 
-const angularRange = '>=22.1.0 <23.0.0';
+const angularRange = '>=22.1.1 <23.0.0';
 
 export const dependencyContracts = {
   ui: {
     peerDependencies: {
-      '@angular/cdk': angularRange,
+      '@angular/cdk': '>=22.1.0 <23.0.0',
       '@angular/common': angularRange,
       '@angular/core': angularRange,
       '@angular/forms': angularRange,
@@ -19,14 +19,14 @@ export const dependencyContracts = {
       '@angular/core': angularRange,
     },
     dependencies: {
-      dompurify: '^3.4.13',
-      marked: '^18.0.9',
+      dompurify: '^3.4.16',
+      marked: '^18.0.14',
       prismjs: '^1.30.0',
     },
   },
   markdownEditor: {
     peerDependencies: {
-      '@angular/cdk': angularRange,
+      '@angular/cdk': '>=22.1.0 <23.0.0',
       '@angular/common': angularRange,
       '@angular/core': angularRange,
       '@angular/forms': angularRange,
@@ -34,14 +34,14 @@ export const dependencyContracts = {
     },
     dependencies: {
       '@codemirror/autocomplete': '^6.20.3',
-      '@codemirror/commands': '^6.10.4',
+      '@codemirror/commands': '^6.11.1',
       '@codemirror/lang-markdown': '^6.5.2',
       '@codemirror/language': '^6.12.4',
-      '@codemirror/search': '^6.7.1',
-      '@codemirror/state': '^6.7.1',
-      '@codemirror/view': '^6.43.8',
-      '@lezer/common': '^1.5.2',
-      '@lezer/highlight': '^1.2.3',
+      '@codemirror/search': '^6.7.2',
+      '@codemirror/state': '^6.7.6',
+      '@codemirror/view': '^6.43.13',
+      '@lezer/common': '^1.5.3',
+      '@lezer/highlight': '^1.2.5',
     },
   },
   testing: {
@@ -56,7 +56,7 @@ export const dependencyContracts = {
   },
   cdkStyles: {
     peerDependencies: {
-      '@angular/cdk': angularRange,
+      '@angular/cdk': '>=22.1.0 <23.0.0',
     },
   },
   infrastructure: {

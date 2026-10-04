@@ -4,11 +4,12 @@ Status: accepted on 2026-08-26.
 
 ## Selected baseline
 
-The design system is compiled with Angular framework and compiler version 22.1.0 in partial-Ivy
-mode. Its Angular and Angular CDK peer dependency range is `>=22.1.0 <23.0.0`.
+The design system is compiled with Angular framework and compiler version 22.1.1 in partial-Ivy
+mode. Its Angular peer dependency range is `>=22.1.1 <23.0.0`; the Angular CDK range remains
+`>=22.1.0 <23.0.0`.
 
 The root workspace is the floor lane: it pins the published Angular, CDK, RxJS, and Bootstrap peer
-floors exactly while using TypeScript 6.0.3 and Node.js 24.16.0 as its repository toolchain baseline.
+floors exactly while using TypeScript 6.0.3 and Node.js 24.21.0 as its repository toolchain baseline.
 The independent demo is the current lane: Dependabot keeps its consumer dependencies current within
 the supported line, and CI installs the packed library into that application before building it.
 

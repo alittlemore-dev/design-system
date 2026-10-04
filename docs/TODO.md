@@ -24,7 +24,13 @@
 - [x] Make `make install-demo-browser` resolve the demo's declared Playwright range before downloading Chromium so it installs the revision used by packed no-lock demo checks.
 - [x] Wait for the Site-select disabled state in the real-browser smoke before asserting its live control update.
 - [x] Preserve owning-page scroll through a late third layout frame when ArrowUp or ArrowDown moves between rendered Markdown-table cells.
-- [ ] Update the demo Express dependency tree so `qs` resolves to `6.16.0` or newer, then verify that `npm --prefix demo audit` reports no vulnerabilities.
+- [x] Update the demo Express dependency tree so `qs` resolves to `6.16.0` or newer, then verify that `npm --prefix demo audit` reports no vulnerabilities.
+
+- [x] Exclude the vulnerable Angular 22.1.0 HTTP transfer-cache baseline and verify the raised peer floor through package and packed-demo checks.
+
+- [ ] Upgrade ng-packagr beyond 22.1.x only after its declaration bundler preserves the Markdown editor public exports and excludes implementation symbols.
+
+- [x] Apply the request CSP nonce to critical CSS emitted by Angular 22.2 and verify packed-demo SSR and Chromium checks.
 
 ## Design tokens and shared styles
 

@@ -10,7 +10,9 @@ const demoRoot = join(repositoryRoot, 'demo');
 const packageRoot = join(repositoryRoot, 'dist/alittlemore.dev/design-system');
 const manifestPaths = [join(demoRoot, 'package.json'), join(demoRoot, 'package-lock.json')];
 const packedPackagePath = join(demoRoot, 'node_modules/@alittlemore.dev/design-system');
-const productionStatsPath = join(demoRoot, 'dist/design-system-demo/stats.json');
+const productionStatsPaths = ['browser-stats.json', 'server-stats.json'].map((filename) =>
+  join(demoRoot, 'dist/design-system-demo', filename),
+);
 const primaryEntryPointBundle =
   '/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system.mjs';
 const markdownEntryPointBundle =
@@ -224,7 +226,9 @@ async function runPackedDemo(scriptName) {
     });
     await runCommand('npm', ['run', scriptName], { cwd: demoRoot, env });
     if (scriptName !== 'start') {
-      await assertProductionBundlesExcludeTestingEntryPoint(productionStatsPath);
+      for (const statsPath of productionStatsPaths) {
+        await assertProductionBundlesExcludeTestingEntryPoint(statsPath);
+      }
     }
   } catch (error) {
     workflowError = error;

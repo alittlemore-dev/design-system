@@ -34,7 +34,7 @@ test('CI is read-only and runs one Make gate per pushed or pull-request commit',
   assert.match(ciWorkflow, /^ {8}run: make install$/m);
   assert.match(ciWorkflow, /^ {8}run: make pack$/m);
   assert.match(ciWorkflow, /^ {8}run: make check-demo$/m);
-  assert.match(ciWorkflow, /node-version: 24\.16\.0/);
+  assert.match(ciWorkflow, /node-version: 24\.21\.0/);
 });
 
 test('push releases are fully queued and isolate gate, OIDC, and tag permissions', () => {
