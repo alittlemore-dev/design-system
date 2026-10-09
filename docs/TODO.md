@@ -284,3 +284,5 @@
 
 - [x] Eliminate the FullCalendar 7 ResizeObserver loop diagnostic during initial busy-day layout and Day view changes, then pass the packed calendar browser test without console errors ([upstream issue #8082](https://github.com/fullcalendar/fullcalendar/issues/8082)).
 - [x] Retain modal focus when choosing an entry from the demo's selected-day list, and restore the busy-day trigger on Escape.
+
+- [x] Keep the calendar runtime out of initial UI-consumer bundles, and verify delayed rendering and retry after a runtime load failure in the packed demo.

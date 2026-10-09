@@ -149,6 +149,35 @@ export async function assertProductionBundlesExcludeTestingEntryPoint(statsPath)
   }
 }
 
+export async function assertCalendarRuntimeIsDeferred(statsPath) {
+  const { outputs } = JSON.parse(await readFile(statsPath, 'utf8'));
+  const initial = Object.entries(outputs ?? {}).find(
+    ([, value]) => value.entryPoint === 'src/main.ts',
+  );
+  if (!initial) throw new Error('The browser module graph has no application entry point.');
+  const visited = new Set();
+  const pending = [initial[0]];
+  while (pending.length) {
+    const name = pending.pop();
+    if (visited.has(name)) continue;
+    visited.add(name);
+    const output = outputs[name];
+    if (!output) throw new Error(`Missing initial bundle metadata: ${name}`);
+    for (const [input, value] of Object.entries(output.inputs ?? {})) {
+      if (
+        value.bytesInOutput > 0 &&
+        /\/(?:fullcalendar|@fullcalendar|@full-ui)\//.test(input.replaceAll('\\', '/'))
+      ) {
+        throw new Error(`The initial browser bundle includes the calendar runtime: ${input}`);
+      }
+    }
+    for (const dependency of output.imports ?? []) {
+      if (!dependency.external && dependency.kind !== 'dynamic-import')
+        pending.push(dependency.path);
+    }
+  }
+}
+
 function formatCommand(command, args) {
   return [command, ...args].join(' ');
 }
@@ -226,6 +255,7 @@ async function runPackedDemo(scriptName) {
     });
     await runCommand('npm', ['run', scriptName], { cwd: demoRoot, env });
     if (scriptName !== 'start') {
+      await assertCalendarRuntimeIsDeferred(productionStatsPaths[0]);
       for (const statsPath of productionStatsPaths) {
         await assertProductionBundlesExcludeTestingEntryPoint(statsPath);
       }

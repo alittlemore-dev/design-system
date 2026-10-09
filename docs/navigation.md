@@ -66,3 +66,5 @@ Labels and all translated text belong to the consumer.
   modal drawers retain their separate behavior.
 
 The packed demo's catalogue and `/preview/navigation` exercise both grouped links and folders.
+
+For a fixed application header, set `--sidebar-sticky-top` on the sidebar or an ancestor. The sidebar reserves that clearance in its sticky position and available height; the default is `1rem`.

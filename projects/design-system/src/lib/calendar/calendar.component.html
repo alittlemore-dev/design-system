@@ -40,7 +40,7 @@
     <span class="visually-hidden" role="status">{{ labels().loading }}</span>
   }
   <div #surface class="ds-calendar-surface"></div>
-  @if (!ready()) {
+  @if (!ready() && !failed()) {
     <div class="ds-calendar-placeholder" role="status">{{ labels().loading }}</div>
   }
 </section>

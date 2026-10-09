@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 
 import { chromium } from 'playwright';
 
@@ -1687,4 +1688,25 @@ test('packed calendars keep entry types distinct, preserve date transitions and 
   await full.getByRole('heading', { name: /октябрь 2026/i }).waitFor();
   assert.deepEqual(await page.evaluate(() => window.__calendarCspViolations), []);
   assert.deepEqual(errors, []);
+});
+
+test('a calendar runtime download failure shows feedback and can be retried', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const browser = await chromium.launch({ headless: true });
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  const stats = JSON.parse(await readFile('dist/design-system-demo/browser-stats.json', 'utf8'));
+  const chunk = Object.entries(stats.outputs).find(([, output]) =>
+    output.entryPoint?.replaceAll('\\', '/').endsWith('/fullcalendar/index.js'),
+  )?.[0];
+  assert.ok(chunk, 'The calendar engine must have a dynamic runtime chunk.');
+  const pattern = `**/${chunk}`;
+  await page.route(pattern, (route) => route.abort());
+  await page.goto(`${server.url}/preview/calendar`, { waitUntil: 'networkidle' });
+  await page.getByRole('alert').getByText('Could not load the calendar.').waitFor();
+  await page.unroute(pattern);
+  await page.getByRole('button', { name: 'Retry calendar', exact: true }).click();
+  await page.locator('.ds-calendar-entry-title').first().waitFor();
+  assert.equal(await page.getByRole('alert').count(), 0);
 });

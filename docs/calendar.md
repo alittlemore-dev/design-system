@@ -36,3 +36,5 @@ Choose responsive view policy in the consumer. The demo starts in Agenda at phon
 Month on larger screens; explicit view changes remain available at every width. Component styles
 use existing theme tokens, are bundled with the packed component, and require no extra consumer
 FullCalendar stylesheet imports.
+
+The engine is loaded only after a full calendar is rendered in the browser. Importing UI or mini-calendar components does not download FullCalendar. `loadError` reports a runtime chunk failure; consumers provide localized feedback and retry by reloading the page, as browsers retain failed module imports. Destruction during loading prevents initialization.

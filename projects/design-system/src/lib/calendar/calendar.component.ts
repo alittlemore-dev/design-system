@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  ErrorHandler,
   NgZone,
   ViewEncapsulation,
   afterNextRender,
@@ -16,19 +17,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import {
-  Calendar,
-  type CalendarOptions,
-  type DatesSetInfo,
-  type EventDisplayInfo,
-} from 'fullcalendar';
-import dayGridPlugin from 'fullcalendar/daygrid';
-import timeGridPlugin from 'fullcalendar/timegrid';
-import listPlugin from 'fullcalendar/list';
-import multiMonthPlugin from 'fullcalendar/multimonth';
-import interactionPlugin from 'fullcalendar/interaction';
-import classicThemePlugin from 'fullcalendar/themes/classic';
-import ruLocale from 'fullcalendar/locales/ru';
+import type { Calendar, CalendarOptions, DatesSetInfo, EventDisplayInfo } from 'fullcalendar';
 import { Temporal } from 'temporal-polyfill';
 import { IconComponent, ICON_PATHS, type IconName } from '../icon/icon.component';
 import { SiteSelectComponent, type SiteSelectOption } from '../site-select/site-select.component';
@@ -39,6 +28,41 @@ import type {
   CalendarRange,
   CalendarView,
 } from './calendar.models';
+
+interface CalendarRuntime {
+  readonly Calendar: typeof Calendar;
+  readonly plugins: NonNullable<CalendarOptions['plugins']>;
+  readonly locales: NonNullable<CalendarOptions['locales']>;
+}
+let runtimePromise: Promise<CalendarRuntime> | null = null;
+function loadRuntime(): Promise<CalendarRuntime> {
+  return (runtimePromise ??= Promise.all([
+    import('fullcalendar'),
+    import('fullcalendar/daygrid'),
+    import('fullcalendar/timegrid'),
+    import('fullcalendar/list'),
+    import('fullcalendar/multimonth'),
+    import('fullcalendar/interaction'),
+    import('fullcalendar/themes/classic'),
+    import('fullcalendar/locales/ru'),
+  ])
+    .then(([core, dayGrid, timeGrid, list, multiMonth, interaction, classic, russian]) => ({
+      Calendar: core.Calendar,
+      plugins: [
+        classic.default,
+        dayGrid.default,
+        timeGrid.default,
+        list.default,
+        multiMonth.default,
+        interaction.default,
+      ],
+      locales: [russian.default],
+    }))
+    .catch((error: unknown) => {
+      runtimePromise = null;
+      throw error;
+    }));
+}
 
 const VIEWS: Readonly<Record<CalendarView, string>> = {
   month: 'dayGridMonth',
@@ -73,29 +97,26 @@ export class CalendarComponent {
   readonly rangeChange = output<CalendarRange>();
   readonly dateSelected = output<CalendarDateSelection>();
   readonly entrySelected = output<CalendarEntry>();
+  readonly loadError = output<void>();
   private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
+  private readonly errorHandler = inject(ErrorHandler);
+  private readonly runtime = signal<CalendarRuntime | null>(null);
   private readonly zone = inject(NgZone);
   private readonly surface = viewChild.required<ElementRef<HTMLElement>>('surface');
   private readonly calendar = signal<Calendar | null>(null);
   private lastOptions: CalendarOptions | null = null;
   /** @internal */ protected readonly ready = signal(false);
+  /** @internal */ protected readonly failed = signal(false);
   /** @internal */ protected readonly title = signal('');
   /** @internal */ protected readonly viewOptions = computed<readonly SiteSelectOption[]>(() =>
     this.views().map((value) => ({ value, label: this.labels().views[value] })),
   );
   /** @internal */ protected readonly options = computed<CalendarOptions>(() => ({
-    plugins: [
-      classicThemePlugin,
-      dayGridPlugin,
-      timeGridPlugin,
-      listPlugin,
-      multiMonthPlugin,
-      interactionPlugin,
-    ],
+    plugins: this.runtime()?.plugins ?? [],
     now: this.today(),
     locale: this.dateLocale().startsWith('ru') ? 'ru' : 'en',
-    locales: [ruLocale],
+    locales: this.runtime()?.locales ?? [],
     firstDay: this.dateLocale().startsWith('ru') ? 1 : 0,
     timeZone: this.timeZone(),
     height: 'auto',
@@ -180,18 +201,31 @@ export class CalendarComponent {
   });
   constructor() {
     afterNextRender(() => {
-      this.zone.runOutsideAngular(() => {
-        const options = this.options();
-        this.lastOptions = options;
-        const api = new Calendar(this.surface().nativeElement, {
-          ...options,
-          initialDate: this.date(),
-          initialView: VIEWS[this.view()],
+      void loadRuntime()
+        .then((runtime) => {
+          if (this.destroyRef.destroyed) return;
+          this.zone.runOutsideAngular(() => {
+            this.runtime.set(runtime);
+            const options = this.options();
+            this.lastOptions = options;
+            const api = new runtime.Calendar(this.surface().nativeElement, {
+              ...options,
+              initialDate: this.date(),
+              initialView: VIEWS[this.view()],
+            });
+            api.render();
+            this.calendar.set(api);
+            this.ready.set(true);
+          });
+        })
+        .catch((error: unknown) => {
+          if (this.destroyRef.destroyed) return;
+          this.zone.run(() => {
+            this.failed.set(true);
+            this.loadError.emit();
+            this.errorHandler.handleError(error);
+          });
         });
-        api.render();
-        this.calendar.set(api);
-        this.ready.set(true);
-      });
     });
     this.destroyRef.onDestroy(() => this.zone.runOutsideAngular(() => this.calendar()?.destroy()));
   }

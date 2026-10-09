@@ -89,20 +89,35 @@
         }}
       </p>
     </aside>
-    <ds-calendar
-      id="preview-calendar"
-      [date]="date()"
-      today="2026-10-09"
-      [dateLocale]="locale()"
-      [labels]="labels()"
-      [view]="view()"
-      [entries]="entries()"
-      timeZone="UTC"
-      (dateChange)="date.set($event)"
-      (viewChange)="view.set($event)"
-      (entrySelected)="selectEntry($event)"
-      (dateSelected)="selectDay($event)"
-    />
+    <div>
+      @if (calendarFailed()) {
+        <p role="alert">
+          {{
+            locale() === 'ru-RU'
+              ? 'Не удалось загрузить календарь.'
+              : 'Could not load the calendar.'
+          }}
+        </p>
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="retryCalendar()">
+          {{ locale() === 'ru-RU' ? 'Повторить' : 'Retry calendar' }}
+        </button>
+      }
+      <ds-calendar
+        id="preview-calendar"
+        [date]="date()"
+        today="2026-10-09"
+        [dateLocale]="locale()"
+        [labels]="labels()"
+        [view]="view()"
+        [entries]="entries()"
+        timeZone="UTC"
+        (loadError)="calendarFailed.set(true)"
+        (dateChange)="date.set($event)"
+        (viewChange)="view.set($event)"
+        (entrySelected)="selectEntry($event)"
+        (dateSelected)="selectDay($event)"
+      />
+    </div>
   </div>
 </main>
 <dialog

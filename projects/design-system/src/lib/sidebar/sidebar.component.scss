@@ -14,8 +14,8 @@
 .sidebar {
   min-width: 0;
   position: sticky;
-  top: 1rem;
-  max-height: calc(100dvh - 2rem);
+  top: var(--sidebar-sticky-top, 1rem);
+  max-height: calc(100dvh - var(--sidebar-sticky-top, 1rem) - 1rem);
   overflow-y: auto;
 }
 .sidebar-open .sidebar {

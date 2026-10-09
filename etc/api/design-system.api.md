@@ -46,6 +46,8 @@ export class CalendarComponent {
     // (undocumented)
     readonly labels: _angular_core.InputSignal<CalendarLabels>;
     // (undocumented)
+    readonly loadError: _angular_core.OutputEmitterRef<void>;
+    // (undocumented)
     readonly loading: _angular_core.InputSignal<boolean>;
     // (undocumented)
     readonly rangeChange: _angular_core.OutputEmitterRef<CalendarRange>;
@@ -60,7 +62,7 @@ export class CalendarComponent {
     // (undocumented)
     readonly views: _angular_core.InputSignal<readonly CalendarView[]>;
     // (undocumented)
-    static ɵcmp: _angular_core.ɵɵComponentDeclaration<CalendarComponent, "ds-calendar", never, { "id": { "alias": "id"; "required": true; "isSignal": true; }; "date": { "alias": "date"; "required": true; "isSignal": true; }; "today": { "alias": "today"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "entries": { "alias": "entries"; "required": false; "isSignal": true; }; "view": { "alias": "view"; "required": false; "isSignal": true; }; "views": { "alias": "views"; "required": false; "isSignal": true; }; "dateLocale": { "alias": "dateLocale"; "required": false; "isSignal": true; }; "timeZone": { "alias": "timeZone"; "required": false; "isSignal": true; }; "loading": { "alias": "loading"; "required": false; "isSignal": true; }; }, { "dateChange": "dateChange"; "viewChange": "viewChange"; "rangeChange": "rangeChange"; "dateSelected": "dateSelected"; "entrySelected": "entrySelected"; }, never, never, true, never>;
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<CalendarComponent, "ds-calendar", never, { "id": { "alias": "id"; "required": true; "isSignal": true; }; "date": { "alias": "date"; "required": true; "isSignal": true; }; "today": { "alias": "today"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "entries": { "alias": "entries"; "required": false; "isSignal": true; }; "view": { "alias": "view"; "required": false; "isSignal": true; }; "views": { "alias": "views"; "required": false; "isSignal": true; }; "dateLocale": { "alias": "dateLocale"; "required": false; "isSignal": true; }; "timeZone": { "alias": "timeZone"; "required": false; "isSignal": true; }; "loading": { "alias": "loading"; "required": false; "isSignal": true; }; }, { "dateChange": "dateChange"; "viewChange": "viewChange"; "rangeChange": "rangeChange"; "dateSelected": "dateSelected"; "entrySelected": "entrySelected"; "loadError": "loadError"; }, never, never, true, never>;
     // (undocumented)
     static ɵfac: _angular_core.ɵɵFactoryDeclaration<CalendarComponent, never>;
 }
