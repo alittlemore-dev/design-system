@@ -18,6 +18,13 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Security
 
+## [0.5.1] - 2026-10-10
+
+### Fixed
+
+- Let applications reserve fixed-header clearance with `--sidebar-sticky-top`, keeping sidebar controls visible while scrolling.
+- Load the calendar engine only when a full calendar renders, keeping it out of the initial bundle for other UI components. Runtime loading failures notify the consumer and permit retry.
+
 ## [0.5.0] - 2026-10-10
 
 ### Added

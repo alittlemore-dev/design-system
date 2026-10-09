@@ -178,3 +178,32 @@ test('does not forward an interruption to the restoring cleanup child', () => {
   assert.doesNotThrow(() => controller.assertWorkflowMayContinue());
   assert.equal(controller.exitCode, 143);
 });
+
+test('keeps the calendar runtime behind dynamic imports in the real bundle graph', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'packed-demo-calendar-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const statsPath = join(directory, 'stats.json');
+  const outputs = {
+    'main.js': {
+      entryPoint: 'src/main.ts',
+      inputs: {},
+      imports: [
+        { path: 'ui.js', kind: 'import-statement' },
+        { path: 'calendar.js', kind: 'dynamic-import' },
+      ],
+    },
+    'ui.js': { inputs: { 'node_modules/ui/index.js': { bytesInOutput: 100 } }, imports: [] },
+    'calendar.js': {
+      inputs: { 'node_modules/fullcalendar/index.js': { bytesInOutput: 100 } },
+      imports: [],
+    },
+  };
+  await writeFile(statsPath, JSON.stringify({ outputs }));
+  await assert.doesNotReject(packedDemo.assertCalendarRuntimeIsDeferred(statsPath));
+  outputs['ui.js'].imports.push({ path: 'calendar.js', kind: 'import-statement' });
+  await writeFile(statsPath, JSON.stringify({ outputs }));
+  await assert.rejects(
+    packedDemo.assertCalendarRuntimeIsDeferred(statsPath),
+    /initial browser bundle includes the calendar runtime/,
+  );
+});

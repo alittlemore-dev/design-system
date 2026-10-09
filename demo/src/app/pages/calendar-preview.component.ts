@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import {
   ChangeDetectionStrategy,
@@ -76,6 +77,7 @@ export class CalendarPreviewComponent {
   private readonly changeDetector = inject(ChangeDetectorRef);
   protected readonly theme = inject(ThemeService);
   protected readonly locale = signal('en-US');
+  protected readonly calendarFailed = signal(false);
   protected readonly date = signal('2026-10-09');
   protected readonly view = signal<CalendarView>('month');
   protected readonly labels = computed(() => (this.locale() === 'ru-RU' ? RU_LABELS : EN_LABELS));
@@ -90,6 +92,10 @@ export class CalendarPreviewComponent {
       .pipe(map((state) => state.matches)),
     { initialValue: false },
   );
+  private readonly document = inject(DOCUMENT);
+  protected retryCalendar(): void {
+    this.document.defaultView?.location.reload();
+  }
   private readonly responsiveView = effect(() => {
     this.view.set(this.narrow() ? 'agenda' : 'month');
   });

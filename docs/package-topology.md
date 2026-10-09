@@ -47,7 +47,7 @@ The sidebar keeps its projected navigation inline and does not share the modal d
 Full and mini calendars expose neutral entries, date/range/view outputs, and consumer-owned labels.
 The primary UI entry point owns the FullCalendar 7.1.1 and Temporal polyfill runtime dependencies;
 no FullCalendar models or Angular adapter become public contracts. FullCalendar core is initialized
-only in the browser and outside Angular's zone to preserve SSR hydration stability. Consumers own
+only when a full calendar is rendered in the browser, through dynamic runtime imports and outside Angular's zone to preserve SSR hydration stability. Consumers own
 fetching, domain entry types, routing, creation, filters, and optional calendar-side navigation.
 
 `DropdownComponent` projects a trigger through `[dsDropdownTrigger]` and arbitrary panel content.
