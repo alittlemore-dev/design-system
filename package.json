@@ -54,7 +54,7 @@
     "bootstrap": "5.3.8",
     "dompurify": "3.4.16",
     "fullcalendar": "7.1.1",
-    "marked": "18.0.14",
+    "marked": "18.1.0",
     "prismjs": "1.30.0",
     "rxjs": "7.8.2",
     "temporal-polyfill": "1.0.5",
