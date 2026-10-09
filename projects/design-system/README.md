@@ -15,9 +15,13 @@ Import UI components only from the primary entry point:
 
 ```ts
 import {
+  CalendarComponent,
+  MiniCalendarComponent,
   EmptyStateComponent,
   ErrorMessageComponent,
-  FoldableTreeComponent,
+  IconComponent,
+  NavigationComponent,
+  SidebarComponent,
   LoadingSpinnerComponent,
   LocalizedDatePickerComponent,
   LocalizedDateRangePickerComponent,
@@ -45,10 +49,14 @@ import {
 
 | Import                                  | Selector                             | Purpose                                                         |
 | --------------------------------------- | ------------------------------------ | --------------------------------------------------------------- |
+| `CalendarComponent`                     | `ds-calendar`                        | Displays a controlled full calendar with neutral entries.       |
+| `MiniCalendarComponent`                 | `ds-mini-calendar`                   | Provides compact keyboard date navigation.                      |
 | `EmptyStateComponent`                   | `ds-empty-state`                     | Displays a consumer-supplied empty-state message.               |
 | `LoadingSpinnerComponent`               | `ds-loading-spinner`                 | Displays a named loading status.                                |
 | `ErrorMessageComponent`                 | `ds-error-message`                   | Displays an `ErrorDisplay` and emits `retry`.                   |
-| `FoldableTreeComponent`                 | `ds-foldable-tree`                   | Renders consumer-owned tree data and emits selected item keys.  |
+| `IconComponent`                         | `ds-icon`                            | Renders a decorative icon from the shared set.                  |
+| `NavigationComponent`                   | `ds-navigation`                      | Renders grouped links and expandable folders.                   |
+| `SidebarComponent`                      | `ds-sidebar`                         | Provides collapsible inline page navigation.                    |
 | `LocalizedDatePickerComponent`          | `ds-localized-date-picker`           | Provides a localized calendar-date form control.                |
 | `LocalizedDateRangePickerComponent`     | `ds-localized-date-range-picker`     | Provides an inclusive localized calendar-date range control.    |
 | `LocalizedDateTimePickerComponent`      | `ds-localized-datetime-picker`       | Provides a localized local-wall-clock datetime control.         |
@@ -57,6 +65,10 @@ import {
 | `LocalizedTimeRangePickerComponent`     | `ds-localized-time-range-picker`     | Provides a same-day local-wall-clock time range control.        |
 | `NotificationAreaComponent`             | `ds-notification-area`               | Renders and dismisses notifications from `NotificationService`. |
 | `SiteSelectComponent`                   | `ds-site-select`                     | Provides a select-only combobox form control.                   |
+
+See [Calendars](../../docs/calendar.md) for controlled date/view composition.
+
+See [Navigation and sidebar](../../docs/navigation.md) for composition and migration from FoldableTree.
 
 All labels, messages, option text, and localized date-picker strings are consumer-owned. Supply
 them through component inputs and application i18n; the package does not provide translations or

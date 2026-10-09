@@ -78,11 +78,9 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'components/foldable-tree',
+    path: 'components/navigation',
     loadComponent: () =>
-      import('./pages/foldable-tree-page.component').then(
-        (module) => module.FoldableTreePageComponent,
-      ),
+      import('./pages/navigation-page.component').then((module) => module.NavigationPageComponent),
   },
   {
     path: 'components/modal-scroll',
@@ -107,6 +105,23 @@ export const routes: Routes = [
       import('./pages/disclosures-page.component').then(
         (module) => module.DisclosuresPageComponent,
       ),
+  },
+  {
+    path: 'preview/navigation',
+    loadComponent: () =>
+      import('./pages/navigation-preview.component').then(
+        (module) => module.NavigationPreviewComponent,
+      ),
+  },
+  {
+    path: 'components/calendar',
+    loadComponent: () =>
+      import('./pages/calendar-page.component').then((m) => m.CalendarPageComponent),
+  },
+  {
+    path: 'preview/calendar',
+    loadComponent: () =>
+      import('./pages/calendar-preview.component').then((m) => m.CalendarPreviewComponent),
   },
   { path: '**', redirectTo: 'overview' },
 ];

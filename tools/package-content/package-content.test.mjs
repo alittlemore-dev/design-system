@@ -153,8 +153,10 @@ test('derives the repository manifest contract from entry-point ownership', () =
     '@lezer/common': '^1.5.3',
     '@lezer/highlight': '^1.2.5',
     dompurify: '^3.4.16',
+    fullcalendar: '7.1.1',
     marked: '^18.0.14',
     prismjs: '^1.30.0',
+    'temporal-polyfill': '^1.0.5',
     tslib: '^2.3.0',
   });
 });

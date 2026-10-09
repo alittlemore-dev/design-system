@@ -1,0 +1,91 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+.ds-mini-calendar {
+  max-width: 19rem;
+  color: var(--text-primary);
+}
+.mini-calendar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+.mini-calendar-heading strong {
+  font-size: 0.875rem;
+  display: block;
+}
+.mini-calendar-heading strong::first-letter {
+  text-transform: uppercase;
+}
+.mini-calendar-actions {
+  display: flex;
+}
+button {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  border-radius: 50%;
+}
+.mini-calendar-actions button {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+.previous {
+  transform: rotate(180deg);
+}
+table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0 0.125rem;
+}
+th {
+  text-align: center;
+  font-weight: 400;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+td {
+  text-align: center;
+  padding: 0;
+}
+td button {
+  width: 1.85rem;
+  height: 1.85rem;
+  font-size: 0.75rem;
+  position: relative;
+}
+button:hover {
+  background: var(--bs-tertiary-bg);
+}
+button.outside {
+  color: var(--text-secondary);
+}
+button.today {
+  box-shadow: inset 0 0 0 1px var(--link-readable-color);
+  font-weight: 600;
+}
+button.selected {
+  background: var(--bs-success-bg-subtle);
+  color: var(--bs-success-text-emphasis);
+  font-weight: 600;
+}
+button.marked::after {
+  content: '';
+  position: absolute;
+  bottom: 0.125rem;
+  width: 0.2rem;
+  height: 0.2rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+button:focus-visible {
+  outline: 2px solid var(--link-readable-color);
+  outline-offset: -2px;
+}

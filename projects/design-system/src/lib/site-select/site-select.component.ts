@@ -1,4 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -67,6 +67,8 @@ const TYPEAHEAD_RESET_MILLISECONDS = 700;
 })
 export class SiteSelectComponent implements ControlValueAccessor, OnChanges, Validator {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly document = inject(DOCUMENT);
+  private scrollAtOpen: readonly [number, number] | null = null;
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly triggerElement =
     viewChild.required<ElementRef<HTMLButtonElement>>('selectTrigger');
@@ -262,15 +264,29 @@ export class SiteSelectComponent implements ControlValueAccessor, OnChanges, Val
     }
     if (!this.open()) return;
     this.open.set(false);
+    this.scrollAtOpen = null;
     this.activeIndex.set(null);
     this.resetTypeahead();
   }
 
   /** @internal */
   @HostListener('window:resize')
-  @HostListener('window:scroll')
   protected onViewportChange(): void {
     if (this.open()) this.closeList(false);
+  }
+
+  /** @internal */
+  @HostListener('window:scroll')
+  protected onScroll(): void {
+    const viewport = this.document.defaultView;
+    if (
+      this.open() &&
+      viewport &&
+      this.scrollAtOpen &&
+      (viewport.scrollX !== this.scrollAtOpen[0] || viewport.scrollY !== this.scrollAtOpen[1])
+    ) {
+      this.closeList(false);
+    }
   }
 
   private handleClosedKeydown(event: KeyboardEvent): void {
@@ -375,6 +391,8 @@ export class SiteSelectComponent implements ControlValueAccessor, OnChanges, Val
     let index = options.findIndex((option) => option.value === this.committedValue());
     if (initialActive === 'first' || index < 0) index = 0;
     if (initialActive === 'last') index = options.length - 1;
+    const viewport = this.isBrowser ? this.document.defaultView : null;
+    this.scrollAtOpen = viewport ? [viewport.scrollX, viewport.scrollY] : null;
     this.activeIndex.set(index);
     this.open.set(true);
     this.resetTypeahead();
@@ -384,6 +402,7 @@ export class SiteSelectComponent implements ControlValueAccessor, OnChanges, Val
   private closeList(restoreFocus: boolean): void {
     const listbox = this.listboxElement().nativeElement;
     this.open.set(false);
+    this.scrollAtOpen = null;
     this.activeIndex.set(null);
     this.resetTypeahead();
     if (this.isBrowser && typeof listbox.hidePopover === 'function') {

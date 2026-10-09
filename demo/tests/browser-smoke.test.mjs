@@ -120,6 +120,7 @@ test('datetime error presentation can be deferred while validation stays active'
   const input = page.locator('#demo-datetime');
   await input.fill('unfinished');
   await input.blur();
+  await page.waitForFunction(() => !document.querySelector('#demo-datetime').checkValidity());
   const error = page.locator('[data-testid="datetime-picker-validation-message"]');
   assert.equal(await error.count(), 0);
   assert.equal(await input.getAttribute('aria-invalid'), null);
@@ -144,9 +145,32 @@ async function waitForText(page, selector, expected) {
 }
 
 async function navigateToDemoPage(page, name, path) {
-  await page.locator('[data-testid="demo-nav-item"]').filter({ hasText: name }).click();
+  const label = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s*New)?$`);
+  await page.locator('[data-demo-sidebar] nav').getByRole('link', { name: label }).click();
   await page.waitForURL(`**${path}`);
   assert.equal(await page.getByRole('heading', { name, level: 1, exact: true }).count(), 1);
+}
+
+async function assertFocusInsideClip(locator, clippingSelector) {
+  const ring = await locator.evaluate((element, selector) => {
+    const rect = element.getBoundingClientRect();
+    const clip = element.closest(selector).getBoundingClientRect();
+    const style = getComputedStyle(element);
+    const extension =
+      Number.parseFloat(style.outlineWidth) + Number.parseFloat(style.outlineOffset);
+    return {
+      focused: element === document.activeElement,
+      width: Number.parseFloat(style.outlineWidth),
+      contained:
+        rect.left - extension >= clip.left &&
+        rect.right + extension <= clip.right &&
+        rect.top - extension >= clip.top &&
+        rect.bottom + extension <= clip.bottom,
+    };
+  }, clippingSelector);
+  assert.equal(ring.focused, true);
+  assert.ok(ring.width >= 2);
+  assert.equal(ring.contained, true, 'Keyboard focus outline must fit its scrolling container.');
 }
 
 async function readText(page, selector) {
@@ -195,24 +219,51 @@ test('navigates the component catalogue and applies Site select inputs live', as
 
   await page.goto(server.url, { waitUntil: 'networkidle' });
   assert.equal(await page.locator('[data-demo-sidebar]').count(), 1);
-  await page.getByRole('button', { name: 'Site select', exact: true }).click();
+  for (const width of [390, 900, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const panel = page.locator('#catalogue-navigation-panel');
+    if (await panel.isHidden())
+      await page.getByRole('button', { name: 'Open catalogue', exact: true }).click();
+    await panel.waitFor({ state: 'visible' });
+    for (const theme of ['light', 'dark']) {
+      await page.locator(`[data-demo-theme="${theme}"]`).click();
+      const badges = await panel.locator('.navigation-badge').evaluateAll((elements) =>
+        elements.map((element) => {
+          const badge = element.getBoundingClientRect();
+          const link = element.closest('a').getBoundingClientRect();
+          return {
+            text: element.textContent,
+            height: badge.height,
+            lineHeight: Number.parseFloat(getComputedStyle(element).lineHeight),
+            insideLink: badge.left >= link.left && badge.right <= link.right,
+          };
+        }),
+      );
+      assert.ok(badges.length > 0);
+      for (const badge of badges) {
+        assert.ok(
+          badge.height <= badge.lineHeight + 1 && badge.insideLink,
+          `${width}px ${theme}: badge ${badge.text} must fit on one line inside its link`,
+        );
+      }
+    }
+  }
+  await page.getByRole('link', { name: 'Site select', exact: true }).click();
   await page.waitForURL('**/components/site-select');
   assert.equal(await page.getByRole('heading', { name: 'Site select', level: 1 }).count(), 1);
   assert.equal(
-    await page
-      .getByRole('button', { name: 'Site select', exact: true })
-      .getAttribute('aria-current'),
+    await page.getByRole('link', { name: 'Site select', exact: true }).getAttribute('aria-current'),
     'page',
   );
 
   await page.goBack({ waitUntil: 'networkidle' });
   assert.equal(await page.getByRole('heading', { name: 'Overview', level: 1 }).count(), 1);
   assert.equal(
-    await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'),
+    await page.getByRole('link', { name: 'Overview', exact: true }).getAttribute('aria-current'),
     'page',
   );
 
-  await page.getByRole('button', { name: 'Site select', exact: true }).click();
+  await page.getByRole('link', { name: 'Site select', exact: true }).click();
   const siteSelect = page.locator('[data-testid="demo-site-select"]');
   await page.locator('[data-demo-site-appearance]').selectOption('bordered');
   await page.locator('[data-demo-site-size]').selectOption('small');
@@ -240,17 +291,153 @@ test('navigates the component catalogue and applies Site select inputs live', as
   await waitForText(page, '[data-demo-site-selection]', 'Selected: beta');
 
   await page.setViewportSize({ width: 390, height: 844 });
-  const mobileNavigation = page.locator('[data-demo-sidebar-tree]');
+  const mobileNavigation = page.locator('#catalogue-navigation-panel');
+  await mobileNavigation.waitFor({ state: 'hidden' });
   assert.equal(await mobileNavigation.isHidden(), true);
-  await page.getByRole('button', { name: 'Browse components' }).click();
+  await page.getByRole('button', { name: 'Open catalogue' }).click();
   await mobileNavigation.waitFor({ state: 'visible' });
   assert.equal(await mobileNavigation.isVisible(), true);
   assert.equal(
-    await page
-      .getByRole('button', { name: 'Site select', exact: true })
-      .getAttribute('aria-current'),
+    await page.getByRole('link', { name: 'Site select', exact: true }).getAttribute('aria-current'),
     'page',
   );
+});
+
+test('inline page navigation preserves its panel, folder state, keyboard focus and responsive geometry', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const browser = await chromium.launch({ headless: true });
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.addInitScript(() => {
+    window.__navigationCspViolations = [];
+    document.addEventListener('securitypolicyviolation', (event) =>
+      window.__navigationCspViolations.push(event.violatedDirective),
+    );
+  });
+  for (const width of [390, 900, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(`${server.url}/preview/navigation`, { waitUntil: 'networkidle' });
+    for (const theme of ['light', 'dark']) {
+      await page.locator(`[data-demo-theme="${theme}"]`).click();
+      await page.waitForFunction(
+        (expected) => document.documentElement.getAttribute('data-bs-theme') === expected,
+        theme,
+      );
+      const panel = page.locator('#preview-sections');
+      if (await panel.isHidden())
+        await page.getByRole('button', { name: 'Open sections', exact: true }).click();
+      await panel.waitFor({ state: 'visible' });
+      const textContrast = await page
+        .locator('#preview-sections h2, .entries strong')
+        .evaluateAll((elements) => {
+          const rgb = (value) => value.match(/[\d.]+/g).map(Number);
+          const luminance = (channels) =>
+            channels
+              .slice(0, 3)
+              .map((value) => value / 255)
+              .map((value) => (value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4))
+              .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+          const background = rgb(
+            getComputedStyle(document.documentElement).getPropertyValue('--main-bg-color'),
+          );
+          return elements.map((element) => {
+            const color = rgb(getComputedStyle(element).color);
+            const alpha = color[3] ?? 1;
+            const foreground = color
+              .slice(0, 3)
+              .map((value, index) => value * alpha + background[index] * (1 - alpha));
+            const first = luminance(foreground),
+              second = luminance(background);
+            return {
+              label: element.textContent,
+              ratio: (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05),
+            };
+          });
+        });
+      for (const text of textContrast)
+        assert.ok(text.ratio >= 4.5, `${theme} ${text.label} contrast is ${text.ratio}.`);
+      const openPosition = await page.locator('.preview-content').boundingBox();
+      await page.getByRole('button', { name: 'Collapse sections', exact: true }).press('Enter');
+      await panel.waitFor({ state: 'hidden' });
+      await assertFocusInsideClip(
+        page.getByRole('button', { name: 'Open sections', exact: true }),
+        'aside',
+      );
+      const closedPosition = await page.locator('.preview-content').boundingBox();
+      if (width >= 768) assert.ok(openPosition.x > closedPosition.x + 100);
+      else assert.ok(openPosition.y > closedPosition.y + 100);
+      assert.equal(await page.locator('dialog[open]').count(), 0);
+      await page.getByRole('button', { name: 'Open sections', exact: true }).press('Enter');
+      await panel.waitFor({ state: 'visible' });
+      await page.getByRole('button', { name: 'Collapse sections', exact: true }).press('Tab');
+      await assertFocusInsideClip(
+        page
+          .getByRole('navigation', { name: 'Workspace sections' })
+          .getByRole('link', { name: 'Dashboard', exact: true }),
+        '#preview-sections',
+      );
+      await page
+        .getByRole('navigation', { name: 'Workspace sections' })
+        .getByRole('link', { name: 'Dashboard', exact: true })
+        .press('Escape');
+      await panel.waitFor({ state: 'hidden' });
+      assert.equal(
+        await page
+          .getByRole('button', { name: 'Open sections', exact: true })
+          .evaluate((element) => element === document.activeElement),
+        true,
+      );
+      await page.getByRole('button', { name: 'Articles', exact: true }).click();
+      await page.getByRole('button', { name: 'Open sections', exact: true }).click();
+      const folder = page.getByRole('button', { name: 'Getting started', exact: true });
+      await folder.press('Space');
+      await page.waitForFunction(
+        () => document.getElementById('preview-navigation-start')?.hidden === true,
+      );
+      assert.equal(await folder.getAttribute('aria-expanded'), 'false');
+      await page.getByRole('button', { name: 'Collapse sections', exact: true }).click();
+      await page.getByRole('button', { name: 'Open sections', exact: true }).click();
+      assert.equal(await folder.getAttribute('aria-expanded'), 'false');
+      await folder.press('Enter');
+      await page.waitForFunction(
+        () => document.getElementById('preview-navigation-start')?.hidden === false,
+      );
+      assert.equal(await folder.getAttribute('aria-expanded'), 'true');
+      await page.getByRole('link', { name: 'Your first article', exact: true }).press('Enter');
+      await page
+        .getByRole('heading', { name: 'Your first article', level: 1 })
+        .waitFor({ state: 'visible' });
+      assert.equal(
+        await page.getByRole('heading', { name: 'Your first article', level: 1 }).count(),
+        1,
+      );
+      await page.getByRole('button', { name: 'Workspace', exact: true }).click();
+      await page
+        .getByRole('heading', { name: 'Dashboard', level: 1 })
+        .waitFor({ state: 'visible' });
+      assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+        true,
+      );
+      assert.deepEqual(await page.evaluate(() => window.__navigationCspViolations), []);
+    }
+  }
+  await page.getByRole('button', { name: 'Open services menu' }).click();
+  await page.getByRole('dialog', { name: 'Services', exact: true }).waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#preview-sections').isVisible(), true);
+  await page.getByRole('button', { name: 'Close services menu' }).press('Escape');
+  await page.getByRole('dialog', { name: 'Services', exact: true }).waitFor({ state: 'hidden' });
+  assert.equal(
+    await page
+      .getByRole('button', { name: 'Open services menu' })
+      .evaluate((element) => element === document.activeElement),
+    true,
+  );
+  assert.deepEqual(await page.evaluate(() => window.__navigationCspViolations), []);
+  assert.deepEqual(errors, []);
 });
 
 test('hydrates the routed showcase, tracks the known Source-mode CSP gap, and keeps interactions CSP-clean', async (t) => {
@@ -309,9 +496,8 @@ test('hydrates the routed showcase, tracks the known Source-mode CSP gap, and ke
   await notification.getByRole('button', { name: 'Close notification' }).click();
   await notification.waitFor({ state: 'detached' });
 
-  await navigateToDemoPage(page, 'Foldable tree', '/components/foldable-tree');
-  await page.getByRole('button', { name: 'Guides', exact: true }).click();
-  await waitForText(page, '[data-demo-tree-selection]', 'Selected: guides');
+  await navigateToDemoPage(page, 'Navigation and sidebar', '/components/navigation');
+  assert.equal(await page.getByRole('link', { name: 'Open navigation demo' }).count(), 1);
 
   await navigateToDemoPage(page, 'Site select', '/components/site-select');
   await page.locator('#demo-site').click();
@@ -1336,5 +1522,169 @@ test('disclosures preserve native keyboard, focus, mobile geometry and draft bou
   await page.getByRole('checkbox', { name: 'Allow discard' }).check();
   await page.getByRole('button', { name: 'Discard draft', exact: true }).click();
   await waitForText(page, '[data-demo-dirty]', 'Saved');
+  assert.deepEqual(errors, []);
+});
+
+test('packed calendars keep entry types distinct, preserve date transitions and support keyboard selection under strict CSP', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const browser = await chromium.launch({ headless: true });
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  const errors = [];
+  t.after(() => {
+    if (errors.length) t.diagnostic(JSON.stringify(errors));
+  });
+  let context = 'initial';
+  page.on('pageerror', (error) => errors.push(`${context}: ${error.message}`));
+  page.on('console', (message) => {
+    if (message.type() === 'error' || /NG05/.test(message.text()))
+      errors.push(`${context}: ${message.text()}`);
+  });
+  await page.addInitScript(() => {
+    window.__calendarCspViolations = [];
+    document.addEventListener('securitypolicyviolation', (event) =>
+      window.__calendarCspViolations.push(event.violatedDirective),
+    );
+  });
+  for (const width of [390, 900, 1440]) {
+    context = `width ${width}`;
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(`${server.url}/preview/calendar`, { waitUntil: 'networkidle' });
+    for (const theme of ['light', 'dark']) {
+      context = `width ${width}, theme ${theme}`;
+      await page.locator(`[data-demo-theme="${theme}"]`).click();
+      const full = page.locator('ds-calendar');
+      const birthday = full.getByRole('button', { name: /Birthday.*Michael Orlov/ });
+      const memorable = full.getByRole('button', {
+        name: /Memorable date.*Project launch anniversary/,
+      });
+      const event = full.getByRole('button', { name: /Event.*Interface review/ });
+      await birthday.waitFor();
+      const backgrounds = [];
+      for (const entry of [event, birthday, memorable]) {
+        backgrounds.push(await entry.evaluate((e) => getComputedStyle(e).backgroundColor));
+      }
+      assert.equal(
+        new Set(backgrounds).size,
+        3,
+        `${width} ${theme}: entry types must have distinct surfaces`,
+      );
+      assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+        true,
+      );
+      const titles = await full.locator('.ds-calendar-entry-title').evaluateAll((es) =>
+        es.map((e) => ({
+          nowrap: getComputedStyle(e).whiteSpace,
+          clipped: getComputedStyle(e).textOverflow,
+        })),
+      );
+      assert.ok(titles.length > 0);
+      assert.ok(titles.every((e) => e.nowrap === 'nowrap' && e.clipped === 'ellipsis'));
+      await birthday.press('Enter');
+      const details = page.getByRole('dialog', { name: 'Calendar details', exact: true });
+      await details.waitFor();
+      await details.getByRole('heading', { name: 'Michael Orlov' }).waitFor();
+      assert.equal(await details.getByRole('heading', { name: 'Michael Orlov' }).count(), 1);
+      await page.getByRole('button', { name: 'Close calendar details' }).press('Escape');
+      await details.waitFor({ state: 'hidden' });
+      assert.equal(await birthday.evaluate((e) => e === document.activeElement), true);
+      if (width >= 768) {
+        const more = full.getByRole('button', { name: '+3 more', exact: true });
+        await more.press('Enter');
+        await details.waitFor();
+        await details.getByRole('button', { name: /Team meeting/ }).waitFor();
+        assert.equal(await details.getByRole('button').count(), 7); // Six entries and dialog close.
+        await details.getByRole('button', { name: /Team meeting/ }).press('Enter');
+        await details.getByRole('heading', { name: 'Team meeting', exact: true }).waitFor();
+        assert.equal(
+          await details.evaluate((dialog) => dialog.contains(document.activeElement)),
+          true,
+          `${width} ${theme}: entry selection must keep focus in the dialog (${await page.evaluate(() => document.activeElement?.tagName)})`,
+        );
+        await page.getByRole('button', { name: 'Close calendar details' }).press('Escape');
+        await details.waitFor({ state: 'hidden' });
+        assert.equal(await more.evaluate((e) => e === document.activeElement), true);
+        const rows = await full
+          .locator('.ds-calendar-month-entry')
+          .evaluateAll((es) => es.map((e) => e.getBoundingClientRect().height));
+        assert.ok(rows.every((height) => height <= 26));
+      }
+      await full.getByRole('button', { name: 'Next period' }).press('Enter');
+      await page.getByRole('heading', { name: 'November 2026', exact: true }).waitFor();
+      await full.getByRole('button', { name: 'Today', exact: true }).press('Enter');
+      await page.getByRole('heading', { name: 'October 2026', exact: true }).waitFor();
+    }
+  }
+  const full = page.locator('ds-calendar');
+  const mini = page.locator('ds-mini-calendar');
+  await mini.getByRole('button', { name: 'Next month', exact: true }).click();
+  assert.equal(await full.getByRole('heading', { name: 'October 2026', exact: true }).count(), 1);
+  await mini.getByRole('button', { name: 'November 5, 2026', exact: true }).press('Enter');
+  await full.getByRole('heading', { name: 'November 2026', exact: true }).waitFor();
+  await full.getByRole('button', { name: 'Today', exact: true }).click();
+  const today = mini.getByRole('button', { name: 'October 9, 2026', exact: true });
+  await today.press('ArrowRight');
+  await mini.getByRole('button', { name: 'October 10, 2026', exact: true }).press('Enter');
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('ds-mini-calendar [aria-selected="true"] [data-date]')
+        ?.getAttribute('data-date') === '2026-10-10',
+  );
+  assert.equal(
+    await mini.locator('[aria-selected="true"] [data-date]').getAttribute('data-date'),
+    '2026-10-10',
+  );
+  const view = full.getByRole('combobox', { name: 'Calendar view' });
+  for (const mode of ['week', 'day', 'agenda', 'year', 'month']) {
+    context = `view ${mode}`;
+    await view.click();
+    await page.locator(`[role="option"][data-value="${mode}"]`).click();
+    await page.waitForFunction(
+      (expected) =>
+        document.querySelector('#preview-calendar-view')?.textContent.includes(expected),
+      { week: 'Week', day: 'Day', agenda: 'Agenda', year: 'Year', month: 'Month' }[mode],
+    );
+    if (mode === 'year') {
+      await full.getByRole('button', { name: '+6', exact: true }).click();
+      const details = page.getByRole('dialog', { name: 'Calendar details', exact: true });
+      await details.getByRole('button', { name: /Michael Orlov/ }).waitFor();
+      await page.getByRole('button', { name: 'Close calendar details' }).press('Escape');
+      await details.waitFor({ state: 'hidden' });
+    } else {
+      await full.getByRole('button', { name: /Birthday.*Michael Orlov/ }).waitFor();
+    }
+  }
+  context = 'all-day range boundaries';
+  // Last included and first excluded dates of an all-day range.
+  for (const [date, hasTrip] of [
+    ['2026-10-16', true],
+    ['2026-10-17', false],
+  ]) {
+    await full
+      .locator(`[data-date="${date}"][role="gridcell"]`)
+      .click({ position: { x: 10, y: 10 } });
+    const details = page.getByRole('dialog', { name: 'Calendar details', exact: true });
+    await details.waitFor();
+    await details
+      .getByRole('heading', {
+        name: date === '2026-10-16' ? 'October 16, 2026' : 'October 17, 2026',
+      })
+      .waitFor();
+    assert.equal(await details.getByRole('button', { name: /Trip/ }).count(), hasTrip ? 1 : 0);
+    await page.getByRole('button', { name: 'Close calendar details' }).press('Escape');
+    await details.waitFor({ state: 'hidden' });
+  }
+  context = 'Russian presentation';
+  await page.getByRole('button', { name: 'Русский', exact: true }).click();
+  await full.getByRole('button', { name: /День рождения.*Михаил Орлов/ }).waitFor();
+  assert.equal(await page.getByRole('heading', { name: 'Календарь', level: 1 }).count(), 1);
+  await full.getByRole('button', { name: 'Следующий период' }).click();
+  await full.getByRole('heading', { name: /ноябрь 2026/i }).waitFor();
+  await full.getByRole('button', { name: 'Сегодня', exact: true }).click();
+  await full.getByRole('heading', { name: /октябрь 2026/i }).waitFor();
+  assert.deepEqual(await page.evaluate(() => window.__calendarCspViolations), []);
   assert.deepEqual(errors, []);
 });

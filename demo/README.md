@@ -13,7 +13,9 @@ make demo
 ```
 
 The application is a routed component catalogue. Its persistent sidebar is built with the packed
-`FoldableTreeComponent`; every component or behavior has a stable deep link and an isolated page.
+`SidebarComponent` and `NavigationComponent`; every component or behavior has a stable deep link and an isolated page.
+The calendar preview at `/preview/calendar` pairs the full calendar and mini calendar, with
+English/Russian labels, light/dark themes, busy days, ranges, and keyboard navigation.
 Pages pair the live component with consumer-owned controls for public inputs that materially change
 rendering, interaction, validation, content, or accessibility semantics. Observable outputs are
 shown beside the example so consumers can see the complete controlled-component flow.

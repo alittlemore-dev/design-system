@@ -27,6 +27,116 @@ export interface AppNotification {
 }
 
 // @public (undocumented)
+export class CalendarComponent {
+    constructor();
+    // (undocumented)
+    readonly date: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly dateChange: _angular_core.OutputEmitterRef<string>;
+    // (undocumented)
+    readonly dateLocale: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly dateSelected: _angular_core.OutputEmitterRef<CalendarDateSelection>;
+    // (undocumented)
+    readonly entries: _angular_core.InputSignal<readonly CalendarEntry[]>;
+    // (undocumented)
+    readonly entrySelected: _angular_core.OutputEmitterRef<CalendarEntry>;
+    // (undocumented)
+    readonly id: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly labels: _angular_core.InputSignal<CalendarLabels>;
+    // (undocumented)
+    readonly loading: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly rangeChange: _angular_core.OutputEmitterRef<CalendarRange>;
+    // (undocumented)
+    readonly timeZone: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly today: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly view: _angular_core.InputSignal<CalendarView>;
+    // (undocumented)
+    readonly viewChange: _angular_core.OutputEmitterRef<CalendarView>;
+    // (undocumented)
+    readonly views: _angular_core.InputSignal<readonly CalendarView[]>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<CalendarComponent, "ds-calendar", never, { "id": { "alias": "id"; "required": true; "isSignal": true; }; "date": { "alias": "date"; "required": true; "isSignal": true; }; "today": { "alias": "today"; "required": true; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "entries": { "alias": "entries"; "required": false; "isSignal": true; }; "view": { "alias": "view"; "required": false; "isSignal": true; }; "views": { "alias": "views"; "required": false; "isSignal": true; }; "dateLocale": { "alias": "dateLocale"; "required": false; "isSignal": true; }; "timeZone": { "alias": "timeZone"; "required": false; "isSignal": true; }; "loading": { "alias": "loading"; "required": false; "isSignal": true; }; }, { "dateChange": "dateChange"; "viewChange": "viewChange"; "rangeChange": "rangeChange"; "dateSelected": "dateSelected"; "entrySelected": "entrySelected"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<CalendarComponent, never>;
+}
+
+// @public (undocumented)
+export interface CalendarDateSelection {
+    // (undocumented)
+    readonly allDay: boolean;
+    // (undocumented)
+    readonly date: string;
+    // (undocumented)
+    readonly start: string;
+}
+
+// @public (undocumented)
+export interface CalendarEntry {
+    // (undocumented)
+    readonly allDay: boolean;
+    // (undocumented)
+    readonly end?: string;
+    // (undocumented)
+    readonly icon?: IconName;
+    // (undocumented)
+    readonly id: string;
+    readonly start: string;
+    // (undocumented)
+    readonly title: string;
+    // (undocumented)
+    readonly tone?: CalendarEntryTone;
+    // (undocumented)
+    readonly typeLabel: string;
+}
+
+// @public (undocumented)
+export type CalendarEntryTone = 'accent' | 'info' | 'neutral';
+
+// @public (undocumented)
+export interface CalendarLabels {
+    // (undocumented)
+    readonly allDay: string;
+    // (undocumented)
+    readonly calendar: string;
+    // (undocumented)
+    readonly loading: string;
+    // (undocumented)
+    readonly more: (count: number) => string;
+    // (undocumented)
+    readonly next: string;
+    // (undocumented)
+    readonly noEvents: string;
+    // (undocumented)
+    readonly previous: string;
+    // (undocumented)
+    readonly today: string;
+    // (undocumented)
+    readonly view: string;
+    // (undocumented)
+    readonly views: Readonly<Record<CalendarView, string>>;
+}
+
+// @public (undocumented)
+export interface CalendarRange {
+    // (undocumented)
+    readonly date: string;
+    // (undocumented)
+    readonly end: string;
+    // (undocumented)
+    readonly start: string;
+    // (undocumented)
+    readonly view: CalendarView;
+}
+
+// @public (undocumented)
+export type CalendarView = 'month' | 'week' | 'day' | 'agenda' | 'year';
+
+// @public (undocumented)
 export class ControlValidationStateDirective {
     // (undocumented)
     protected get invalid(): boolean;
@@ -147,56 +257,25 @@ export class FoldableSectionComponent {
 }
 
 // @public (undocumented)
-export class FoldableTreeComponent {
-    // (undocumented)
-    readonly defaultExpandedSectionKeys: _angular_core.InputSignal<readonly string[]>;
-    // (undocumented)
-    readonly emptyMessage: _angular_core.InputSignal<string>;
-    // (undocumented)
-    readonly itemSelected: _angular_core.OutputEmitterRef<string>;
-    // (undocumented)
-    readonly itemTestId: _angular_core.InputSignal<string>;
-    // (undocumented)
-    readonly rootItems: _angular_core.InputSignal<readonly FoldableTreeItem[]>;
-    // (undocumented)
-    readonly sections: _angular_core.InputSignal<readonly FoldableTreeSection[]>;
-    // (undocumented)
-    readonly sectionTestId: _angular_core.InputSignal<string>;
-    // (undocumented)
-    readonly selectedItemKey: _angular_core.InputSignal<string | null>;
-    // (undocumented)
-    static ɵcmp: _angular_core.ɵɵComponentDeclaration<FoldableTreeComponent, "ds-foldable-tree", never, { "rootItems": { "alias": "rootItems"; "required": true; "isSignal": true; }; "sections": { "alias": "sections"; "required": true; "isSignal": true; }; "emptyMessage": { "alias": "emptyMessage"; "required": true; "isSignal": true; }; "selectedItemKey": { "alias": "selectedItemKey"; "required": true; "isSignal": true; }; "defaultExpandedSectionKeys": { "alias": "defaultExpandedSectionKeys"; "required": true; "isSignal": true; }; "sectionTestId": { "alias": "sectionTestId"; "required": true; "isSignal": true; }; "itemTestId": { "alias": "itemTestId"; "required": true; "isSignal": true; }; }, { "itemSelected": "itemSelected"; }, never, never, true, never>;
-    // (undocumented)
-    static ɵfac: _angular_core.ɵɵFactoryDeclaration<FoldableTreeComponent, never>;
-}
-
-// @public (undocumented)
-export interface FoldableTreeItem {
-    // (undocumented)
-    readonly badgeText: string | null;
-    // (undocumented)
-    readonly key: string;
-    // (undocumented)
-    readonly label: string;
-}
-
-// @public (undocumented)
-export interface FoldableTreeSection {
-    // (undocumented)
-    readonly items: readonly FoldableTreeItem[];
-    // (undocumented)
-    readonly key: string;
-    // (undocumented)
-    readonly label: string;
-    // (undocumented)
-    readonly trailingText: string | null;
-}
-
-// @public (undocumented)
 export function formatErrorMessage(error: ErrorDisplay): string;
 
 // @public (undocumented)
 export function formatLocalizedDate(value: string, locale: string, display: LocalizedDateDisplay): string;
+
+// @public (undocumented)
+export class IconComponent {
+    // (undocumented)
+    readonly name: _angular_core.InputSignal<IconName>;
+    // (undocumented)
+    readonly size: _angular_core.InputSignal<number>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<IconComponent, "ds-icon", never, { "name": { "alias": "name"; "required": true; "isSignal": true; }; "size": { "alias": "size"; "required": false; "isSignal": true; }; }, {}, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<IconComponent, never>;
+}
+
+// @public (undocumented)
+export type IconName = 'menu' | 'panel-open' | 'panel-close' | 'folder' | 'chevron-right' | 'refresh' | 'plus' | 'calendar' | 'people' | 'document' | 'dashboard';
 
 // @public (undocumented)
 export class LoadingSpinnerComponent {
@@ -845,6 +924,42 @@ export interface LocalizedTimeRangePickerLabels {
     readonly unavailableRange: string;
 }
 
+// @public (undocumented)
+export class MiniCalendarComponent {
+    // (undocumented)
+    readonly date: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly dateChange: _angular_core.OutputEmitterRef<string>;
+    // (undocumented)
+    readonly dateLocale: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly id: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly labels: _angular_core.InputSignal<MiniCalendarLabels>;
+    // (undocumented)
+    readonly markedDates: _angular_core.InputSignal<readonly string[]>;
+    // (undocumented)
+    readonly monthChange: _angular_core.OutputEmitterRef<string>;
+    // (undocumented)
+    readonly today: _angular_core.InputSignal<string>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<MiniCalendarComponent, "ds-mini-calendar", never, { "id": { "alias": "id"; "required": true; "isSignal": true; }; "date": { "alias": "date"; "required": true; "isSignal": true; }; "today": { "alias": "today"; "required": true; "isSignal": true; }; "dateLocale": { "alias": "dateLocale"; "required": false; "isSignal": true; }; "labels": { "alias": "labels"; "required": true; "isSignal": true; }; "markedDates": { "alias": "markedDates"; "required": false; "isSignal": true; }; }, { "dateChange": "dateChange"; "monthChange": "monthChange"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<MiniCalendarComponent, never>;
+}
+
+// @public (undocumented)
+export interface MiniCalendarLabels {
+    // (undocumented)
+    readonly calendar: string;
+    // (undocumented)
+    readonly keyboardHelp: string;
+    // (undocumented)
+    readonly nextMonth: string;
+    // (undocumented)
+    readonly previousMonth: string;
+}
+
 // @public
 export class ModalDialogDirective {
     constructor();
@@ -902,6 +1017,66 @@ export class ModalScrollDirective {
 }
 
 // @public (undocumented)
+export class NavigationComponent {
+    // (undocumented)
+    readonly defaultExpandedGroupKeys: _angular_core.InputSignal<readonly string[]>;
+    // (undocumented)
+    readonly emptyMessage: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly groups: _angular_core.InputSignal<readonly NavigationGroup[]>;
+    // (undocumented)
+    readonly id: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly itemSelected: _angular_core.OutputEmitterRef<NavigationSelection>;
+    // (undocumented)
+    readonly label: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly rootItems: _angular_core.InputSignal<readonly NavigationItem[]>;
+    // (undocumented)
+    readonly selectedItemKey: _angular_core.InputSignal<string | null>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<NavigationComponent, "ds-navigation", never, { "id": { "alias": "id"; "required": true; "isSignal": true; }; "label": { "alias": "label"; "required": true; "isSignal": true; }; "rootItems": { "alias": "rootItems"; "required": false; "isSignal": true; }; "groups": { "alias": "groups"; "required": false; "isSignal": true; }; "selectedItemKey": { "alias": "selectedItemKey"; "required": false; "isSignal": true; }; "defaultExpandedGroupKeys": { "alias": "defaultExpandedGroupKeys"; "required": false; "isSignal": true; }; "emptyMessage": { "alias": "emptyMessage"; "required": true; "isSignal": true; }; }, { "itemSelected": "itemSelected"; }, never, never, true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<NavigationComponent, never>;
+}
+
+// @public (undocumented)
+export interface NavigationGroup {
+    // (undocumented)
+    readonly collapsible?: boolean;
+    // (undocumented)
+    readonly icon?: IconName;
+    // (undocumented)
+    readonly items: readonly NavigationItem[];
+    // (undocumented)
+    readonly key: string;
+    // (undocumented)
+    readonly label: string;
+}
+
+// @public (undocumented)
+export interface NavigationItem {
+    // (undocumented)
+    readonly badgeText?: string | null;
+    // (undocumented)
+    readonly href: string;
+    // (undocumented)
+    readonly icon?: IconName;
+    // (undocumented)
+    readonly key: string;
+    // (undocumented)
+    readonly label: string;
+}
+
+// @public (undocumented)
+export interface NavigationSelection {
+    // (undocumented)
+    readonly event: MouseEvent;
+    // (undocumented)
+    readonly item: NavigationItem;
+}
+
+// @public (undocumented)
 export class NotificationAreaComponent {
     // (undocumented)
     readonly closeLabel: _angular_core.InputSignal<string>;
@@ -927,6 +1102,26 @@ export class NotificationService {
     static ɵfac: _angular_core.ɵɵFactoryDeclaration<NotificationService, never>;
     // (undocumented)
     static ɵprov: _angular_core.ɵɵInjectableDeclaration<NotificationService>;
+}
+
+// @public
+export class SidebarComponent {
+    // (undocumented)
+    readonly closeLabel: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly label: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly open: _angular_core.InputSignal<boolean>;
+    // (undocumented)
+    readonly openChange: _angular_core.OutputEmitterRef<boolean>;
+    // (undocumented)
+    readonly openLabel: _angular_core.InputSignal<string>;
+    // (undocumented)
+    readonly panelId: _angular_core.InputSignal<string>;
+    // (undocumented)
+    static ɵcmp: _angular_core.ɵɵComponentDeclaration<SidebarComponent, "ds-sidebar", never, { "panelId": { "alias": "panelId"; "required": true; "isSignal": true; }; "label": { "alias": "label"; "required": true; "isSignal": true; }; "openLabel": { "alias": "openLabel"; "required": true; "isSignal": true; }; "closeLabel": { "alias": "closeLabel"; "required": true; "isSignal": true; }; "open": { "alias": "open"; "required": true; "isSignal": true; }; }, { "openChange": "openChange"; }, never, ["[dsSidebarNavigation]", "*"], true, never>;
+    // (undocumented)
+    static ɵfac: _angular_core.ɵɵFactoryDeclaration<SidebarComponent, never>;
 }
 
 // @public (undocumented)

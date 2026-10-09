@@ -1,7 +1,9 @@
 export * from './lib/empty-state/empty-state.component';
 export * from './lib/loading-spinner/loading-spinner.component';
 export * from './lib/error-message/error-message.component';
-export * from './lib/foldable-tree/foldable-tree.component';
+export * from './lib/icon/icon.component';
+export * from './lib/navigation/navigation.component';
+export * from './lib/sidebar/sidebar.component';
 export * from './lib/forms/control-validation-state.directive';
 export * from './lib/localized-date/localized-date';
 export { LocalizedDatePickerComponent } from './lib/localized-date-picker/localized-date-picker.component';
@@ -35,3 +37,7 @@ export * from './lib/drawer/drawer.component';
 export * from './lib/unsaved-changes/unsaved-changes.service';
 export * from './lib/foldable-section/foldable-section.component';
 export * from './lib/modal/modal-dialog.directive';
+
+export * from './lib/calendar/calendar.models';
+export * from './lib/calendar/calendar.component';
+export * from './lib/calendar/mini-calendar.component';

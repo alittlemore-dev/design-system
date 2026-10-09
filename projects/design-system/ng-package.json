@@ -14,11 +14,14 @@
     "^dompurify$",
     "^marked$",
     "^prismjs$",
-    "^tslib$"
+    "^tslib$",
+    "^fullcalendar$",
+    "^temporal-polyfill$"
   ],
   "assets": ["README.md", "LICENSE", "styles", "theme-preload.js"],
   "inlineStyleLanguage": "scss",
   "lib": {
-    "entryFile": "src/public-api.ts"
+    "entryFile": "src/public-api.ts",
+    "styleIncludePaths": ["../../node_modules"]
   }
 }

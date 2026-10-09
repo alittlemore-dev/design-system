@@ -29,7 +29,7 @@ module.exports = {
     ],
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(.*\\.mjs$|@angular/common/locales/.*\\.js$|marked|dompurify))',
+    'node_modules/(?!(.*\\.mjs$|@angular/common/locales/.*\\.js$|marked|dompurify|fullcalendar|@fullcalendar|@full-ui|temporal-polyfill|temporal-utils|preact))',
   ],
   collectCoverageFrom: [
     'projects/design-system/**/src/**/*.ts',

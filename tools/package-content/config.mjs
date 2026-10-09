@@ -4,6 +4,10 @@ const angularRange = '>=22.1.1 <23.0.0';
 
 export const dependencyContracts = {
   ui: {
+    dependencies: {
+      fullcalendar: '7.1.1',
+      'temporal-polyfill': '^1.0.5',
+    },
     peerDependencies: {
       '@angular/cdk': '>=22.1.0 <23.0.0',
       '@angular/common': angularRange,

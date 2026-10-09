@@ -18,6 +18,39 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Security
 
+## [0.5.0] - 2026-10-10
+
+### Added
+
+- Add controlled inline `SidebarComponent`, grouped-link and folder `NavigationComponent`, and
+  decorative `IconComponent`, with native links, accessible disclosure controls, and focus restoration.
+
+- Add controlled full and mini calendars with neutral entries, consumer-supplied labels, five views,
+  keyboard date navigation, and compact semantic entry styles in the packed demo.
+
+### Changed
+
+- Use the shared inline sidebar in the packed demo and add a responsive workspace/article preview.
+
+### Deprecated
+
+### Removed
+
+- Remove `FoldableTreeComponent` and its tree models in favor of grouped navigation; see
+  [the migration guide](docs/navigation.md).
+
+### Fixed
+
+- Keep navigation badges on one line beside wrapping link labels.
+
+- Stabilize calendar entry layout before the engine's first measurement to avoid ResizeObserver
+  loops on busy days and when changing views.
+
+- Keep SiteSelect's first click open after automatic scrolling, while dismissing it on subsequent
+  viewport movement.
+
+### Security
+
 ## [0.4.0] - 2026-10-04
 
 ### Added

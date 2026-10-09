@@ -1,0 +1,220 @@
+<div class="preview-toolbar">
+  <a routerLink="/components/navigation">← Component catalogue</a>
+  <span class="preview-caption">Design system demo · sample data</span>
+  <div class="preview-modes" aria-label="Navigation variant">
+    <button
+      type="button"
+      class="btn btn-sm"
+      [class.btn-secondary]="mode() === 'workspace'"
+      [class.btn-outline-secondary]="mode() !== 'workspace'"
+      [attr.aria-pressed]="mode() === 'workspace'"
+      (click)="switchMode('workspace')"
+    >
+      Workspace
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm"
+      [class.btn-secondary]="mode() === 'articles'"
+      [class.btn-outline-secondary]="mode() !== 'articles'"
+      [attr.aria-pressed]="mode() === 'articles'"
+      (click)="switchMode('articles')"
+    >
+      Articles
+    </button>
+  </div>
+  <div class="preview-modes" aria-label="Theme">
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-secondary"
+      data-demo-theme="light"
+      [attr.aria-pressed]="theme.theme() === 'light'"
+      (click)="theme.setTheme('light')"
+    >
+      Light
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-secondary"
+      data-demo-theme="dark"
+      [attr.aria-pressed]="theme.theme() === 'dark'"
+      (click)="theme.setTheme('dark')"
+    >
+      Dark
+    </button>
+  </div>
+</div>
+<header class="preview-header">
+  <button
+    type="button"
+    class="services-toggle"
+    aria-label="Open services menu"
+    title="Services"
+    (click)="services.open()"
+  >
+    <ds-icon name="menu" />
+  </button>
+  <ds-icon [name]="mode() === 'workspace' ? 'dashboard' : 'document'" />
+  <strong>{{ mode() === 'workspace' ? 'Personal workspace' : 'Articles' }}</strong>
+  <span class="preview-owner">Demo</span>
+</header>
+<main class="preview-main" data-demo-navigation-preview>
+  <ds-sidebar
+    panelId="preview-sections"
+    [label]="mode() === 'workspace' ? 'Sections' : 'Folders'"
+    openLabel="Open sections"
+    closeLabel="Collapse sections"
+    [open]="open()"
+    (openChange)="open.set($event)"
+  >
+    <ds-navigation
+      dsSidebarNavigation
+      id="preview-navigation"
+      [label]="mode() === 'workspace' ? 'Workspace sections' : 'Articles by folder'"
+      [rootItems]="roots()"
+      [groups]="groups()"
+      [selectedItemKey]="selected()"
+      [defaultExpandedGroupKeys]="['start', 'practice']"
+      emptyMessage="No sections yet"
+      (itemSelected)="select($event)"
+    />
+    <div class="preview-content">
+      <div class="page-heading">
+        <h1>{{ title() }}</h1>
+        <span>{{
+          mode() === 'workspace' ? 'Your records and upcoming events' : 'Knowledge base'
+        }}</span>
+      </div>
+      @if (mode() === 'workspace' && selected() === 'dashboard') {
+        <div class="dashboard-sections">
+          <ds-foldable-section
+            sectionKey="preview-important"
+            title="Important information"
+            summary="2 notes"
+            [expanded]="importantExpanded()"
+            (expandedChange)="importantExpanded.set($event)"
+          >
+            <div class="important-grid">
+              <p>Check documents before travelling<br /><small>Before 18 October</small></p>
+              <p>Team contacts and useful links<br /><small>Everything you need at hand</small></p>
+            </div>
+          </ds-foldable-section>
+          <ds-foldable-section
+            sectionKey="preview-upcoming"
+            title="Upcoming events"
+            summary="This week"
+            [expanded]="upcomingExpanded()"
+            (expandedChange)="upcomingExpanded.set($event)"
+          >
+            <div class="entries upcoming-entries">
+              <a href="#events" (click)="follow('events', $event)"
+                ><ds-icon name="calendar" /><span
+                  ><strong>Review the new interface</strong
+                  ><small>Today, 10:00 · Event</small></span
+                ></a
+              >
+              <a href="#dates" (click)="follow('dates', $event)"
+                ><ds-icon name="calendar" /><span
+                  ><strong>Project launch anniversary</strong
+                  ><small>10 October · Memorable date</small></span
+                ></a
+              >
+              <a href="#people" (click)="follow('people', $event)"
+                ><ds-icon name="people" /><span
+                  ><strong>Michael’s birthday</strong><small>11 October · People</small></span
+                ></a
+              >
+              <a href="#events" (click)="follow('events', $event)"
+                ><ds-icon name="calendar" /><span
+                  ><strong>Team meeting after the release</strong
+                  ><small>12 October, 16:00 · Event</small></span
+                ></a
+              >
+            </div>
+            <a class="section-more" href="#calendar" (click)="follow('calendar', $event)"
+              >View calendar →</a
+            >
+          </ds-foldable-section>
+          <ds-foldable-section
+            sectionKey="preview-recent"
+            title="Recent changes"
+            summary="Latest records"
+            [expanded]="recentExpanded()"
+            (expandedChange)="recentExpanded.set($event)"
+          >
+            <div class="entries recent-entries">
+              <a href="#resumes" (click)="follow('resumes', $event)"
+                ><ds-icon name="document" /><span
+                  ><strong>Developer résumé</strong><small>Today, 09:45 · Résumé</small></span
+                ></a
+              >
+              <a href="#people" (click)="follow('people', $event)"
+                ><ds-icon name="people" /><span
+                  ><strong>Anna Sokolova</strong><small>Yesterday, 16:00 · People</small></span
+                ></a
+              >
+              <a href="#dates" (click)="follow('dates', $event)"
+                ><ds-icon name="calendar" /><span
+                  ><strong>First meeting anniversary</strong
+                  ><small>Yesterday, 15:57 · Memorable dates</small></span
+                ></a
+              >
+            </div>
+          </ds-foldable-section>
+          <ds-foldable-section
+            sectionKey="preview-statistics"
+            title="Storage statistics"
+            summary="49 records"
+            [expanded]="statisticsExpanded()"
+            (expandedChange)="statisticsExpanded.set($event)"
+          >
+            <div class="statistics-grid">
+              <div><span>Total records</span><strong>49</strong></div>
+              <div><span>People</span><strong>29</strong></div>
+              <div><span>Memorable dates</span><strong>13</strong></div>
+              <div><span>Résumés</span><strong>7</strong></div>
+            </div>
+          </ds-foldable-section>
+        </div>
+      } @else if (mode() === 'articles') {
+        <article class="article-preview">
+          <p class="article-meta">Getting started · 3 minute read</p>
+          <p>
+            The knowledge base keeps content organised by topic. Folders group articles, and the
+            selected article stays highlighted when you collapse the panel.
+          </p>
+          <h2>Finding content</h2>
+          <p>
+            Open a folder to see its articles. The panel stays part of the page: collapse it and
+            reopen it with the same button.
+          </p>
+          <h2>Related articles</h2>
+          <a href="#article-links" (click)="follow('article-links', $event)"
+            >Connecting articles →</a
+          >
+        </article>
+      } @else {
+        <div class="article-preview">
+          <p>Content for “{{ title() }}” will appear here.</p>
+          <p>
+            Try navigating, selecting a section, collapsing the panel, and using the keyboard in
+            this demo.
+          </p>
+        </div>
+      }
+    </div>
+  </ds-sidebar>
+</main>
+<ds-drawer #services label="Services" closeLabel="Close services menu">
+  <p class="text-body-secondary small mb-3">Choose a service</p>
+  <button type="button" class="service-card" (click)="switchMode('workspace'); services.close()">
+    <ds-icon name="dashboard" [size]="24" /><span
+      ><strong>Personal workspace</strong><small>People, events and résumés</small></span
+    >
+  </button>
+  <button type="button" class="service-card" (click)="switchMode('articles'); services.close()">
+    <ds-icon name="document" [size]="24" /><span
+      ><strong>Articles</strong><small>Articles and knowledge base</small></span
+    >
+  </button>
+</ds-drawer>

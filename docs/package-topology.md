@@ -39,6 +39,17 @@ The primary entry point owns:
 - native disclosure popovers and modal drawers with consumer-owned content;
 - controlled foldable sections and scoped unsaved-change tracking.
 
+Inline page navigation is composed from `SidebarComponent` and `NavigationComponent`, with shared
+decorative icons from `IconComponent`. Grouped links and optional folder disclosures remain
+application-independent; the consumer owns routes, selection, labels, breakpoints, and persistence.
+The sidebar keeps its projected navigation inline and does not share the modal drawer lifecycle.
+
+Full and mini calendars expose neutral entries, date/range/view outputs, and consumer-owned labels.
+The primary UI entry point owns the FullCalendar 7.1.1 and Temporal polyfill runtime dependencies;
+no FullCalendar models or Angular adapter become public contracts. FullCalendar core is initialized
+only in the browser and outside Angular's zone to preserve SSR hydration stability. Consumers own
+fetching, domain entry types, routing, creation, filters, and optional calendar-side navigation.
+
 `DropdownComponent` projects a trigger through `[dsDropdownTrigger]` and arbitrary panel content.
 Consumers supply a stable unique `id` and an accessible `label`; selection policy remains with the
 consumer, which calls `close()` when appropriate. The native popover owns light dismissal and Escape.
