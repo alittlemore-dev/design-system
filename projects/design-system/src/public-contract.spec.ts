@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import {
   EmptyStateComponent,
   ErrorMessageComponent,
-  FoldableTreeComponent,
+  NavigationComponent,
   LoadingSpinnerComponent,
   LocalizedDatePickerComponent,
   LocalizedDateRangePickerComponent,
@@ -19,8 +19,9 @@ import {
 } from '@alittlemore.dev/design-system';
 import type {
   ErrorDisplay,
-  FoldableTreeItem,
-  FoldableTreeSection,
+  NavigationItem,
+  NavigationGroup,
+  NavigationSelection,
   LocalizedDatePickerControlSize,
   LocalizedDatePickerLabels,
   LocalizedDateRange,
@@ -53,30 +54,26 @@ type ErrorRetryLabelContract = Expect<
 type ErrorRetryOutputContract = Expect<
   Equal<ErrorMessageComponent['retry'], OutputEmitterRef<void>>
 >;
-type TreeRootItemsContract = Expect<
-  Equal<FoldableTreeComponent['rootItems'], InputSignal<readonly FoldableTreeItem[]>>
+type NavigationRootItemsContract = Expect<
+  Equal<NavigationComponent['rootItems'], InputSignal<readonly NavigationItem[]>>
 >;
-type TreeSectionsContract = Expect<
-  Equal<FoldableTreeComponent['sections'], InputSignal<readonly FoldableTreeSection[]>>
+type NavigationSectionsContract = Expect<
+  Equal<NavigationComponent['groups'], InputSignal<readonly NavigationGroup[]>>
 >;
-type TreeEmptyMessageContract = Expect<
-  Equal<FoldableTreeComponent['emptyMessage'], InputSignal<string>>
+type NavigationEmptyMessageContract = Expect<
+  Equal<NavigationComponent['emptyMessage'], InputSignal<string>>
 >;
-type TreeSelectedItemKeyContract = Expect<
-  Equal<FoldableTreeComponent['selectedItemKey'], InputSignal<string | null>>
+type NavigationSelectedItemKeyContract = Expect<
+  Equal<NavigationComponent['selectedItemKey'], InputSignal<string | null>>
 >;
-type TreeDefaultExpandedSectionKeysContract = Expect<
-  Equal<FoldableTreeComponent['defaultExpandedSectionKeys'], InputSignal<readonly string[]>>
+type NavigationDefaultExpandedSectionKeysContract = Expect<
+  Equal<NavigationComponent['defaultExpandedGroupKeys'], InputSignal<readonly string[]>>
 >;
-type TreeSectionTestIdContract = Expect<
-  Equal<FoldableTreeComponent['sectionTestId'], InputSignal<string>>
+type NavigationItemSelectedOutputContract = Expect<
+  Equal<NavigationComponent['itemSelected'], OutputEmitterRef<NavigationSelection>>
 >;
-type TreeItemTestIdContract = Expect<
-  Equal<FoldableTreeComponent['itemTestId'], InputSignal<string>>
->;
-type TreeItemSelectedOutputContract = Expect<
-  Equal<FoldableTreeComponent['itemSelected'], OutputEmitterRef<string>>
->;
+type NavigationIdContract = Expect<Equal<NavigationComponent['id'], InputSignal<string>>>;
+type NavigationLabelContract = Expect<Equal<NavigationComponent['label'], InputSignal<string>>>;
 type DateInputIdContract = Expect<
   Equal<LocalizedDatePickerComponent['inputId'], InputSignal<string>>
 >;
@@ -397,16 +394,16 @@ type LoadingPublicKeysContract = Expect<Equal<keyof LoadingSpinnerComponent, 'ar
 type ErrorPublicKeysContract = Expect<
   Equal<keyof ErrorMessageComponent, 'error' | 'retryLabel' | 'retry'>
 >;
-type FoldableTreePublicKeysContract = Expect<
+type NavigationPublicKeysContract = Expect<
   Equal<
-    keyof FoldableTreeComponent,
+    keyof NavigationComponent,
     | 'rootItems'
-    | 'sections'
+    | 'groups'
+    | 'id'
+    | 'label'
     | 'emptyMessage'
     | 'selectedItemKey'
-    | 'defaultExpandedSectionKeys'
-    | 'sectionTestId'
-    | 'itemTestId'
+    | 'defaultExpandedGroupKeys'
     | 'itemSelected'
   >
 >;
@@ -559,14 +556,14 @@ type PublicContractAssertions = readonly [
   ErrorValueContract,
   ErrorRetryLabelContract,
   ErrorRetryOutputContract,
-  TreeRootItemsContract,
-  TreeSectionsContract,
-  TreeEmptyMessageContract,
-  TreeSelectedItemKeyContract,
-  TreeDefaultExpandedSectionKeysContract,
-  TreeSectionTestIdContract,
-  TreeItemTestIdContract,
-  TreeItemSelectedOutputContract,
+  NavigationRootItemsContract,
+  NavigationSectionsContract,
+  NavigationEmptyMessageContract,
+  NavigationSelectedItemKeyContract,
+  NavigationDefaultExpandedSectionKeysContract,
+  NavigationItemSelectedOutputContract,
+  NavigationIdContract,
+  NavigationLabelContract,
   DateInputIdContract,
   DateValueContract,
   DateControlSizeContract,
@@ -665,7 +662,7 @@ type PublicContractAssertions = readonly [
   EmptyPublicKeysContract,
   LoadingPublicKeysContract,
   ErrorPublicKeysContract,
-  FoldableTreePublicKeysContract,
+  NavigationPublicKeysContract,
   LocalizedDatePickerPublicKeysContract,
   LocalizedDateRangePickerPublicKeysContract,
   LocalizedDateTimePickerPublicKeysContract,
@@ -683,17 +680,16 @@ const ERROR_DISPLAY = {
 } as const satisfies ErrorDisplay;
 
 const ROOT_ITEMS = [
-  { key: 'overview', label: 'Overview', badgeText: null },
-] as const satisfies readonly FoldableTreeItem[];
+  { key: 'overview', label: 'Overview', href: '/overview', badgeText: null },
+] as const satisfies readonly NavigationItem[];
 
-const TREE_SECTIONS = [
+const NAVIGATION_GROUPS = [
   {
     key: 'guides',
     label: 'Guides',
-    trailingText: '1',
-    items: [{ key: 'start', label: 'Getting started', badgeText: 'New' }],
+    items: [{ key: 'start', label: 'Getting started', href: '/start', badgeText: 'New' }],
   },
-] as const satisfies readonly FoldableTreeSection[];
+] as const satisfies readonly NavigationGroup[];
 
 const DATE_LABELS = {
   placeholder: 'DD.MM.YYYY',
@@ -865,14 +861,14 @@ const PUBLIC_HOST_TEMPLATE = `
   <ds-empty-state [message]="emptyMessage()" />
   <ds-loading-spinner [ariaLabel]="loadingAriaLabel()" />
   <ds-error-message [error]="error()" [retryLabel]="retryLabel()" />
-  <ds-foldable-tree
+  <ds-navigation
     [rootItems]="rootItems()"
-    [sections]="sections()"
+    [groups]="sections()"
     [emptyMessage]="treeEmptyMessage()"
-    [selectedItemKey]="selectedTreeItemKey()"
-    [defaultExpandedSectionKeys]="expandedSectionKeys()"
-    sectionTestId="public-tree-section"
-    itemTestId="public-tree-item"
+    [selectedItemKey]="selectedNavigationItemKey()"
+    [defaultExpandedGroupKeys]="expandedSectionKeys()"
+    id="public-navigation"
+    label="Sections"
   />
   <ds-localized-date-picker
     inputId="public-date"
@@ -987,10 +983,10 @@ abstract class PublicHostInputs {
   readonly loadingAriaLabel = signal('Loading data');
   readonly error = signal<ErrorDisplay>(ERROR_DISPLAY);
   readonly retryLabel = signal('Try again');
-  readonly rootItems = signal<readonly FoldableTreeItem[]>(ROOT_ITEMS);
-  readonly sections = signal<readonly FoldableTreeSection[]>(TREE_SECTIONS);
+  readonly rootItems = signal<readonly NavigationItem[]>(ROOT_ITEMS);
+  readonly sections = signal<readonly NavigationGroup[]>(NAVIGATION_GROUPS);
   readonly treeEmptyMessage = signal('No tree items');
-  readonly selectedTreeItemKey = signal<string | null>(null);
+  readonly selectedNavigationItemKey = signal<string | null>(null);
   readonly expandedSectionKeys = signal<readonly string[]>([]);
   readonly dateValue = signal('2026-02-05');
   readonly dateControlSize = DATE_CONTROL_SIZE;
@@ -1025,7 +1021,7 @@ abstract class PublicHostInputs {
     EmptyStateComponent,
     LoadingSpinnerComponent,
     ErrorMessageComponent,
-    FoldableTreeComponent,
+    NavigationComponent,
     LocalizedDatePickerComponent,
     LocalizedDateRangePickerComponent,
     LocalizedDateTimePickerComponent,
@@ -1044,7 +1040,7 @@ class PublicImportHostComponent extends PublicHostInputs {}
     EmptyStateComponent,
     LoadingSpinnerComponent,
     ErrorMessageComponent,
-    FoldableTreeComponent,
+    NavigationComponent,
     LocalizedDatePickerComponent,
     LocalizedDateRangePickerComponent,
     LocalizedDateTimePickerComponent,
@@ -1212,9 +1208,7 @@ describe('primary design-system entry point', () => {
     expect(fixture.nativeElement.querySelector('ds-error-message').textContent).toContain(
       'items 0 / name: Required',
     );
-    expect(fixture.nativeElement.querySelector('ds-foldable-tree').textContent).toContain(
-      'Overview',
-    );
+    expect(fixture.nativeElement.querySelector('ds-navigation').textContent).toContain('Overview');
     expect(
       fixture.nativeElement
         .querySelector('ds-localized-date-picker input')
@@ -1251,7 +1245,7 @@ describe('primary design-system entry point', () => {
     fixture.componentInstance.loadingAriaLabel.set('Refreshing data');
     fixture.componentInstance.error.set({ message: 'Updated failure' });
     fixture.componentInstance.rootItems.set([
-      { key: 'activity', label: 'Recent activity', badgeText: null },
+      { key: 'activity', label: 'Recent activity', href: '/activity', badgeText: null },
     ]);
     fixture.componentInstance.dateLabels.set({
       ...DATE_LABELS,
@@ -1291,7 +1285,7 @@ describe('primary design-system entry point', () => {
     expect(fixture.nativeElement.querySelector('ds-error-message').textContent).toContain(
       'Updated failure',
     );
-    expect(fixture.nativeElement.querySelector('ds-foldable-tree').textContent).toContain(
+    expect(fixture.nativeElement.querySelector('ds-navigation').textContent).toContain(
       'Recent activity',
     );
     expect(
@@ -1353,7 +1347,7 @@ describe('primary design-system entry point', () => {
       expect(fixture.nativeElement.querySelectorAll('ds-empty-state')).toHaveLength(1);
       expect(fixture.nativeElement.querySelectorAll('ds-loading-spinner')).toHaveLength(1);
       expect(fixture.nativeElement.querySelectorAll('ds-error-message')).toHaveLength(1);
-      expect(fixture.nativeElement.querySelectorAll('ds-foldable-tree')).toHaveLength(1);
+      expect(fixture.nativeElement.querySelectorAll('ds-navigation')).toHaveLength(1);
       expect(fixture.nativeElement.querySelectorAll('ds-localized-date-picker')).toHaveLength(1);
       expect(fixture.nativeElement.querySelectorAll('ds-localized-date-range-picker')).toHaveLength(
         1,

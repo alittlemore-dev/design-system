@@ -28,9 +28,9 @@ import { DemoPageComponent } from '../shared/demo-page.component';
             <span>Forms</span>
             <strong>Configure validation, appearance, size, and state</strong>
           </a>
-          <a routerLink="/components/foldable-tree">
+          <a routerLink="/components/navigation">
             <span>Navigation</span>
-            <strong>Inspect data-driven sections, badges, and selection</strong>
+            <strong>Try inline panels, grouped links, and article folders</strong>
           </a>
           <a routerLink="/markdown/editor">
             <span>Markdown</span>

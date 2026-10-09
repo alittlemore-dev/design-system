@@ -1,0 +1,46 @@
+<section class="ds-calendar" [attr.aria-label]="labels().calendar" [attr.aria-busy]="loading()">
+  <div class="ds-calendar-toolbar">
+    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goToday()">
+      {{ labels().today }}
+    </button>
+    <div class="ds-calendar-period-actions">
+      <button
+        type="button"
+        class="ds-calendar-icon"
+        [attr.aria-label]="labels().previous"
+        (click)="previous()"
+      >
+        <ds-icon name="chevron-right" class="ds-calendar-previous" />
+      </button>
+      <button
+        type="button"
+        class="ds-calendar-icon"
+        [attr.aria-label]="labels().next"
+        (click)="next()"
+      >
+        <ds-icon name="chevron-right" />
+      </button>
+    </div>
+    <h2 class="ds-calendar-title" aria-live="polite">{{ title() }}</h2>
+    <label class="visually-hidden" [for]="id() + '-view'">{{ labels().view }}</label>
+    <ds-site-select
+      class="ds-calendar-view"
+      [inputId]="id() + '-view'"
+      controlSize="small"
+      appearance="bordered"
+      [required]="false"
+      [invalid]="false"
+      [controlDisabled]="false"
+      [options]="viewOptions()"
+      [value]="view()"
+      (valueChange)="changeView($event)"
+    />
+  </div>
+  @if (loading()) {
+    <span class="visually-hidden" role="status">{{ labels().loading }}</span>
+  }
+  <div #surface class="ds-calendar-surface"></div>
+  @if (!ready()) {
+    <div class="ds-calendar-placeholder" role="status">{{ labels().loading }}</div>
+  }
+</section>

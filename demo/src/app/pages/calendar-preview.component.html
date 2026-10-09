@@ -1,0 +1,143 @@
+<div class="calendar-demo-toolbar">
+  <a routerLink="/components/calendar">{{
+    locale() === 'ru-RU' ? '← Каталог компонентов' : '← Component catalogue'
+  }}</a>
+  <span class="text-body-secondary small">{{
+    locale() === 'ru-RU'
+      ? 'Демо дизайн-системы · примеры · UTC'
+      : 'Design system demo · sample data · UTC'
+  }}</span>
+  <div class="d-flex gap-2">
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-secondary"
+      [attr.aria-pressed]="locale() === 'en-US'"
+      (click)="locale.set('en-US')"
+    >
+      English
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-secondary"
+      [attr.aria-pressed]="locale() === 'ru-RU'"
+      (click)="locale.set('ru-RU')"
+    >
+      Русский
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-secondary"
+      data-demo-theme="light"
+      (click)="theme.setTheme('light')"
+    >
+      {{ locale() === 'ru-RU' ? 'Светлая тема' : 'Light' }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-secondary"
+      data-demo-theme="dark"
+      (click)="theme.setTheme('dark')"
+    >
+      {{ locale() === 'ru-RU' ? 'Тёмная тема' : 'Dark' }}
+    </button>
+  </div>
+</div>
+<main class="calendar-demo" data-demo-calendar>
+  <header>
+    <h1>{{ labels().calendar }}</h1>
+    <p class="text-body-secondary">
+      {{
+        locale() === 'ru-RU'
+          ? 'Полный календарь и выбор даты на общих компонентах дизайн-системы.'
+          : 'Full calendar and date navigation, built with shared design-system components.'
+      }}
+    </p>
+  </header>
+  <div class="calendar-demo-layout">
+    <aside class="calendar-demo-sidebar">
+      <ds-mini-calendar
+        id="preview-mini"
+        [date]="date()"
+        today="2026-10-09"
+        [dateLocale]="locale()"
+        [labels]="miniLabels()"
+        [markedDates]="markedDates()"
+        (dateChange)="chooseDate($event)"
+      />
+      <div
+        class="calendar-legend"
+        [attr.aria-label]="locale() === 'ru-RU' ? 'Типы записей' : 'Entry types'"
+      >
+        <div>
+          <span class="legend-sample accent"></span>
+          {{ locale() === 'ru-RU' ? 'События' : 'Events' }}
+        </div>
+        <div>
+          <span class="legend-sample info"></span>
+          {{ locale() === 'ru-RU' ? 'Дни рождения' : 'Birthdays' }}
+        </div>
+        <div>
+          <span class="legend-sample neutral"></span>
+          {{ locale() === 'ru-RU' ? 'Памятные даты' : 'Memorable dates' }}
+        </div>
+      </div>
+      <p class="small text-body-secondary calendar-demo-hint">
+        {{
+          locale() === 'ru-RU'
+            ? '10 октября много записей: откройте «Ещё», попробуйте клавиатуру или расписание.'
+            : '10 October is a busy day: try “more”, keyboard navigation, or the Agenda view.'
+        }}
+      </p>
+    </aside>
+    <ds-calendar
+      id="preview-calendar"
+      [date]="date()"
+      today="2026-10-09"
+      [dateLocale]="locale()"
+      [labels]="labels()"
+      [view]="view()"
+      [entries]="entries()"
+      timeZone="UTC"
+      (dateChange)="date.set($event)"
+      (viewChange)="view.set($event)"
+      (entrySelected)="selectEntry($event)"
+      (dateSelected)="selectDay($event)"
+    />
+  </div>
+</main>
+<dialog
+  dsModalDialog
+  class="calendar-demo-dialog"
+  [attr.aria-label]="locale() === 'ru-RU' ? 'Записи календаря' : 'Calendar details'"
+>
+  <div class="d-flex justify-content-end mb-2">
+    <button
+      #detailClose
+      type="button"
+      class="btn-close"
+      [attr.aria-label]="
+        locale() === 'ru-RU' ? 'Закрыть записи календаря' : 'Close calendar details'
+      "
+      (click)="detailDialog().close()"
+    ></button>
+  </div>
+  @if (selected(); as entry) {
+    <p class="small text-body-secondary">{{ entry.typeLabel }}</p>
+    <h2 class="h5">{{ entry.title }}</h2>
+    <p>{{ titleForDate(entry.start.slice(0, 10)) }} · {{ entryTime(entry) }}</p>
+  } @else if (selectedDay(); as day) {
+    <h2 class="h5">{{ titleForDate(day) }}</h2>
+    <ul class="list-unstyled calendar-day-entries">
+      @for (entry of dayEntries(); track entry.id) {
+        <li>
+          <button type="button" (click)="selectEntry(entry)">
+            <strong>{{ entry.title }}</strong
+            ><small>{{ entry.typeLabel }} · {{ entryTime(entry) }}</small>
+          </button>
+        </li>
+      } @empty {
+        <li>{{ labels().noEvents }}</li>
+      }
+    </ul>
+  }
+</dialog>

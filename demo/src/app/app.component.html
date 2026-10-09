@@ -1,69 +1,57 @@
-<main class="demo-shell" data-demo-shell>
-  <header class="demo-header">
-    <div>
-      <p class="demo-kicker">Packed archive consumer</p>
-      <p class="demo-title">Design system</p>
-      <p class="demo-subtitle">Interactive component catalogue</p>
-    </div>
-    <div class="theme-switcher" aria-label="Theme">
-      <button
-        type="button"
-        class="btn btn-sm"
-        [class.btn-primary]="themeService.theme() === 'light'"
-        [class.btn-outline-secondary]="themeService.theme() !== 'light'"
-        data-demo-theme="light"
-        (click)="themeService.setTheme('light')"
-      >
-        Light
-      </button>
-      <button
-        type="button"
-        class="btn btn-sm"
-        [class.btn-primary]="themeService.theme() === 'dark'"
-        [class.btn-outline-secondary]="themeService.theme() !== 'dark'"
-        data-demo-theme="dark"
-        (click)="themeService.setTheme('dark')"
-      >
-        Dark
-      </button>
-    </div>
-  </header>
-
-  <div class="demo-layout">
-    <aside class="demo-sidebar" data-demo-sidebar aria-label="Component navigation">
-      <div class="demo-sidebar-heading">
-        <p class="demo-sidebar-label">Catalogue</p>
+@if (selectedRoute().startsWith('/preview/')) {
+  <router-outlet />
+} @else {
+  <main class="demo-shell" data-demo-shell>
+    <header class="demo-header">
+      <div>
+        <p class="demo-kicker">Packed archive consumer</p>
+        <p class="demo-title">Design system</p>
+        <p class="demo-subtitle">Interactive component catalogue</p>
+      </div>
+      <div class="theme-switcher" aria-label="Theme">
         <button
           type="button"
-          class="btn btn-sm btn-outline-secondary demo-sidebar-toggle"
-          [attr.aria-expanded]="mobileNavigationOpen()"
-          aria-controls="demo-sidebar-tree"
-          (click)="mobileNavigationOpen.set(!mobileNavigationOpen())"
+          class="btn btn-sm"
+          [class.btn-primary]="themeService.theme() === 'light'"
+          [class.btn-outline-secondary]="themeService.theme() !== 'light'"
+          data-demo-theme="light"
+          (click)="themeService.setTheme('light')"
         >
-          {{ mobileNavigationOpen() ? 'Hide components' : 'Browse components' }}
+          Light
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm"
+          [class.btn-primary]="themeService.theme() === 'dark'"
+          [class.btn-outline-secondary]="themeService.theme() !== 'dark'"
+          data-demo-theme="dark"
+          (click)="themeService.setTheme('dark')"
+        >
+          Dark
         </button>
       </div>
-      <div
-        id="demo-sidebar-tree"
-        class="demo-sidebar-tree"
-        data-demo-sidebar-tree
-        [class.demo-sidebar-tree-open]="mobileNavigationOpen()"
-      >
-        <ds-foldable-tree
-          [rootItems]="rootItems"
-          [sections]="sections"
-          emptyMessage="No demo pages"
-          [selectedItemKey]="selectedRoute()"
-          [defaultExpandedSectionKeys]="expandedSectionKeys"
-          sectionTestId="demo-nav-section"
-          itemTestId="demo-nav-item"
-          (itemSelected)="navigate($event)"
-        />
-      </div>
-    </aside>
+    </header>
 
-    <div class="demo-content">
-      <router-outlet />
-    </div>
-  </div>
-</main>
+    <ds-sidebar
+      data-demo-sidebar
+      panelId="catalogue-navigation-panel"
+      label="Catalogue"
+      openLabel="Open catalogue"
+      closeLabel="Close catalogue"
+      [open]="navigationOpen()"
+      (openChange)="navigationOpen.set($event)"
+    >
+      <ds-navigation
+        dsSidebarNavigation
+        id="catalogue-navigation"
+        label="Component navigation"
+        [rootItems]="rootItems"
+        [groups]="groups"
+        [selectedItemKey]="selectedRoute()"
+        emptyMessage="No demo pages"
+        (itemSelected)="navigate($event)"
+      />
+      <div class="demo-content"><router-outlet /></div>
+    </ds-sidebar>
+  </main>
+}

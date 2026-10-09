@@ -1,0 +1,54 @@
+<section class="ds-mini-calendar" [attr.aria-label]="labels().calendar">
+  <div class="mini-calendar-heading">
+    <strong [id]="id() + '-title'" aria-live="polite">{{ monthTitle() }}</strong>
+    <div class="mini-calendar-actions">
+      <button type="button" [attr.aria-label]="labels().previousMonth" (click)="moveMonth(-1)">
+        <ds-icon name="chevron-right" class="previous" [size]="16" />
+      </button>
+      <button type="button" [attr.aria-label]="labels().nextMonth" (click)="moveMonth(1)">
+        <ds-icon name="chevron-right" [size]="16" />
+      </button>
+    </div>
+  </div>
+  <p class="visually-hidden" [id]="id() + '-help'">{{ labels().keyboardHelp }}</p>
+  <table
+    role="grid"
+    [attr.aria-labelledby]="id() + '-title'"
+    [attr.aria-describedby]="id() + '-help'"
+  >
+    <thead>
+      <tr>
+        @for (weekday of weekdays(); track $index) {
+          <th scope="col" [attr.aria-label]="weekday.long">{{ weekday.short }}</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (week of weeks(); track $index) {
+        <tr>
+          @for (day of week; track day.iso) {
+            <td [attr.aria-selected]="day.iso === date()">
+              <button
+                #dayButton
+                type="button"
+                [attr.data-date]="day.iso"
+                [attr.aria-label]="day.label"
+                [attr.aria-current]="day.iso === today() ? 'date' : null"
+                [attr.tabindex]="day.iso === focusedDate() ? 0 : -1"
+                [class.selected]="day.iso === date()"
+                [class.today]="day.iso === today()"
+                [class.outside]="day.outside"
+                [class.marked]="day.marked"
+                (focus)="focusedDate.set(day.iso)"
+                (click)="select(day.iso)"
+                (keydown)="navigate($event, day.iso)"
+              >
+                {{ day.number }}
+              </button>
+            </td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</section>

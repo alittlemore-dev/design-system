@@ -1,0 +1,100 @@
+:host {
+  display: block;
+}
+.sidebar-layout {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+.sidebar-open {
+  grid-template-columns: 13rem minmax(0, 1fr);
+  gap: 0;
+}
+.sidebar {
+  min-width: 0;
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+}
+.sidebar-open .sidebar {
+  padding-inline-end: 1rem;
+}
+.sidebar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.sidebar-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  color: var(--main-text-color);
+  background: transparent;
+  border: 1px solid var(--border-color-solid);
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+.sidebar-toggle:hover {
+  background: var(--bs-tertiary-bg);
+}
+.sidebar-toggle:focus-visible {
+  outline: 2px solid var(--bs-success);
+  outline-offset: -3px;
+}
+.sidebar-panel {
+  overflow-wrap: anywhere;
+}
+.sidebar-panel[hidden] {
+  display: none;
+}
+.sidebar-content {
+  min-width: 0;
+}
+.sidebar-open .sidebar-content {
+  border-inline-start: 1px solid var(--border-color-solid);
+  padding-inline-start: 1rem;
+}
+@media (max-width: 767.98px) {
+  .sidebar-layout,
+  .sidebar-open {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+  .sidebar {
+    position: static;
+    max-height: none;
+  }
+  .sidebar-heading {
+    justify-content: flex-start;
+    flex-direction: row-reverse;
+    width: fit-content;
+    margin-bottom: 0;
+  }
+  .sidebar-open .sidebar {
+    border-bottom: 1px solid var(--border-color-solid);
+    padding: 0 0 0.75rem;
+  }
+  .sidebar-open .sidebar-heading {
+    margin-bottom: 0.5rem;
+  }
+  .sidebar-open .sidebar-content {
+    border: 0;
+    padding-inline-start: 0;
+  }
+  .sidebar-panel {
+    max-height: min(24rem, 60dvh);
+    overflow-y: auto;
+  }
+}

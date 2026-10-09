@@ -40,6 +40,24 @@ describe('SiteSelectComponent', () => {
     jest.restoreAllMocks();
   });
 
+  it('keeps a newly opened list visible for a delayed scroll event and closes it when the viewport actually moves', () => {
+    const trigger = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    const position = jest.replaceProperty(window, 'scrollY', 120);
+    try {
+      trigger.click();
+      fixture.detectChanges();
+      window.dispatchEvent(new Event('scroll'));
+      fixture.detectChanges();
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      position.replaceValue(180);
+      window.dispatchEvent(new Event('scroll'));
+      fixture.detectChanges();
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    } finally {
+      position.restore();
+    }
+  });
+
   it('renders the selected label and complete select-only combobox semantics', () => {
     const control = trigger();
     const popup = listbox();

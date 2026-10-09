@@ -56,6 +56,11 @@ test('serves component pages directly without rendering the former all-in-one sh
   t.after(() => stopDemoServer(server.child));
 
   for (const page of [
+    {
+      path: '/components/calendar',
+      heading: 'Calendar and mini calendar',
+      content: /Open calendar demo/,
+    },
     { path: '/components/empty-state', heading: 'Empty state', content: /<ds-empty-state/ },
     {
       path: '/components/loading-spinner',
@@ -115,9 +120,9 @@ test('serves component pages directly without rendering the former all-in-one sh
       picker: 'ds-localized-datetime-range-picker',
     },
     {
-      path: '/components/foldable-tree',
-      heading: 'Foldable tree',
-      content: /data-demo-tree-selection/,
+      path: '/components/navigation',
+      heading: 'Navigation and sidebar',
+      content: /data-demo-navigation/,
     },
     {
       path: '/components/disclosures',
@@ -183,4 +188,35 @@ test('serves component pages directly without rendering the former all-in-one sh
     const simpleComponentHtml = await (await fetch(`${server.url}${path}`)).text();
     assert.doesNotMatch(simpleComponentHtml, /Initialization parameters/, path);
   }
+});
+
+test('server-renders the inline navigation preview using neutral public components under strict CSP', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const response = await fetch(`${server.url}/preview/navigation`);
+  assert.equal(response.status, 200);
+  assert.doesNotMatch(response.headers.get('content-security-policy'), /unsafe-inline|unsafe-eval/);
+  const html = await response.text();
+  assert.match(html, /<ds-sidebar/);
+  assert.match(html, /<ds-navigation/);
+  assert.match(html, /id="preview-sections"/);
+  assert.match(html, /href="#dashboard"/);
+  assert.match(html, /aria-current="page"/);
+  assert.ok(html.indexOf('Important information') < html.indexOf('Upcoming events'));
+});
+
+test('server-renders the calendar preview without browser timers or inline styles', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const response = await fetch(`${server.url}/preview/calendar`);
+  assert.equal(response.status, 200);
+  assert.doesNotMatch(response.headers.get('content-security-policy'), /unsafe-inline|unsafe-eval/);
+  const html = await response.text();
+  assert.match(html, /<ds-mini-calendar/);
+  assert.match(html, /<ds-calendar/);
+  assert.match(html, /Choose a date/);
+  assert.match(html, /Loading calendar/);
+  assert.match(html, /data-date="2026-10-09"/);
+  assert.doesNotMatch(html.match(/<ds-calendar\b[\s\S]*?<\/ds-calendar>/)?.[0] ?? '', /\sstyle=/);
+  assert.doesNotMatch(server.output(), /ReferenceError|uncaughtException/);
 });

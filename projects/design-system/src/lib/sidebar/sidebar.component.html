@@ -1,0 +1,29 @@
+<div class="sidebar-layout" [class.sidebar-open]="open()">
+  <aside class="sidebar" tabindex="-1" [attr.aria-label]="label()" (keydown.escape)="close($event)">
+    <div class="sidebar-heading">
+      <span class="sidebar-label" [hidden]="!open()">{{ label() }}</span>
+      <button
+        #toggle
+        type="button"
+        class="sidebar-toggle"
+        [attr.aria-label]="open() ? closeLabel() : openLabel()"
+        [title]="open() ? closeLabel() : openLabel()"
+        [attr.aria-expanded]="open()"
+        [attr.aria-controls]="panelId()"
+        (click)="openChange.emit(!open())"
+      >
+        <ds-icon [name]="open() ? 'panel-close' : 'panel-open'" />
+      </button>
+    </div>
+    <div
+      #panel
+      class="sidebar-panel"
+      [id]="panelId()"
+      [hidden]="!open()"
+      [attr.inert]="open() ? null : ''"
+    >
+      <ng-content select="[dsSidebarNavigation]" />
+    </div>
+  </aside>
+  <div class="sidebar-content"><ng-content /></div>
+</div>

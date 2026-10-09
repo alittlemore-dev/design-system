@@ -1,0 +1,64 @@
+<nav [attr.aria-label]="label()" class="navigation">
+  @if (!rootItems().length && !groups().length) {
+    <p class="small text-body-secondary mb-0">{{ emptyMessage() }}</p>
+  }
+  @if (rootItems().length) {
+    <div class="navigation-items">
+      @for (item of rootItems(); track item.key) {
+        <a
+          [href]="item.href"
+          [class.active]="selectedItemKey() === item.key"
+          [attr.aria-current]="selectedItemKey() === item.key ? 'page' : null"
+          (click)="select(item, $event)"
+        >
+          @if (item.icon) {
+            <ds-icon [name]="item.icon" [size]="18" />
+          }
+          <span>{{ item.label }}</span>
+          @if (item.badgeText) {
+            <span class="navigation-badge">{{ item.badgeText }}</span>
+          }
+        </a>
+      }
+    </div>
+  }
+  @for (group of groups(); track group.key) {
+    <div class="navigation-group">
+      @if (group.collapsible) {
+        <button
+          type="button"
+          class="navigation-group-toggle"
+          [attr.aria-expanded]="expanded(group)"
+          [attr.aria-controls]="id() + '-' + group.key"
+          (click)="toggle(group)"
+        >
+          <ds-icon name="chevron-right" [size]="14" [class.expanded]="expanded(group)" />
+          @if (group.icon) {
+            <ds-icon [name]="group.icon" [size]="18" />
+          }
+          <span>{{ group.label }}</span>
+        </button>
+      } @else {
+        <h2>{{ group.label }}</h2>
+      }
+      <div class="navigation-items" [id]="id() + '-' + group.key" [hidden]="!expanded(group)">
+        @for (item of group.items; track item.key) {
+          <a
+            [href]="item.href"
+            [class.active]="selectedItemKey() === item.key"
+            [attr.aria-current]="selectedItemKey() === item.key ? 'page' : null"
+            (click)="select(item, $event)"
+          >
+            @if (item.icon) {
+              <ds-icon [name]="item.icon" [size]="18" />
+            }
+            <span>{{ item.label }}</span>
+            @if (item.badgeText) {
+              <span class="navigation-badge">{{ item.badgeText }}</span>
+            }
+          </a>
+        }
+      </div>
+    </div>
+  }
+</nav>

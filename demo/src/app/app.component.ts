@@ -1,15 +1,29 @@
-import { CSP_NONCE, ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  CSP_NONCE,
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FoldableTreeComponent, ThemeService } from '@alittlemore.dev/design-system';
+import {
+  NavigationComponent,
+  SidebarComponent,
+  ThemeService,
+  type NavigationSelection,
+} from '@alittlemore.dev/design-system';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { filter } from 'rxjs';
+import { filter, map } from 'rxjs';
 
-import { DEMO_EXPANDED_SECTION_KEYS, DEMO_ROOT_ITEMS, DEMO_SECTIONS } from './demo-navigation';
+import { DEMO_ROOT_ITEMS, DEMO_GROUPS } from './demo-navigation';
 
 @Component({
   selector: 'demo-root',
   standalone: true,
-  imports: [FoldableTreeComponent, RouterOutlet],
+  imports: [NavigationComponent, SidebarComponent, RouterOutlet],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -23,10 +37,16 @@ export class AppComponent {
   protected readonly cspNonce = inject(CSP_NONCE);
   protected readonly themeService = inject(ThemeService);
   protected readonly rootItems = DEMO_ROOT_ITEMS;
-  protected readonly sections = DEMO_SECTIONS;
-  protected readonly expandedSectionKeys = DEMO_EXPANDED_SECTION_KEYS;
+  protected readonly groups = DEMO_GROUPS;
   protected readonly selectedRoute = signal('/overview');
-  protected readonly mobileNavigationOpen = signal(false);
+  protected readonly navigationOpen = signal(true);
+  private readonly desktop = toSignal(
+    inject(BreakpointObserver)
+      .observe('(min-width: 768px)')
+      .pipe(map((state) => state.matches)),
+    { initialValue: true },
+  );
+  private readonly responsiveNavigation = effect(() => this.navigationOpen.set(this.desktop()));
 
   private readonly navigationSubscription = this.router.events
     .pipe(
@@ -35,9 +55,10 @@ export class AppComponent {
     )
     .subscribe((event) => this.selectedRoute.set(this.routePath(event.urlAfterRedirects)));
 
-  protected navigate(route: string): void {
-    this.mobileNavigationOpen.set(false);
-    void this.router.navigateByUrl(route);
+  protected navigate(selection: NavigationSelection): void {
+    selection.event.preventDefault();
+    if (!this.desktop()) this.navigationOpen.set(false);
+    void this.router.navigateByUrl(selection.item.href);
   }
 
   private routePath(url: string): string {

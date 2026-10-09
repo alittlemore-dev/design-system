@@ -257,3 +257,30 @@
 - [x] Allow npm publish-time scanning to complete before release confirmation exhausts its retries.
 - [x] Keep Bootstrap overrides compatible with preloaded Bootstrap and preserve form-control
       validation styles while applying the green accent.
+
+- [x] Give inline sidebar panels a unique ID without duplicating the host ID, and verify toggle,
+      Escape, projection, and focus restoration against the actual panel.
+- [x] Make the packed navigation browser smoke handle badges in link names and await keyboard
+      disclosure rendering before asserting the resulting state.
+- [x] Keep keyboard focus outlines fully visible inside scrolling inline navigation panels and
+      the collapsed sidebar rail in both themes.
+
+- [x] Use readable text tokens for navigation captions and demo entry links, and verify their
+      rendered contrast in light and dark themes.
+
+# Demo regressions
+
+- [x] Keep navigation badges on one line beside wrapping link labels, and verify their geometry in the packed catalogue at mobile, intermediate, and desktop widths in both themes.
+- [x] Keep the navigation preview entirely in English and verify its labelled actions.
+- [x] Wait for native datetime validation to settle before checking deferred-error behavior in the browser smoke.
+
+## Calendar extraction
+
+- [x] Apply semantic entry classes through the FullCalendar 7 rendering API and verify compact, clipped, separated entries in both themes.
+- [x] Initialize and update calendar timers outside Angular's zone so hydration completes, while keeping selection callbacks reactive.
+- [x] Respect exclusive all-day end dates in the demo's selected-day list and cover the last included and first excluded days.
+
+- [x] Keep SiteSelect open when a delayed scroll event arrives without a position change; continue closing on actual viewport movement and cover the calendar Year-to-Month transition.
+
+- [x] Eliminate the FullCalendar 7 ResizeObserver loop diagnostic during initial busy-day layout and Day view changes, then pass the packed calendar browser test without console errors ([upstream issue #8082](https://github.com/fullcalendar/fullcalendar/issues/8082)).
+- [x] Retain modal focus when choosing an entry from the demo's selected-day list, and restore the busy-day trigger on Escape.
