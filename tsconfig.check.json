@@ -4,6 +4,12 @@
     "noEmit": true,
     "paths": {
       "@alittlemore.dev/design-system": ["./projects/design-system/src/public-api.ts"],
+      "@alittlemore.dev/design-system/primitives": [
+        "./projects/design-system/primitives/src/public-api.ts"
+      ],
+      "@alittlemore.dev/design-system/calendar": [
+        "./projects/design-system/calendar/src/public-api.ts"
+      ],
       "@alittlemore.dev/design-system/markdown": [
         "./projects/design-system/markdown/src/public-api.ts"
       ],

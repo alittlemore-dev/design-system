@@ -1,7 +1,11 @@
 export * from './lib/empty-state/empty-state.component';
 export * from './lib/loading-spinner/loading-spinner.component';
 export * from './lib/error-message/error-message.component';
-export * from './lib/icon/icon.component';
+export {
+  IconComponent,
+  getIconPaths,
+  type IconName,
+} from '@alittlemore.dev/design-system/primitives';
 export * from './lib/navigation/navigation.component';
 export * from './lib/sidebar/sidebar.component';
 export * from './lib/forms/control-validation-state.directive';
@@ -26,7 +30,12 @@ export type {
   LocalizedTimePickerMode,
   LocalizedDatePickerControlSize,
 } from './lib/localized-date-picker/localized-temporal-picker.types';
-export * from './lib/site-select/site-select.component';
+export {
+  SiteSelectComponent,
+  type SiteSelectOption,
+  type SiteSelectAppearance,
+  type SiteSelectControlSize,
+} from '@alittlemore.dev/design-system/primitives';
 export * from './lib/notifications/notification.service';
 export * from './lib/notifications/notification-area.component';
 export * from './lib/theme/theme.service';
@@ -38,6 +47,16 @@ export * from './lib/unsaved-changes/unsaved-changes.service';
 export * from './lib/foldable-section/foldable-section.component';
 export * from './lib/modal/modal-dialog.directive';
 
-export * from './lib/calendar/calendar.models';
-export * from './lib/calendar/calendar.component';
-export * from './lib/calendar/mini-calendar.component';
+export { CalendarComponent } from './lib/calendar/calendar.component';
+export type {
+  CalendarView,
+  CalendarEntryTone,
+  CalendarEntry,
+  CalendarRange,
+  CalendarDateSelection,
+  CalendarLabels,
+} from '@alittlemore.dev/design-system/calendar';
+export {
+  MiniCalendarComponent,
+  type MiniCalendarLabels,
+} from '@alittlemore.dev/design-system/primitives';

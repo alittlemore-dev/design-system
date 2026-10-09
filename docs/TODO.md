@@ -286,3 +286,8 @@
 - [x] Retain modal focus when choosing an entry from the demo's selected-day list, and restore the busy-day trigger on Escape.
 
 - [x] Keep the calendar runtime out of initial UI-consumer bundles, and verify delayed rendering and retry after a runtime load failure in the packed demo.
+
+- [x] Keep calendar component code and styles out of initial UI-consumer bundles through public entry-point isolation, preserve existing primary imports, and verify the packed module graph.
+- [x] Disable calendar commands until the runtime is ready and verify their states after download failure and recovery.
+
+- [x] Wait for controlled calendar view updates in the primary-entry browser regression before asserting the selected view.

@@ -26,7 +26,7 @@ export interface AppNotification {
     type: 'success' | 'danger';
 }
 
-// @public (undocumented)
+// @public
 export class CalendarComponent {
     constructor();
     // (undocumented)
@@ -263,6 +263,9 @@ export function formatErrorMessage(error: ErrorDisplay): string;
 
 // @public (undocumented)
 export function formatLocalizedDate(value: string, locale: string, display: LocalizedDateDisplay): string;
+
+// @public (undocumented)
+export function getIconPaths(name: IconName): readonly string[];
 
 // @public (undocumented)
 export class IconComponent {

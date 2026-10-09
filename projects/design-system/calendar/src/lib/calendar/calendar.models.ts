@@ -1,4 +1,4 @@
-import type { IconName } from '../icon/icon.component';
+import type { IconName } from '@alittlemore.dev/design-system/primitives';
 
 export type CalendarView = 'month' | 'week' | 'day' | 'agenda' | 'year';
 export type CalendarEntryTone = 'accent' | 'info' | 'neutral';
@@ -25,12 +25,7 @@ export interface CalendarLabels {
   readonly loading: string;
   readonly more: (count: number) => string;
 }
-export interface MiniCalendarLabels {
-  readonly calendar: string;
-  readonly previousMonth: string;
-  readonly nextMonth: string;
-  readonly keyboardHelp: string;
-}
+
 export interface CalendarRange {
   readonly start: string;
   readonly end: string;
@@ -42,3 +37,5 @@ export interface CalendarDateSelection {
   readonly start: string;
   readonly allDay: boolean;
 }
+
+export type { MiniCalendarLabels } from '@alittlemore.dev/design-system/primitives';

@@ -5,7 +5,7 @@ Status: accepted on 2026-08-25.
 ## Decision
 
 The design system is published as one Angular package with a primary UI entry point and secondary
-entry points for Markdown rendering, the Markdown editor, test utilities, and styles.
+entry points for calendars, shared primitives, Markdown rendering, the Markdown editor, test utilities, and styles.
 
 The package is one installation, versioning, and release unit. Secondary entry points define
 public API and bundle boundaries; they do not create separately installable dependency sets.
@@ -45,7 +45,7 @@ application-independent; the consumer owns routes, selection, labels, breakpoint
 The sidebar keeps its projected navigation inline and does not share the modal drawer lifecycle.
 
 Full and mini calendars expose neutral entries, date/range/view outputs, and consumer-owned labels.
-The primary UI entry point owns the FullCalendar 7.1.1 and Temporal polyfill runtime dependencies;
+The calendar entry point owns the FullCalendar 7.1.1 and Temporal polyfill integration;
 no FullCalendar models or Angular adapter become public contracts. FullCalendar core is initialized
 only when a full calendar is rendered in the browser, through dynamic runtime imports and outside Angular's zone to preserve SSR hydration stability. Consumers own
 fetching, domain entry types, routing, creation, filters, and optional calendar-side navigation.
@@ -71,6 +71,12 @@ changes exist. Applications own translated confirmation and navigation. `discard
 current values as baselines; it does not mutate consumer data.
 
 It must not re-export Markdown-rendering or Markdown-editor APIs.
+
+### Calendar and primitives secondary entry points
+
+`calendar` owns the full calendar, its neutral contracts, component styles, and deferred browser runtime. It also re-exports the mini calendar. Import this entry point directly in calendar features so an ordinary UI consumer does not eagerly include the full calendar component or styles. The primary entry point preserves its calendar contracts through a small wrapper that loads the implementation on demand.
+
+`primitives` owns icons, select controls, the mini calendar, and shared date calculations. Primary UI and calendar components consume these public contracts, preserving an acyclic graph. Icons and select controls remain available through the primary entry point.
 
 ### Markdown-rendering secondary entry point
 
@@ -132,6 +138,9 @@ The allowed internal dependency direction is:
 Markdown editor ──> primary UI
        │
        └──────────> Markdown rendering
+
+primary UI ──(dynamic)──> calendar ──> primitives
+      └──────────────────> primitives
 
 Markdown rendering    primary UI
         └────── no dependency ──────┘

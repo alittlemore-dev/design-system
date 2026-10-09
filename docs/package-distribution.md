@@ -23,6 +23,8 @@ Local archive integration is exercised by a repository-owned demo application.
 There is one installable and atomically versioned package. Its public TypeScript entry points are:
 
 - `@alittlemore.dev/design-system` for application-independent UI;
+- `@alittlemore.dev/design-system/calendar` for full and mini calendars without eager calendar loading in other UI consumers;
+- `@alittlemore.dev/design-system/primitives` for shared icons, select controls, the mini calendar, and date calculations;
 - `@alittlemore.dev/design-system/markdown` for Markdown rendering;
 - `@alittlemore.dev/design-system/markdown-editor` for the interactive Markdown editor;
 - `@alittlemore.dev/design-system/testing` for public test utilities.

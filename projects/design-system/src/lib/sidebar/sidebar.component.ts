@@ -9,7 +9,7 @@ import {
   output,
   viewChild,
 } from '@angular/core';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@alittlemore.dev/design-system/primitives';
 
 /** Inline page navigation. Modal service menus belong in DrawerComponent. */
 @Component({

@@ -1705,6 +1705,72 @@ test('a calendar runtime download failure shows feedback and can be retried', as
   await page.route(pattern, (route) => route.abort());
   await page.goto(`${server.url}/preview/calendar`, { waitUntil: 'networkidle' });
   await page.getByRole('alert').getByText('Could not load the calendar.').waitFor();
+  assert.equal(
+    await page.getByRole('button', { name: 'Previous period', exact: true }).isEnabled(),
+    false,
+  );
+  assert.equal(
+    await page.getByRole('combobox', { name: 'Calendar view', exact: true }).isEnabled(),
+    false,
+  );
+  await page.unroute(pattern);
+  await page.getByRole('button', { name: 'Retry calendar', exact: true }).click();
+  await page.locator('.ds-calendar-entry-title').first().waitFor();
+  assert.equal(await page.getByRole('alert').count(), 0);
+  assert.equal(
+    await page.getByRole('button', { name: 'Previous period', exact: true }).isEnabled(),
+    true,
+  );
+});
+
+test('primary calendar imports forward inputs, range changes and modal selection', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const browser = await chromium.launch({ headless: true });
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto(`${server.url}/preview/calendar-primary`, { waitUntil: 'networkidle' });
+  const initialRanges = Number((await page.locator('output').innerText()).split(': ')[1]);
+  assert.ok(initialRanges > 0);
+  await page.getByRole('button', { name: 'Event · 10:00 Interface review', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Interface review', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Calendar view', exact: true }).click();
+  await page.getByRole('option', { name: 'Week', exact: true }).click();
+  await page.waitForFunction(
+    () => document.querySelector('#primary-calendar-view')?.textContent?.trim() === 'Week',
+  );
+  assert.equal(await page.getByRole('combobox').innerText(), 'Week');
+  await page.getByRole('button', { name: 'Next period', exact: true }).click();
+  await page.waitForFunction(
+    () => document.querySelectorAll('.ds-calendar-entry-title').length === 0,
+  );
+  assert.equal(await page.locator('.ds-calendar-entry-title').count(), 0);
+  await page.getByRole('button', { name: 'Previous period', exact: true }).click();
+  await page.locator('.ds-calendar-entry-title').first().waitFor();
+  assert.ok(Number((await page.locator('output').innerText()).split(': ')[1]) > initialRanges);
+  assert.deepEqual(errors, []);
+});
+
+test('primary calendar import reports a failed component download and recovers', async (t) => {
+  const server = await startDemoServer(process.cwd());
+  t.after(() => stopDemoServer(server.child));
+  const browser = await chromium.launch({ headless: true });
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  const stats = JSON.parse(await readFile('dist/design-system-demo/browser-stats.json', 'utf8'));
+  const chunk = Object.entries(stats.outputs).find(([, output]) =>
+    output.entryPoint
+      ?.replaceAll('\\', '/')
+      .endsWith('/alittlemore.dev-design-system-calendar.mjs'),
+  )?.[0];
+  assert.ok(chunk, 'The calendar component must have a dynamic chunk.');
+  const pattern = `**/${chunk}`;
+  await page.route(pattern, (route) => route.abort());
+  await page.goto(`${server.url}/preview/calendar-primary`, { waitUntil: 'networkidle' });
+  await page.getByRole('alert').getByText('Could not load the calendar.').waitFor();
   await page.unroute(pattern);
   await page.getByRole('button', { name: 'Retry calendar', exact: true }).click();
   await page.locator('.ds-calendar-entry-title').first().waitFor();

@@ -20,8 +20,8 @@ import {
   formatLongDate,
   parseIsoDate,
   startOfMonth,
-} from '../localized-date-picker/localized-date-picker.utils';
-import type { MiniCalendarLabels } from './calendar.models';
+} from '../calendar-date';
+import type { MiniCalendarLabels } from './mini-calendar.models';
 
 @Component({
   selector: 'ds-mini-calendar',

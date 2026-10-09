@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { MiniCalendarComponent } from './mini-calendar.component';
-import type { MiniCalendarLabels } from './calendar.models';
+import type { MiniCalendarLabels } from './mini-calendar.models';
 const labels: MiniCalendarLabels = {
   calendar: 'Choose a date',
   previousMonth: 'Previous month',

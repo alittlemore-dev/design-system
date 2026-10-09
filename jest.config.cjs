@@ -11,6 +11,10 @@ module.exports = {
   modulePathIgnorePatterns: ['<rootDir>/dist/'],
   moduleNameMapper: {
     '^@alittlemore\\.dev/design-system$': '<rootDir>/projects/design-system/src/public-api.ts',
+    '^@alittlemore\\.dev/design-system/primitives$':
+      '<rootDir>/projects/design-system/primitives/src/public-api.ts',
+    '^@alittlemore\\.dev/design-system/calendar$':
+      '<rootDir>/projects/design-system/calendar/src/public-api.ts',
     '^@alittlemore\\.dev/design-system/markdown$':
       '<rootDir>/projects/design-system/markdown/src/public-api.ts',
     '^@alittlemore\\.dev/design-system/markdown-editor$':
