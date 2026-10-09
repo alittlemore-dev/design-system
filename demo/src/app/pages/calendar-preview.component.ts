@@ -1,3 +1,4 @@
+import { EN_LABELS, RU_LABELS, EN_MINI, RU_MINI } from './calendar-demo-labels';
 import { DOCUMENT } from '@angular/common';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import {
@@ -17,53 +18,11 @@ import { map } from 'rxjs';
 import {
   CalendarComponent,
   MiniCalendarComponent,
-  ModalDialogDirective,
-  ThemeService,
   type CalendarEntry,
-  type CalendarLabels,
   type CalendarView,
   type CalendarDateSelection,
-  type MiniCalendarLabels,
-} from '@alittlemore.dev/design-system';
-
-const EN_LABELS: CalendarLabels = {
-  calendar: 'Calendar',
-  previous: 'Previous period',
-  next: 'Next period',
-  today: 'Today',
-  view: 'Calendar view',
-  views: { month: 'Month', week: 'Week', day: 'Day', agenda: 'Agenda', year: 'Year' },
-  allDay: 'All day',
-  noEvents: 'No events in this period',
-  loading: 'Loading calendar…',
-  more: (count) => `+${count} more`,
-};
-const RU_LABELS: CalendarLabels = {
-  calendar: 'Календарь',
-  previous: 'Предыдущий период',
-  next: 'Следующий период',
-  today: 'Сегодня',
-  view: 'Вид календаря',
-  views: { month: 'Месяц', week: 'Неделя', day: 'День', agenda: 'Расписание', year: 'Год' },
-  allDay: 'Весь день',
-  noEvents: 'В этом периоде нет событий',
-  loading: 'Загрузка календаря…',
-  more: (count) => `Ещё ${count}`,
-};
-const EN_MINI: MiniCalendarLabels = {
-  calendar: 'Choose a date',
-  previousMonth: 'Previous month',
-  nextMonth: 'Next month',
-  keyboardHelp:
-    'Use arrows to move between days, Page Up or Page Down to change month, and Enter to choose a date.',
-};
-const RU_MINI: MiniCalendarLabels = {
-  calendar: 'Выберите дату',
-  previousMonth: 'Предыдущий месяц',
-  nextMonth: 'Следующий месяц',
-  keyboardHelp:
-    'Стрелки перемещают фокус по дням, Page Up и Page Down меняют месяц, Enter выбирает дату.',
-};
+} from '@alittlemore.dev/design-system/calendar';
+import { ModalDialogDirective, ThemeService } from '@alittlemore.dev/design-system';
 
 @Component({
   selector: 'demo-calendar-preview',

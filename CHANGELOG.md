@@ -18,6 +18,17 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Security
 
+## [0.5.2] - 2026-10-10
+
+### Added
+
+- Public `calendar` and `primitives` entry points, preserving all existing primary UI imports.
+
+### Fixed
+
+- Keep full-calendar component code and styles out of initial UI bundles while preserving existing primary imports.
+- Disable calendar commands until the browser runtime is ready, including after a failed download.
+
 ## [0.5.1] - 2026-10-10
 
 ### Fixed

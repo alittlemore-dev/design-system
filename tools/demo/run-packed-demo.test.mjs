@@ -206,4 +206,13 @@ test('keeps the calendar runtime behind dynamic imports in the real bundle graph
     packedDemo.assertCalendarRuntimeIsDeferred(statsPath),
     /initial browser bundle includes the calendar runtime/,
   );
+  outputs['calendar.js'].inputs = {
+    'node_modules/@alittlemore.dev/design-system/fesm2022/alittlemore.dev-design-system-calendar.mjs':
+      { bytesInOutput: 100 },
+  };
+  await writeFile(statsPath, JSON.stringify({ outputs }));
+  await assert.rejects(
+    packedDemo.assertCalendarRuntimeIsDeferred(statsPath),
+    /initial browser bundle includes the calendar runtime/,
+  );
 });

@@ -14,6 +14,30 @@ export const typeScriptEntryPoints = [
     },
   },
   {
+    declarationFile: 'types/alittlemore.dev-design-system-primitives.d.ts',
+    exportKey: './primitives',
+    name: 'primitives',
+    reportFileName: 'design-system.primitives',
+    sourceRoot: 'projects/design-system/primitives/src',
+    specifier: `${packageName}/primitives`,
+    targets: {
+      default: './fesm2022/alittlemore.dev-design-system-primitives.mjs',
+      types: './types/alittlemore.dev-design-system-primitives.d.ts',
+    },
+  },
+  {
+    declarationFile: 'types/alittlemore.dev-design-system-calendar.d.ts',
+    exportKey: './calendar',
+    name: 'calendar',
+    reportFileName: 'design-system.calendar',
+    sourceRoot: 'projects/design-system/calendar/src',
+    specifier: `${packageName}/calendar`,
+    targets: {
+      default: './fesm2022/alittlemore.dev-design-system-calendar.mjs',
+      types: './types/alittlemore.dev-design-system-calendar.d.ts',
+    },
+  },
+  {
     declarationFile: 'types/alittlemore.dev-design-system-markdown.d.ts',
     exportKey: './markdown',
     name: 'markdown',

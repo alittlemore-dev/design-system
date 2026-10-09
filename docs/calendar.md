@@ -1,7 +1,11 @@
 # Calendars
 
-Import `CalendarComponent`, `MiniCalendarComponent`, and their models from the primary public
-`@alittlemore.dev/design-system` entry point. The packed demo lives at `/preview/calendar`.
+Import `CalendarComponent`, `MiniCalendarComponent`, and their models from
+`@alittlemore.dev/design-system/calendar`. Existing imports from the primary public
+`@alittlemore.dev/design-system` entry point remain compatible through a lazy full-calendar wrapper.
+The mini calendar is also available from `@alittlemore.dev/design-system/primitives`.
+The packed demo lives at `/preview/calendar`; `/preview/calendar-primary` verifies the compatible
+primary import, controlled inputs, modal selection, and chunk failure recovery.
 
 Both components require consumer-owned `id`, ISO `date`, ISO `today`, and `labels`. They support
 English and Russian calendar presentation through `dateLocale`. The package does not own a clock,
@@ -38,3 +42,5 @@ use existing theme tokens, are bundled with the packed component, and require no
 FullCalendar stylesheet imports.
 
 The engine is loaded only after a full calendar is rendered in the browser. Importing UI or mini-calendar components does not download FullCalendar. `loadError` reports a runtime chunk failure; consumers provide localized feedback and retry by reloading the page, as browsers retain failed module imports. Destruction during loading prevents initialization.
+
+Import calendars from `@alittlemore.dev/design-system/calendar` to keep their components, styles, and runtime out of unrelated initial UI bundles. Primary-entry imports remain available for compatibility. Toolbar commands stay disabled until the browser runtime is ready.

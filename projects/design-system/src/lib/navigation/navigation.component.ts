@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { IconComponent, IconName } from '../icon/icon.component';
+import { IconComponent, IconName } from '@alittlemore.dev/design-system/primitives';
 
 export interface NavigationItem {
   readonly key: string;

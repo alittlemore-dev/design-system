@@ -166,7 +166,8 @@ export async function assertCalendarRuntimeIsDeferred(statsPath) {
     for (const [input, value] of Object.entries(output.inputs ?? {})) {
       if (
         value.bytesInOutput > 0 &&
-        /\/(?:fullcalendar|@fullcalendar|@full-ui)\//.test(input.replaceAll('\\', '/'))
+        (/\/(?:fullcalendar|@fullcalendar|@full-ui)\//.test(input.replaceAll('\\', '/')) ||
+          input.replaceAll('\\', '/').endsWith('/alittlemore.dev-design-system-calendar.mjs'))
       ) {
         throw new Error(`The initial browser bundle includes the calendar runtime: ${input}`);
       }

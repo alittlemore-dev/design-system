@@ -123,5 +123,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/calendar-preview.component').then((m) => m.CalendarPreviewComponent),
   },
+  {
+    path: 'preview/calendar-primary',
+    loadComponent: () =>
+      import('./pages/calendar-primary-preview.component').then(
+        (m) => m.CalendarPrimaryPreviewComponent,
+      ),
+  },
   { path: '**', redirectTo: 'overview' },
 ];

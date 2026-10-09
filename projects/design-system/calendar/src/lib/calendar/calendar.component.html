@@ -1,6 +1,15 @@
-<section class="ds-calendar" [attr.aria-label]="labels().calendar" [attr.aria-busy]="loading()">
+<section
+  class="ds-calendar"
+  [attr.aria-label]="labels().calendar"
+  [attr.aria-busy]="loading() || (!ready() && !failed())"
+>
   <div class="ds-calendar-toolbar">
-    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goToday()">
+    <button
+      type="button"
+      class="btn btn-outline-secondary btn-sm"
+      [disabled]="!ready()"
+      (click)="goToday()"
+    >
       {{ labels().today }}
     </button>
     <div class="ds-calendar-period-actions">
@@ -8,6 +17,7 @@
         type="button"
         class="ds-calendar-icon"
         [attr.aria-label]="labels().previous"
+        [disabled]="!ready()"
         (click)="previous()"
       >
         <ds-icon name="chevron-right" class="ds-calendar-previous" />
@@ -16,6 +26,7 @@
         type="button"
         class="ds-calendar-icon"
         [attr.aria-label]="labels().next"
+        [disabled]="!ready()"
         (click)="next()"
       >
         <ds-icon name="chevron-right" />
@@ -30,7 +41,7 @@
       appearance="bordered"
       [required]="false"
       [invalid]="false"
-      [controlDisabled]="false"
+      [controlDisabled]="!ready()"
       [options]="viewOptions()"
       [value]="view()"
       (valueChange)="changeView($event)"

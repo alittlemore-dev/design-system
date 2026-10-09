@@ -14,7 +14,7 @@ export type IconName =
   | 'dashboard';
 
 /** @internal */
-export const ICON_PATHS: Readonly<Record<IconName, readonly string[]>> = {
+const ICON_PATHS: Readonly<Record<IconName, readonly string[]>> = {
   menu: ['M4 6h16', 'M4 12h16', 'M4 18h16'],
   'panel-open': [
     'M9 4v16',
@@ -51,6 +51,10 @@ export const ICON_PATHS: Readonly<Record<IconName, readonly string[]>> = {
   dashboard: ['M3 3h7v7H3Z', 'M14 3h7v7h-7Z', 'M3 14h7v7H3Z', 'M14 14h7v7h-7Z'],
 };
 
+export function getIconPaths(name: IconName): readonly string[] {
+  return ICON_PATHS[name] ?? [];
+}
+
 @Component({
   selector: 'ds-icon',
   standalone: true,
@@ -84,5 +88,5 @@ export class IconComponent {
   readonly name = input.required<IconName>();
   readonly size = input(20);
   /** @internal */
-  protected readonly paths = computed(() => ICON_PATHS[this.name()] ?? []);
+  protected readonly paths = computed(() => getIconPaths(this.name()));
 }
