@@ -98,7 +98,8 @@ jobs:
       - name: Set up Node.js and npm registry
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version-file: .nvmrc
+          # The publisher receives only the verified archive.
+          node-version: 24.22.3
           package-manager-cache: false
           registry-url: https://registry.npmjs.org
 

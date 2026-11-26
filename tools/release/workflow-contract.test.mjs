@@ -66,7 +66,8 @@ test('push releases are fully queued and isolate gate, OIDC, and tag permissions
     /if: github\.event_name == 'push' && needs\.gate\.outputs\.release_required == 'true'/,
   );
   assert.match(publish, /permissions:\n {6}actions: read\n {6}contents: read\n {6}id-token: write/);
-  assert.doesNotMatch(publish, /actions\/checkout|contents: write/);
+  assert.doesNotMatch(publish, /actions\/checkout|contents: write|node-version-file/);
+  assert.match(publish, /node-version: \d+\.\d+\.\d+/);
   assert.doesNotMatch(publish, /NODE_AUTH_TOKEN|NPM_TOKEN/);
   assert.match(publish, /npm publish "\$ARCHIVE_PATH"/);
   assert.match(publish, /sha256sum --check --strict/);
