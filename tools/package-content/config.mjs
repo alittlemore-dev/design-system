@@ -5,8 +5,8 @@ const angularRange = '>=22.1.1 <23.0.0';
 export const dependencyContracts = {
   ui: {
     dependencies: {
-      fullcalendar: '7.1.1',
-      'temporal-polyfill': '^1.0.5',
+      fullcalendar: '7.1.5',
+      'temporal-polyfill': '^1.0.8',
     },
     peerDependencies: {
       '@angular/cdk': '>=22.1.0 <23.0.0',
@@ -23,8 +23,8 @@ export const dependencyContracts = {
       '@angular/core': angularRange,
     },
     dependencies: {
-      dompurify: '^3.4.16',
-      marked: '^18.0.14',
+      dompurify: '^3.5.0',
+      marked: '^18.3.0',
       prismjs: '^1.30.0',
     },
   },
@@ -37,14 +37,14 @@ export const dependencyContracts = {
       rxjs: '>=7.8.2 <8.0.0',
     },
     dependencies: {
-      '@codemirror/autocomplete': '^6.20.3',
-      '@codemirror/commands': '^6.11.1',
+      '@codemirror/autocomplete': '^6.20.4',
+      '@codemirror/commands': '^6.11.2',
       '@codemirror/lang-markdown': '^6.5.2',
-      '@codemirror/language': '^6.12.4',
-      '@codemirror/search': '^6.7.2',
+      '@codemirror/language': '^6.13.1',
+      '@codemirror/search': '^6.7.3',
       '@codemirror/state': '^6.7.6',
-      '@codemirror/view': '^6.43.13',
-      '@lezer/common': '^1.5.3',
+      '@codemirror/view': '^6.44.0',
+      '@lezer/common': '^1.5.7',
       '@lezer/highlight': '^1.2.5',
     },
   },
@@ -65,7 +65,7 @@ export const dependencyContracts = {
   },
   infrastructure: {
     dependencies: {
-      tslib: '^2.3.0',
+      tslib: '^2.9.1',
     },
   },
 };

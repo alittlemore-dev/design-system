@@ -18,6 +18,12 @@ policy in [Release workflows](docs/release-workflows.md).
 
 ### Security
 
+## [0.5.3] - 2026-11-26
+
+### Changed
+
+- Update the calendar, Markdown renderer, and editor dependencies while preserving the Angular peer compatibility range.
+
 ## [0.5.2] - 2026-10-10
 
 ### Added

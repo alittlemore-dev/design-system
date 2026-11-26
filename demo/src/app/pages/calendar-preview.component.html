@@ -146,8 +146,9 @@
       @for (entry of dayEntries(); track entry.id) {
         <li>
           <button type="button" (click)="selectEntry(entry)">
-            <strong>{{ entry.title }}</strong
-            ><small>{{ entry.typeLabel }} · {{ entryTime(entry) }}</small>
+            <strong>{{ entry.title }}</strong><small
+              >{{ entry.typeLabel }} · {{ entryTime(entry) }}</small
+            >
           </button>
         </li>
       } @empty {

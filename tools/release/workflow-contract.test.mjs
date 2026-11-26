@@ -34,7 +34,7 @@ test('CI is read-only and runs one Make gate per pushed or pull-request commit',
   assert.match(ciWorkflow, /^ {8}run: make install$/m);
   assert.match(ciWorkflow, /^ {8}run: make pack$/m);
   assert.match(ciWorkflow, /^ {8}run: make check-demo$/m);
-  assert.match(ciWorkflow, /node-version: 24\.21\.0/);
+  assert.match(ciWorkflow, /node-version-file: \.nvmrc/);
 });
 
 test('push releases are fully queued and isolate gate, OIDC, and tag permissions', () => {
@@ -66,7 +66,8 @@ test('push releases are fully queued and isolate gate, OIDC, and tag permissions
     /if: github\.event_name == 'push' && needs\.gate\.outputs\.release_required == 'true'/,
   );
   assert.match(publish, /permissions:\n {6}actions: read\n {6}contents: read\n {6}id-token: write/);
-  assert.doesNotMatch(publish, /actions\/checkout|contents: write/);
+  assert.doesNotMatch(publish, /actions\/checkout|contents: write|node-version-file/);
+  assert.match(publish, /node-version: \d+\.\d+\.\d+/);
   assert.doesNotMatch(publish, /NODE_AUTH_TOKEN|NPM_TOKEN/);
   assert.match(publish, /npm publish "\$ARCHIVE_PATH"/);
   assert.match(publish, /sha256sum --check --strict/);
